@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, StatusBar as RNStatusBar, SafeAreaView, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, StatusBar as RNStatusBar, ScrollView, Alert } from 'react-native';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
+import { AuthService } from '../services/AuthService';
+import { CONFIG } from '../Config';
 
 const { width, height } = Dimensions.get('window');
 
@@ -9,8 +11,39 @@ const LoginScreen = ({ navigation }: any) => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
-    const handleLogin = () => {
-        console.log('Login clicked', { email, password });
+    useEffect(() => {
+        const checkBiometric = async () => {
+            if (CONFIG.ENABLE_BIOMETRIC) {
+                const authenticated = await AuthService.checkBiometric();
+                if (authenticated) {
+                    // Mock user data for biometric login (since we don't have creds)
+                    handleLoginSuccess({ name: 'Biometric User', email: 'bio@user.com' });
+                }
+            }
+        };
+        checkBiometric();
+    }, []);
+
+    const handleLoginSuccess = (user: any) => {
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home', params: { user } }],
+        });
+    };
+
+    const handleLogin = async () => {
+        if (!email || !password) {
+            Alert.alert('Error', 'Please enter email and password');
+            return;
+        }
+        try {
+            const result = await AuthService.login({ email, password });
+            if (result.success) {
+                handleLoginSuccess(result.user);
+            }
+        } catch (error: any) {
+            Alert.alert('Login Failed', error.message || 'Invalid credentials');
+        }
     };
 
     const handleGoogleLogin = () => {
@@ -18,18 +51,8 @@ const LoginScreen = ({ navigation }: any) => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <RNStatusBar barStyle="dark-content" backgroundColor="#E8EEF3" />
-
-            {/* Status Bar Mockup */}
-            <View style={styles.statusBar}>
-                <Text style={styles.time}>9:41</Text>
-                <View style={styles.statusIcons}>
-                    <Text style={styles.statusIcon}>📶</Text>
-                    <Text style={styles.statusIcon}>📡</Text>
-                    <Text style={styles.statusIcon}>🔋</Text>
-                </View>
-            </View>
+        <View style={styles.container}>
+            <RNStatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
             <ScrollView contentContainerStyle={styles.contentContainer}>
                 {/* Back Button */}
@@ -133,12 +156,9 @@ const LoginScreen = ({ navigation }: any) => {
                     </View>
                 </View>
 
-                {/* Bottom Indicator */}
-                <View style={styles.bottomIndicator}>
-                    <View style={styles.indicator} />
-                </View>
+                {/* Bottom Indicator Removed */}
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 };
 
@@ -147,28 +167,10 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#E8EEF3',
     },
+
     contentContainer: {
         flexGrow: 1,
-    },
-    statusBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-    },
-    time: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#1a202c',
-    },
-    statusIcons: {
-        flexDirection: 'row',
-        gap: 4,
-    },
-    statusIcon: {
-        fontSize: 14,
-        marginLeft: 4,
+        paddingBottom: 20,
     },
     backButton: {
         position: 'absolute',
@@ -282,16 +284,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         textDecorationLine: 'underline',
     },
-    bottomIndicator: {
-        alignItems: 'center',
-        paddingVertical: 20,
-    },
-    indicator: {
-        width: 120,
-        height: 5,
-        backgroundColor: '#2D3748',
-        borderRadius: 3,
-    },
+
 });
 
 export default LoginScreen;

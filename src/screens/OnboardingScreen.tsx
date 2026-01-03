@@ -19,6 +19,37 @@ const OnboardingScreen = ({ navigation }: any) => {
     navigation.navigate('Signup');
   };
 
+  // Typewriter Effect Logic
+  const words = ["Smart", "Safe", "Digital"];
+  const [currentWordIndex, setCurrentWordIndex] = React.useState(0);
+  const [displayText, setDisplayText] = React.useState("");
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [typingSpeed, setTypingSpeed] = React.useState(150);
+
+  useEffect(() => {
+    const handleTyping = () => {
+      const currentWord = words[currentWordIndex];
+
+      if (isDeleting) {
+        setDisplayText(prev => prev.substring(0, prev.length - 1));
+        setTypingSpeed(50); // Deleting speed
+      } else {
+        setDisplayText(prev => currentWord.substring(0, prev.length + 1));
+        setTypingSpeed(150); // Typing speed
+      }
+
+      if (!isDeleting && displayText === currentWord) {
+        setTimeout(() => setIsDeleting(true), 1500); // Pause before deleting
+      } else if (isDeleting && displayText === "") {
+        setIsDeleting(false);
+        setCurrentWordIndex((prev) => (prev + 1) % words.length);
+      }
+    };
+
+    const timer = setTimeout(handleTyping, typingSpeed);
+    return () => clearTimeout(timer);
+  }, [displayText, isDeleting, currentWordIndex, typingSpeed]);
+
   return (
     <View style={styles.container}>
       <RNStatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
@@ -35,7 +66,7 @@ const OnboardingScreen = ({ navigation }: any) => {
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.title}>Be Smart{'\n'}Be Safe{'\n'}Be Digital</Text>
+        <Text style={styles.title}>Be {displayText}<Text style={{ color: '#4A9EFF' }}>|</Text></Text>
         <Text style={styles.description}>
           As everything in the world is getting Digital why not we we should also be digital make ourself digitally available to Everyone
         </Text>

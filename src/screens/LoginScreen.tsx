@@ -5,11 +5,34 @@ import { AuthContext } from '../context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
+import CustomAlert from '../components/CustomAlert';
+
 const LoginScreen = ({ navigation }: any) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const { login } = useContext(AuthContext);
+
+    // Alert State
+    const [alertConfig, setAlertConfig] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        type: 'error' | 'success' | 'info';
+    }>({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'error',
+    });
+
+    const showAlert = (title: string, message: string, type: 'error' | 'success' | 'info' = 'error') => {
+        setAlertConfig({ visible: true, title, message, type });
+    };
+
+    const hideAlert = () => {
+        setAlertConfig({ ...alertConfig, visible: false });
+    };
 
     const validateEmail = (email: string) => {
         const re = /\S+@\S+\.\S+/;
@@ -18,11 +41,11 @@ const LoginScreen = ({ navigation }: any) => {
 
     const handleLogin = async () => {
         if (!email || !password) {
-            Alert.alert('Error', 'Please enter email and password');
+            showAlert('Error', 'Please enter email and password', 'error');
             return;
         }
         if (!validateEmail(email)) {
-            Alert.alert('Error', 'Please enter a valid email address');
+            showAlert('Error', 'Please enter a valid email address', 'error');
             return;
         }
 
@@ -30,7 +53,7 @@ const LoginScreen = ({ navigation }: any) => {
             await login(email, password);
             // Navigation handled by App.tsx based strictly on token state
         } catch (error: any) {
-            Alert.alert('Login Failed', error.message || 'Invalid credentials');
+            showAlert('Login Failed', error.message || 'Invalid credentials', 'error');
         }
     };
 
@@ -146,6 +169,14 @@ const LoginScreen = ({ navigation }: any) => {
 
                 {/* Bottom Indicator Removed */}
             </ScrollView>
+
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={hideAlert}
+            />
         </View>
     );
 };

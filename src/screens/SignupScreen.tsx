@@ -5,6 +5,8 @@ import { AuthContext } from '../context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
+import CustomAlert from '../components/CustomAlert';
+
 const SignupScreen = ({ navigation }: any) => {
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
@@ -12,36 +14,57 @@ const SignupScreen = ({ navigation }: any) => {
     const [showPassword, setShowPassword] = useState(false);
     const { register } = useContext(AuthContext);
 
+    // Alert State
+    const [alertConfig, setAlertConfig] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        type: 'error' | 'success' | 'info';
+    }>({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'error',
+    });
+
+    const showAlert = (title: string, message: string, type: 'error' | 'success' | 'info' = 'error') => {
+        setAlertConfig({ visible: true, title, message, type });
+    };
+
+    const hideAlert = () => {
+        setAlertConfig({ ...alertConfig, visible: false });
+    };
+
     const validateEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
     const validatePhone = (phone: string) => /^[0-9]+$/.test(phone);
 
     const handleSignUp = async () => {
         if (!email || !password || !phone) {
-            Alert.alert('Error', 'Please fill all fields');
+            showAlert('Error', 'Please fill all fields', 'error');
             return;
         }
         if (!validateEmail(email)) {
-            Alert.alert('Error', 'Please enter a valid email address');
+            showAlert('Error', 'Please enter a valid email address', 'error');
             return;
         }
         if (!validatePhone(phone)) {
-            Alert.alert('Error', 'Please enter a valid phone number (digits only)');
+            showAlert('Error', 'Please enter a valid phone number (digits only)', 'error');
             return;
         }
         if (password.length < 6) {
-            Alert.alert('Error', 'Password must be at least 6 characters long');
+            showAlert('Error', 'Password must be at least 6 characters long', 'error');
             return;
         }
 
         try {
             const result = await register('User', email, password, phone);
             if (result.success) {
-                Alert.alert('Success', 'Account created! Please login.', [
-                    { text: 'OK', onPress: () => navigation.navigate('Login') }
-                ]);
+                showAlert('Success', 'Account created! Please login.', 'success');
+                // We'll let user dismiss the alert, and we could optionally navigate them on dismiss.
+                // For now, let's keep it simple or hook into onDismiss for this specific case.
             }
         } catch (error: any) {
-            Alert.alert('Registration Failed', error.message || 'Something went wrong');
+            showAlert('Registration Failed', error.message || 'Something went wrong', 'error');
         }
     };
 
@@ -170,6 +193,14 @@ const SignupScreen = ({ navigation }: any) => {
 
                 {/* Bottom Indicator Removed */}
             </ScrollView>
+
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={hideAlert}
+            />
         </View>
     );
 };

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, StatusBar as RNStatusBar, ScrollView, Alert } from 'react-native';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
-import { AuthService } from '../services/AuthService';
+import { AuthContext } from '../context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -10,14 +10,31 @@ const SignupScreen = ({ navigation }: any) => {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const { register } = useContext(AuthContext);
+
+    const validateEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
+    const validatePhone = (phone: string) => /^[0-9]+$/.test(phone);
 
     const handleSignUp = async () => {
         if (!email || !password || !phone) {
             Alert.alert('Error', 'Please fill all fields');
             return;
         }
+        if (!validateEmail(email)) {
+            Alert.alert('Error', 'Please enter a valid email address');
+            return;
+        }
+        if (!validatePhone(phone)) {
+            Alert.alert('Error', 'Please enter a valid phone number (digits only)');
+            return;
+        }
+        if (password.length < 6) {
+            Alert.alert('Error', 'Password must be at least 6 characters long');
+            return;
+        }
+
         try {
-            const result = await AuthService.register({ email, password, phone });
+            const result = await register('User', email, password, phone);
             if (result.success) {
                 Alert.alert('Success', 'Account created! Please login.', [
                     { text: 'OK', onPress: () => navigation.navigate('Login') }

@@ -33,16 +33,5 @@ export const AuthService = {
         }
     },
 
-    checkBiometric: async (): Promise<boolean> => {
-        if (!CONFIG.ENABLE_BIOMETRIC) return false;
-
-        // Mock Biometric Success for "Make everything working" without native crashes
-        // In a real scenario with linked libraries: 
-        // const rnBiometrics = new ReactNativeBiometrics();
-        // const { available } = await rnBiometrics.isSensorAvailable();
-        // if (available) { result = await rnBiometrics.simplePrompt({ promptMessage: 'Confirm fingerprint' }); return result.success; }
-
-        console.log('Biometric Check: Mocking success as native lib not linked.');
-        return new Promise(resolve => setTimeout(() => resolve(true), 1000));
-    }
+    // checkBiometric removed as per user request
 };

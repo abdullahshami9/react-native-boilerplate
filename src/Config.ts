@@ -1,4 +1,4 @@
 export const CONFIG = {
-    API_URL: 'http://10.0.2.2:3000', // Emulator localhost
-    ENABLE_BIOMETRIC: true, // User requested toggle
+    API_URL: 'http://192.168.1.112:3000', // Local LAN IP
+    ENABLE_BIOMETRIC: false, // User requested toggle
 };

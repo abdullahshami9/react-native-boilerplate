@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, StatusBar as RNStatusBar, ScrollView, Alert } from 'react-native';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
-import { AuthService } from '../services/AuthService';
-import { CONFIG } from '../Config';
+import { AuthContext } from '../context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -10,25 +9,11 @@ const LoginScreen = ({ navigation }: any) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const { login } = useContext(AuthContext);
 
-    useEffect(() => {
-        const checkBiometric = async () => {
-            if (CONFIG.ENABLE_BIOMETRIC) {
-                const authenticated = await AuthService.checkBiometric();
-                if (authenticated) {
-                    // Mock user data for biometric login (since we don't have creds)
-                    handleLoginSuccess({ name: 'Biometric User', email: 'bio@user.com' });
-                }
-            }
-        };
-        checkBiometric();
-    }, []);
-
-    const handleLoginSuccess = (user: any) => {
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'Home', params: { user } }],
-        });
+    const validateEmail = (email: string) => {
+        const re = /\S+@\S+\.\S+/;
+        return re.test(email);
     };
 
     const handleLogin = async () => {
@@ -36,11 +21,14 @@ const LoginScreen = ({ navigation }: any) => {
             Alert.alert('Error', 'Please enter email and password');
             return;
         }
+        if (!validateEmail(email)) {
+            Alert.alert('Error', 'Please enter a valid email address');
+            return;
+        }
+
         try {
-            const result = await AuthService.login({ email, password });
-            if (result.success) {
-                handleLoginSuccess(result.user);
-            }
+            await login(email, password);
+            // Navigation handled by App.tsx based strictly on token state
         } catch (error: any) {
             Alert.alert('Login Failed', error.message || 'Invalid credentials');
         }

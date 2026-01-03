@@ -2,11 +2,13 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, StatusBar as RNStatusBar, Dimensions, ScrollView, Animated, Switch } from 'react-native';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
+import { AuthContext } from '../context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation, route }: any) => {
     const user = route.params?.user || { name: 'User', email: 'user@example.com' };
+    const authContext = React.useContext(AuthContext);
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const sidebarAnim = useRef(new Animated.Value(-width * 0.75)).current;
@@ -126,7 +128,7 @@ const HomeScreen = ({ navigation, route }: any) => {
                         <Switch value={isDarkMode} onValueChange={toggleDarkMode} />
                     </View>
 
-                    <TouchableOpacity style={[styles.sidebarItem, { marginTop: 20 }]} onPress={() => { toggleSidebar(); navigation.replace('Login'); }}>
+                    <TouchableOpacity style={[styles.sidebarItem, { marginTop: 20 }]} onPress={() => { toggleSidebar(); authContext.logout(); }}>
                         <Text style={[styles.sidebarItemText, { color: '#E53E3E' }]}>Logout</Text>
                     </TouchableOpacity>
                 </View>

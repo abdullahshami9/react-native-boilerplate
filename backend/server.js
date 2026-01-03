@@ -28,7 +28,7 @@ db.connect((err) => {
     }
     console.log('Connected to MySQL server.');
 
-    const initQuery = `
+
     const initQuery = `
         CREATE DATABASE IF NOT EXISTS AppStarter;
         USE AppStarter;
@@ -39,8 +39,7 @@ db.connect((err) => {
         name VARCHAR(255),
         phone VARCHAR(50),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    `;
+    )`;
 
     db.query(initQuery, (err, result) => {
         if (err) {

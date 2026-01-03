@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, StatusBar as RNStatusBar } from 'react-native';
 import { AuthService } from '../services/AuthService';
+import { AuthContext } from '../context/AuthContext';
 import Svg, { Path } from 'react-native-svg';
 
 const ProfileScreen = ({ navigation, route }: any) => {
@@ -9,6 +10,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
     const [email, setEmail] = useState(initialUser?.email || '');
     const [phone, setPhone] = useState(initialUser?.phone || '');
     const [loading, setLoading] = useState(false);
+    const authContext = React.useContext(AuthContext);
 
     const handleUpdate = async () => {
         setLoading(true);
@@ -42,6 +44,11 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 <View style={styles.avatarContainer}>
                     <Text style={styles.avatarText}>{name ? name.charAt(0).toUpperCase() : 'U'}</Text>
                 </View>
+
+                {/* Logout Button */}
+                <TouchableOpacity onPress={() => { authContext.logout(); }} style={styles.logoutButton}>
+                    <Text style={styles.logoutText}>Logout</Text>
+                </TouchableOpacity>
 
                 <View style={styles.form}>
                     <Text style={styles.label}>Full Name</Text>
@@ -135,6 +142,19 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    logoutButton: {
+        marginTop: 20,
+        backgroundColor: '#E53E3E',
+        padding: 15,
+        borderRadius: 12,
+        alignItems: 'center',
+        width: '100%',
+    },
+    logoutText: {
+        color: 'white',
         fontSize: 16,
         fontWeight: '600',
     },

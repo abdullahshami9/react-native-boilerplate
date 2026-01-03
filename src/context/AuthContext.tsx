@@ -39,6 +39,25 @@ export const AuthProvider = ({ children }: any) => {
         }
     };
 
+    const biometricLogin = async () => {
+        setIsLoading(true);
+        try {
+            // Mock successful login for biometric demo
+            const mockUser = { name: 'Biometric User', email: 'bio@example.com', user_type: 'individual' };
+            const mockToken = 'biometric-demo-token';
+
+            setUserInfo(mockUser);
+            setUserToken(mockToken);
+            await AsyncStorage.setItem('userToken', mockToken);
+            await AsyncStorage.setItem('userInfo', JSON.stringify(mockUser));
+        } catch (e: any) {
+            console.log(`Biometric Login error: ${e}`);
+            throw e;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const logout = () => {
         setIsLoading(true);
         setUserToken(null);
@@ -83,7 +102,7 @@ export const AuthProvider = ({ children }: any) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ login, logout, register, updateProfile, isLoading, userToken, userInfo }}>
+        <AuthContext.Provider value={{ login, logout, register, updateProfile, biometricLogin, isLoading, userToken, userInfo }}>
             {children}
         </AuthContext.Provider>
     );

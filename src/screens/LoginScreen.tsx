@@ -1,17 +1,18 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, StatusBar as RNStatusBar, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, StatusBar as RNStatusBar, ScrollView } from 'react-native';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import { AuthContext } from '../context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
 import CustomAlert from '../components/CustomAlert';
+import ReactNativeBiometrics, { BiometryTypes } from 'react-native-biometrics';
 
 const LoginScreen = ({ navigation }: any) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const { login } = useContext(AuthContext);
+    const { login, biometricLogin } = useContext(AuthContext);
 
     // Alert State
     const [alertConfig, setAlertConfig] = useState<{
@@ -59,6 +60,43 @@ const LoginScreen = ({ navigation }: any) => {
 
     const handleGoogleLogin = () => {
         console.log('Google login clicked');
+    };
+
+    const rnBiometrics = new ReactNativeBiometrics();
+    const [biometryType, setBiometryType] = useState<string | undefined>(undefined);
+
+    React.useEffect(() => {
+        rnBiometrics.isSensorAvailable()
+            .then((resultObject) => {
+                const { available, biometryType } = resultObject;
+
+                if (available && biometryType === BiometryTypes.Biometrics) {
+                    setBiometryType(biometryType);
+                } else if (available && biometryType === BiometryTypes.TouchID) {
+                    setBiometryType(biometryType);
+                } else if (available && biometryType === BiometryTypes.FaceID) {
+                    setBiometryType(biometryType);
+                }
+            })
+            .catch(() => {
+                console.log('biometrics failed');
+            });
+    }, []);
+
+    const handleBiometricLogin = async () => {
+        try {
+            const { success } = await rnBiometrics.simplePrompt({ promptMessage: 'Confirm fingerprint' });
+            if (success) {
+                // Mock login or use stored credentials
+                showAlert('Success', 'Biometric authentication successful', 'success');
+                // For demo purposes, we can log them in as a default user or re-use last known
+                await biometricLogin();
+            } else {
+                showAlert('Error', 'Biometric authentication cancelled', 'error');
+            }
+        } catch (error) {
+            showAlert('Error', 'Biometric authentication failed', 'error');
+        }
     };
 
     return (
@@ -136,10 +174,24 @@ const LoginScreen = ({ navigation }: any) => {
                             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                         </TouchableOpacity>
 
-                        {/* Login Button */}
-                        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-                            <Text style={styles.loginButtonText}>Login</Text>
-                        </TouchableOpacity>
+                        {/* Login Button Row */}
+                        <View style={styles.loginRow}>
+                            <TouchableOpacity style={[styles.loginButton, { flex: 1 }]} onPress={handleLogin}>
+                                <Text style={styles.loginButtonText}>Login</Text>
+                            </TouchableOpacity>
+
+                            {biometryType && (
+                                <TouchableOpacity style={styles.biometricButton} onPress={handleBiometricLogin}>
+                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2">
+                                        <Path d="M2 12C2 7.58 5.58 4 10 4C13.43 4 16.36 6.16 17.5 9.17" />
+                                        <Path d="M5.5 12C5.5 9.5 7.5 7.5 10 7.5C11.5 7.5 12.8 8.25 13.6 9.4" />
+                                        <Path d="M12 19V12A2 2 0 0 1 14 10H14.5" />
+                                        <Path d="M8 19V12A2 2 0 0 0 6 10H5.5" />
+                                        <Path d="M16 19.5V13A3.5 3.5 0 0 1 19.5 9.5H20" />
+                                    </Svg>
+                                </TouchableOpacity>
+                            )}
+                        </View>
 
                         {/* Divider */}
                         <View style={styles.dividerContainer}>
@@ -168,7 +220,7 @@ const LoginScreen = ({ navigation }: any) => {
                 </View>
 
                 {/* Bottom Indicator Removed */}
-            </ScrollView>
+            </ScrollView >
 
             <CustomAlert
                 visible={alertConfig.visible}
@@ -177,7 +229,7 @@ const LoginScreen = ({ navigation }: any) => {
                 type={alertConfig.type}
                 onDismiss={hideAlert}
             />
-        </View>
+        </View >
     );
 };
 
@@ -263,6 +315,25 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: '600',
+    },
+    loginRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginTop: 8,
+    },
+    biometricButton: {
+        backgroundColor: '#4A5568',
+        borderRadius: 50,
+        width: 56,
+        height: 56,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#4A5568',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 8,
     },
     dividerContainer: {
         alignItems: 'center',

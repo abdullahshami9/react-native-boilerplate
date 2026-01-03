@@ -57,7 +57,7 @@ const SignupScreen = ({ navigation }: any) => {
         }
 
         try {
-            const result = await register('User', email, password, phone);
+            const result = await register('User', email, password, phone, userType);
             if (result.success) {
                 showAlert('Success', 'Account created! Please login.', 'success');
                 // We'll let user dismiss the alert, and we could optionally navigate them on dismiss.
@@ -71,6 +71,8 @@ const SignupScreen = ({ navigation }: any) => {
     const handleGoogleSignUp = () => {
         console.log('Google sign up clicked');
     };
+
+    const [userType, setUserType] = useState<'individual' | 'business'>('individual');
 
     return (
         <View style={styles.container}>
@@ -88,6 +90,22 @@ const SignupScreen = ({ navigation }: any) => {
                     {/* Welcome Text */}
                     <View style={styles.welcomeSection}>
                         <Text style={styles.welcomeText}>Let's get{'\n'}started</Text>
+                    </View>
+
+                    {/* User Type Selection */}
+                    <View style={styles.userTypeContainer}>
+                        <TouchableOpacity
+                            style={[styles.userTypeButton, userType === 'individual' && styles.userTypeActive]}
+                            onPress={() => setUserType('individual')}
+                        >
+                            <Text style={[styles.userTypeText, userType === 'individual' && styles.userTypeActiveText]}>Personal</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.userTypeButton, userType === 'business' && styles.userTypeActive]}
+                            onPress={() => setUserType('business')}
+                        >
+                            <Text style={[styles.userTypeText, userType === 'business' && styles.userTypeActiveText]}>Business</Text>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Form Section */}
@@ -229,7 +247,36 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     welcomeSection: {
-        marginBottom: 40,
+        marginBottom: 20,
+    },
+    userTypeContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#E2E8F0',
+        borderRadius: 25,
+        padding: 4,
+        marginBottom: 30,
+    },
+    userTypeButton: {
+        flex: 1,
+        paddingVertical: 10,
+        alignItems: 'center',
+        borderRadius: 22,
+    },
+    userTypeActive: {
+        backgroundColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    userTypeText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#718096',
+    },
+    userTypeActiveText: {
+        color: '#2D3748',
     },
     welcomeText: {
         fontSize: 36, // Slightly smaller than Login for "Let's get started" or keep same? Design had similar

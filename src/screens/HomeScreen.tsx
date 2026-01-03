@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, StatusBar as RNStatusBar, Dimensions, ScrollView, Animated, Switch } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { AuthContext } from '../context/AuthContext';
 
@@ -12,6 +13,8 @@ const HomeScreen = ({ navigation, route }: any) => {
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const sidebarAnim = useRef(new Animated.Value(-width * 0.75)).current;
+
+    const isFocused = useIsFocused();
 
     const toggleSidebar = () => {
         if (isSidebarOpen) {
@@ -26,7 +29,7 @@ const HomeScreen = ({ navigation, route }: any) => {
 
     const theme = {
         bg: isDarkMode ? '#1A202C' : '#F7FAFC',
-        headerBg: isDarkMode ? '#2D3748' : '#fff',
+        headerBg: isDarkMode ? '#2D3748' : '#F7FAFC',
         text: isDarkMode ? '#F7FAFC' : '#2D3748',
         subText: isDarkMode ? '#A0AEC0' : '#718096',
         cardBg: isDarkMode ? '#2D3748' : '#fff',
@@ -37,7 +40,7 @@ const HomeScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
-            <RNStatusBar translucent backgroundColor="transparent" barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+            {isFocused && <RNStatusBar backgroundColor={theme.headerBg} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />}
 
             {/* Header */}
             <View style={[styles.header, { backgroundColor: theme.headerBg }]}>
@@ -145,7 +148,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingTop: 50,
+        paddingTop: 15,
         paddingHorizontal: 20,
         paddingBottom: 15,
         shadowColor: '#000',

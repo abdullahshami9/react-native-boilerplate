@@ -25,7 +25,7 @@ const OnboardingScreen = ({ navigation }: any) => {
 
       {/* Header */}
       <View style={styles.header}>
-        <Image source={require('../assets/logo-provision.png')} style={styles.logoImage} resizeMode="contain" />
+        {/* <Image source={require('../assets/logo-provision.png')} style={styles.logoImage} resizeMode="contain" /> */}
       </View>
 
       {/* Illustration */}
@@ -35,9 +35,9 @@ const OnboardingScreen = ({ navigation }: any) => {
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.title}>Lorem ipsum{'\n'}dolor.</Text>
+        <Text style={styles.title}>Be Smart{'\n'}Be Safe{'\n'}Be Digital</Text>
         <Text style={styles.description}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+          As everything in the world is getting Digital why not we we should also be digital make ourself digitally available to Everyone
         </Text>
       </View>
 
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoImage: {
-    width: 150,
+    width: 50,
     height: 50,
   },
   logoContainer: {

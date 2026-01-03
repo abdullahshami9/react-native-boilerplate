@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { AuthContext } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
 const ShopScreen = () => {
+    const { userInfo: user } = React.useContext(AuthContext);
     const [activeTab, setActiveTab] = useState('Products');
 
     const products = [
@@ -62,15 +64,17 @@ const ShopScreen = () => {
                 </View>
             </ScrollView>
 
-            {/* Floating Action Buttons */}
-            <View style={styles.fabContainer}>
-                <TouchableOpacity style={styles.fabSecondary}>
-                    <Text style={styles.fabSecondaryText}>Add Product</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.fabSecondary}>
-                    <Text style={styles.fabSecondaryText}>Manage Inventory</Text>
-                </TouchableOpacity>
-            </View>
+            {/* Floating Action Buttons - Only for Business Users */}
+            {user?.user_type === 'business' && (
+                <View style={styles.fabContainer}>
+                    <TouchableOpacity style={styles.fabSecondary}>
+                        <Text style={styles.fabSecondaryText}>Add Product</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.fabSecondary}>
+                        <Text style={styles.fabSecondaryText}>Manage Inventory</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
 };

@@ -25,10 +25,10 @@ export const AuthProvider = ({ children }: any) => {
         }
     };
 
-    const register = async (name: string, email: string, password: string, phone: string) => {
+    const register = async (name: string, email: string, password: string, phone: string, user_type: string) => {
         setIsLoading(true);
         try {
-            const response = await AuthService.register({ name, email, password, phone });
+            const response = await AuthService.register({ name, email, password, phone, user_type });
             // Optionally auto-login or just return success
             return response;
         } catch (e: any) {
@@ -46,6 +46,23 @@ export const AuthProvider = ({ children }: any) => {
         AsyncStorage.removeItem('userToken');
         AsyncStorage.removeItem('userInfo');
         setIsLoading(false);
+    };
+
+    const updateProfile = async (data: any) => {
+        setIsLoading(true);
+        try {
+            const response = await AuthService.updateProfile(data);
+            // Update local state merged with new data
+            const updatedUser = { ...userInfo, ...data };
+            setUserInfo(updatedUser);
+            AsyncStorage.setItem('userInfo', JSON.stringify(updatedUser)); // Persist update
+            return response;
+        } catch (e: any) {
+            console.log(`Update Profile error: ${e}`);
+            throw e;
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const isLoggedIn = async () => {
@@ -66,7 +83,7 @@ export const AuthProvider = ({ children }: any) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ login, logout, register, isLoading, userToken, userInfo }}>
+        <AuthContext.Provider value={{ login, logout, register, updateProfile, isLoading, userToken, userInfo }}>
             {children}
         </AuthContext.Provider>
     );

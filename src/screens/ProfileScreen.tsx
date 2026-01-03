@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, Switch } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import QRCode from 'react-native-qrcode-svg';
 import { AuthContext } from '../context/AuthContext';
@@ -7,13 +7,28 @@ import { AuthContext } from '../context/AuthContext';
 const { width } = Dimensions.get('window');
 
 const ProfileScreen = ({ navigation }: any) => {
-    const { logout, userInfo } = useContext(AuthContext);
-    // For demo purposes, we can toggle between Individual and Business views
-    // In a real app, this would be determined by userInfo.user_type
-    const [isBusiness, setIsBusiness] = useState(userInfo?.user_type === 'business');
+    const { logout, userInfo, updateProfile } = useContext(AuthContext);
+    const [isEditing, setIsEditing] = useState(false);
+    const [name, setName] = useState(userInfo?.name || '');
+    const [phone, setPhone] = useState(userInfo?.phone || '');
 
-    // Toggle function for demo
-    const toggleUserType = () => setIsBusiness(!isBusiness);
+    // We can keep the view toggle for design purposes if user is business, 
+    // but the main request is "login user can edit their info".
+    // We will assume "isBusiness" view logic remains for displaying different layouts if they ARE a business, 
+    // but let's base it on actual user_type for the default view.
+    const isBusinessUser = userInfo?.user_type === 'business';
+    const [isBusinessView, setIsBusinessView] = useState(isBusinessUser);
+
+    const handleSave = async () => {
+        try {
+            await updateProfile({ id: userInfo.id, name, phone, email: userInfo.email });
+            setIsEditing(false);
+            // Optionally show success alert
+        } catch (error) {
+            console.error(error);
+            // Optionally show error alert
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -21,9 +36,21 @@ const ProfileScreen = ({ navigation }: any) => {
             <View style={styles.headerBackground}>
                 {/* Header Top Bar */}
                 <View style={styles.headerTop}>
-                    {/* Back Button (Optional in Tab, usually hidden or goes to Home) - Design shows none or specific */}
-                    {/* We will add settings/logout here */}
-                    <TouchableOpacity onPress={logout} style={styles.logoutIcon}>
+                    <TouchableOpacity onPress={() => setIsEditing(!isEditing)} style={styles.iconButton}>
+                        <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                            {isEditing ? (
+                                <Path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                            ) : (
+                                <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            )}
+                            {isEditing ? (
+                                <Path d="M17 21v-8h-6v8" /> // Save icon-ish
+                            ) : (
+                                <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            )}
+                        </Svg>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={logout} style={[styles.iconButton, { marginLeft: 15 }]}>
                         <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
                             <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                             <Path d="M16 17l5-5-5-5" />
@@ -47,18 +74,13 @@ const ProfileScreen = ({ navigation }: any) => {
 
             {/* Content Body */}
             <View style={styles.contentContainer}>
-                {/* Curve Svg simulated by top borderRadius of contentContainer if absolute, 
-                     but design shows the dark part overlapping. 
-                     Let's use negative margin approach or absolute positioning. 
-                 */}
-
-                {/* Profile Image / Shop Logo */}
+                {/* Avatar */}
                 <View style={styles.avatarWrapper}>
                     <Image
                         source={{
-                            uri: isBusiness
-                                ? 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?fit=crop&w=200&h=200' // Flower/Shop logo
-                                : 'https://randomuser.me/api/portraits/men/32.jpg' // Person
+                            uri: isBusinessView
+                                ? 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?fit=crop&w=200&h=200'
+                                : 'https://randomuser.me/api/portraits/men/32.jpg'
                         }}
                         style={styles.avatar}
                     />
@@ -66,41 +88,46 @@ const ProfileScreen = ({ navigation }: any) => {
 
                 {/* Info Section */}
                 <View style={styles.infoSection}>
-                    <Text style={styles.nameText}>{isBusiness ? 'Shop Name' : (userInfo?.name || 'Name Smith')}</Text>
-                    <Text style={styles.roleText}>{isBusiness ? 'Shop Shop' : 'User Photo'}</Text>
+                    {isEditing ? (
+                        <View style={styles.editForm}>
+                            <TextInput
+                                style={styles.input}
+                                value={name}
+                                onChangeText={setName}
+                                placeholder="Name"
+                            />
+                            <TextInput
+                                style={[styles.input, { marginTop: 10 }]}
+                                value={phone}
+                                onChangeText={setPhone}
+                                placeholder="Phone"
+                                keyboardType="phone-pad"
+                            />
+                        </View>
+                    ) : (
+                        <>
+                            <Text style={styles.nameText}>{userInfo?.name || 'Name'}</Text>
+                            <Text style={styles.roleText}>{userInfo?.email}</Text>
+                            <Text style={[styles.roleText, { fontSize: 14, marginTop: 5 }]}>{userInfo?.phone}</Text>
+                        </>
+                    )}
                 </View>
 
-                {/* Tags / Skills - Only for Individual */}
-                {!isBusiness && (
-                    <View style={styles.tagsContainer}>
-                        <View style={[styles.tag, styles.activeTag]}>
-                            <Text style={styles.activeTagText}>Skill</Text>
-                        </View>
-                        <View style={styles.tag}>
-                            <Text style={styles.tagText}>Speestiling</Text>
-                        </View>
-                        <View style={styles.tag}>
-                            <Text style={styles.tagText}>Skills</Text>
-                        </View>
-                        <View style={styles.tag}>
-                            <Text style={styles.tagText}>Making</Text>
-                        </View>
-                    </View>
+                {/* Edit Save Button if editing */}
+                {isEditing && (
+                    <TouchableOpacity style={styles.mainButton} onPress={handleSave}>
+                        <Text style={styles.mainButtonText}>Save Changes</Text>
+                    </TouchableOpacity>
                 )}
 
-                {/* Main Action Button */}
-                <TouchableOpacity style={styles.mainButton}>
-                    <Text style={styles.mainButtonText}>
-                        {isBusiness ? 'View Products' : 'Connect'}
-                    </Text>
-                </TouchableOpacity>
-
-                {/* Toggle for Demo */}
-                <View style={styles.demoToggle}>
-                    <Text style={styles.demoText}>View as {isBusiness ? 'Business' : 'Individual'}</Text>
-                    <Switch value={isBusiness} onValueChange={toggleUserType} trackColor={{ false: "#767577", true: "#4A5568" }} />
-                </View>
-
+                {/* Normal Action Button (Hidden if editing maybe? or kept) */}
+                {!isEditing && (
+                    <TouchableOpacity style={styles.mainButton}>
+                        <Text style={styles.mainButtonText}>
+                            {isBusinessView ? 'View Products' : 'Connect'}
+                        </Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );
@@ -124,11 +151,33 @@ const styles = StyleSheet.create({
     headerTop: {
         width: '100%',
         paddingHorizontal: 20,
-        alignItems: 'flex-end',
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
         marginBottom: 10,
+    },
+    iconButton: {
+        padding: 5,
     },
     logoutIcon: {
         padding: 5,
+    },
+    editForm: {
+        width: '100%',
+        paddingHorizontal: 40,
+        alignItems: 'center',
+    },
+    input: {
+        width: '100%',
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 10,
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        fontSize: 16,
+        color: '#2D3748',
+        textAlign: 'center',
     },
     qrContainer: {
         marginTop: 10,

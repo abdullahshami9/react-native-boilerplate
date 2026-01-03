@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, StatusBar } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
@@ -7,6 +7,7 @@ const { width } = Dimensions.get('window');
 const ProductDetailsScreen = ({ navigation }: any) => {
     return (
         <View style={styles.container}>
+            <StatusBar barStyle="dark-content" backgroundColor="#F7FAFC" />
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>

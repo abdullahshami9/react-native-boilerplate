@@ -26,7 +26,12 @@ const AppNav = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+        presentation: 'card',
+        gestureEnabled: true,
+      }}>
         {userToken !== null ? (
           <>
             <Stack.Screen name="Home" component={HomeScreen} />

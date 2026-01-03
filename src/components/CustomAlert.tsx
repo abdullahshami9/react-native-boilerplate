@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Dimensions } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Dimensions, Animated } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
 import Svg, { Path } from 'react-native-svg';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 interface CustomAlertProps {
     visible: boolean;
@@ -14,21 +14,48 @@ interface CustomAlertProps {
 }
 
 const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, type = 'error', onDismiss }) => {
+    const scaleValue = useRef(new Animated.Value(0)).current;
+    const opacityValue = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (visible) {
+            scaleValue.setValue(0.5);
+            opacityValue.setValue(0);
+            Animated.parallel([
+                Animated.spring(scaleValue, {
+                    toValue: 1,
+                    friction: 6,
+                    tension: 50,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(opacityValue, {
+                    toValue: 1,
+                    duration: 150,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        } else {
+            // Reset values when not visible
+            scaleValue.setValue(0);
+            opacityValue.setValue(0);
+        }
+    }, [visible]);
+
     if (!visible) return null;
 
     return (
-        <Modal transparent animationType="fade" visible={visible}>
+        <Modal transparent animationType="none" visible={visible}>
             <View style={styles.container}>
                 {/* Blur Background */}
                 <BlurView
                     style={styles.absolute}
                     blurType="light"
-                    blurAmount={10}
+                    blurAmount={3} // Reduced from 10 to 3
                     reducedTransparencyFallbackColor="white"
                 />
 
                 {/* Alert Box */}
-                <View style={styles.alertBox}>
+                <Animated.View style={[styles.alertBox, { transform: [{ scale: scaleValue }], opacity: opacityValue }]}>
                     {/* Icon */}
                     <View style={styles.iconContainer}>
                         {type === 'error' && (
@@ -59,7 +86,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, type
                     <TouchableOpacity style={styles.button} onPress={onDismiss}>
                         <Text style={styles.buttonText}>Dismiss</Text>
                     </TouchableOpacity>
-                </View>
+                </Animated.View>
             </View>
         </Modal>
     );

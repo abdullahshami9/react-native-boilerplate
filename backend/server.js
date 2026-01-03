@@ -38,6 +38,7 @@ db.connect((err) => {
         password VARCHAR(255) NOT NULL,
         name VARCHAR(255),
         phone VARCHAR(50),
+        user_type ENUM('individual', 'business') DEFAULT 'individual',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`;
 
@@ -62,8 +63,8 @@ app.post('/register', (req, res) => {
         return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    const query = 'INSERT INTO users (email, password, name, phone) VALUES (?, ?, ?, ?)';
-    db.query(query, [email, password, name, phone], (err, result) => {
+    const query = 'INSERT INTO users (email, password, name, phone, user_type) VALUES (?, ?, ?, ?, ?)';
+    db.query(query, [email, password, name, phone, req.body.user_type || 'individual'], (err, result) => {
         if (err) {
             console.error(err);
             if (err.code === 'ER_DUP_ENTRY') {
@@ -115,5 +116,5 @@ app.post('/update-profile', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${ PORT } `);
+    console.log(`Server running on port ${PORT} `);
 });

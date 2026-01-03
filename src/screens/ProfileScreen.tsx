@@ -1,69 +1,106 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, StatusBar as RNStatusBar } from 'react-native';
-import { AuthService } from '../services/AuthService';
-import { AuthContext } from '../context/AuthContext';
+import React, { useState, useContext } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, Switch } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import QRCode from 'react-native-qrcode-svg';
+import { AuthContext } from '../context/AuthContext';
 
-const ProfileScreen = ({ navigation, route }: any) => {
-    const { user: initialUser } = route.params || {};
-    const [name, setName] = useState(initialUser?.name || '');
-    const [email, setEmail] = useState(initialUser?.email || '');
-    const [phone, setPhone] = useState(initialUser?.phone || '');
-    const [loading, setLoading] = useState(false);
-    const authContext = React.useContext(AuthContext);
+const { width } = Dimensions.get('window');
 
-    const handleUpdate = async () => {
-        setLoading(true);
-        try {
-            await AuthService.updateProfile({ id: initialUser.id, name, email, phone });
-            Alert.alert('Success', 'Profile updated successfully!', [
-                { text: 'OK', onPress: () => navigation.goBack() }
-            ]);
-        } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to update user');
-        } finally {
-            setLoading(false);
-        }
-    };
+const ProfileScreen = ({ navigation }: any) => {
+    const { logout, userInfo } = useContext(AuthContext);
+    // For demo purposes, we can toggle between Individual and Business views
+    // In a real app, this would be determined by userInfo.user_type
+    const [isBusiness, setIsBusiness] = useState(userInfo?.user_type === 'business');
+
+    // Toggle function for demo
+    const toggleUserType = () => setIsBusiness(!isBusiness);
 
     return (
         <View style={styles.container}>
-            <RNStatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
-
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
-                        <Path d="M19 12H5M12 19l-7-7 7-7" />
-                    </Svg>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Profile</Text>
-                <View style={{ width: 24 }} />
-            </View>
-
-            <View style={styles.content}>
-                <View style={styles.avatarContainer}>
-                    <Text style={styles.avatarText}>{name ? name.charAt(0).toUpperCase() : 'U'}</Text>
-                </View>
-
-                {/* Logout Button */}
-                <TouchableOpacity onPress={() => { authContext.logout(); }} style={styles.logoutButton}>
-                    <Text style={styles.logoutText}>Logout</Text>
-                </TouchableOpacity>
-
-                <View style={styles.form}>
-                    <Text style={styles.label}>Full Name</Text>
-                    <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Name" />
-
-                    <Text style={styles.label}>Email</Text>
-                    <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Email" keyboardType="email-address" autoCapitalize="none" />
-
-                    <Text style={styles.label}>Phone</Text>
-                    <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Phone" keyboardType="phone-pad" />
-
-                    <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleUpdate} disabled={loading}>
-                        <Text style={styles.buttonText}>{loading ? 'Updating...' : 'Update Profile'}</Text>
+            {/* Dark Header Background */}
+            <View style={styles.headerBackground}>
+                {/* Header Top Bar */}
+                <View style={styles.headerTop}>
+                    {/* Back Button (Optional in Tab, usually hidden or goes to Home) - Design shows none or specific */}
+                    {/* We will add settings/logout here */}
+                    <TouchableOpacity onPress={logout} style={styles.logoutIcon}>
+                        <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                            <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <Path d="M16 17l5-5-5-5" />
+                            <Path d="M21 12H9" />
+                        </Svg>
                     </TouchableOpacity>
                 </View>
+
+                {/* QR Code Area */}
+                <View style={styles.qrContainer}>
+                    <View style={styles.qrWrapper}>
+                        <QRCode
+                            value={userInfo?.email || "https://example.com"}
+                            size={120}
+                            backgroundColor="white"
+                            color="black"
+                        />
+                    </View>
+                </View>
+            </View>
+
+            {/* Content Body */}
+            <View style={styles.contentContainer}>
+                {/* Curve Svg simulated by top borderRadius of contentContainer if absolute, 
+                     but design shows the dark part overlapping. 
+                     Let's use negative margin approach or absolute positioning. 
+                 */}
+
+                {/* Profile Image / Shop Logo */}
+                <View style={styles.avatarWrapper}>
+                    <Image
+                        source={{
+                            uri: isBusiness
+                                ? 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?fit=crop&w=200&h=200' // Flower/Shop logo
+                                : 'https://randomuser.me/api/portraits/men/32.jpg' // Person
+                        }}
+                        style={styles.avatar}
+                    />
+                </View>
+
+                {/* Info Section */}
+                <View style={styles.infoSection}>
+                    <Text style={styles.nameText}>{isBusiness ? 'Shop Name' : (userInfo?.name || 'Name Smith')}</Text>
+                    <Text style={styles.roleText}>{isBusiness ? 'Shop Shop' : 'User Photo'}</Text>
+                </View>
+
+                {/* Tags / Skills - Only for Individual */}
+                {!isBusiness && (
+                    <View style={styles.tagsContainer}>
+                        <View style={[styles.tag, styles.activeTag]}>
+                            <Text style={styles.activeTagText}>Skill</Text>
+                        </View>
+                        <View style={styles.tag}>
+                            <Text style={styles.tagText}>Speestiling</Text>
+                        </View>
+                        <View style={styles.tag}>
+                            <Text style={styles.tagText}>Skills</Text>
+                        </View>
+                        <View style={styles.tag}>
+                            <Text style={styles.tagText}>Making</Text>
+                        </View>
+                    </View>
+                )}
+
+                {/* Main Action Button */}
+                <TouchableOpacity style={styles.mainButton}>
+                    <Text style={styles.mainButtonText}>
+                        {isBusiness ? 'View Products' : 'Connect'}
+                    </Text>
+                </TouchableOpacity>
+
+                {/* Toggle for Demo */}
+                <View style={styles.demoToggle}>
+                    <Text style={styles.demoText}>View as {isBusiness ? 'Business' : 'Individual'}</Text>
+                    <Switch value={isBusiness} onValueChange={toggleUserType} trackColor={{ false: "#767577", true: "#4A5568" }} />
+                </View>
+
             </View>
         </View>
     );
@@ -74,90 +111,129 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F7FAFC',
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    headerBackground: {
+        backgroundColor: '#2D3748',
+        height: '45%', // Takes up top portion
+        borderBottomLeftRadius: 40,
+        borderBottomRightRadius: 40,
         alignItems: 'center',
         paddingTop: 50,
+        position: 'relative',
+        zIndex: 1,
+    },
+    headerTop: {
+        width: '100%',
         paddingHorizontal: 20,
-        paddingBottom: 20,
-        backgroundColor: '#fff',
+        alignItems: 'flex-end',
+        marginBottom: 10,
     },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#2D3748',
-    },
-    backButton: {
+    logoutIcon: {
         padding: 5,
     },
-    content: {
-        padding: 20,
+    qrContainer: {
+        marginTop: 10,
         alignItems: 'center',
+        justifyContent: 'center',
     },
-    avatarContainer: {
+    qrWrapper: {
+        padding: 10,
+        backgroundColor: '#fff',
+        borderRadius: 15,
+    },
+    contentContainer: {
+        flex: 1,
+        alignItems: 'center',
+        marginTop: -60, // Pull up to overlap
+        zIndex: 2,
+    },
+    avatarWrapper: {
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: '#4A9EFF',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 30,
         borderWidth: 4,
-        borderColor: '#EBF8FF',
-    },
-    avatarText: {
-        fontSize: 40,
-        color: '#fff',
-        fontWeight: 'bold',
-    },
-    form: {
-        width: '100%',
-    },
-    label: {
-        fontSize: 14,
-        color: '#718096',
-        marginBottom: 8,
-        marginLeft: 4,
-    },
-    input: {
+        borderColor: '#F7FAFC', // Match bg
         backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-        borderRadius: 12,
-        padding: 15,
-        fontSize: 16,
-        color: '#2D3748',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 15,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+    },
+    avatar: {
+        width: 92,
+        height: 92,
+        borderRadius: 46,
+    },
+    infoSection: {
+        alignItems: 'center',
         marginBottom: 20,
     },
-    button: {
-        backgroundColor: '#4A5568',
-        padding: 18,
-        borderRadius: 12,
-        alignItems: 'center',
-        marginTop: 10,
+    nameText: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#2D3748',
+        marginBottom: 5,
     },
-    buttonDisabled: {
-        opacity: 0.7,
+    roleText: {
+        fontSize: 16,
+        color: '#718096',
     },
-    buttonText: {
+    tagsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 10,
+        marginBottom: 30,
+        paddingHorizontal: 30,
+    },
+    tag: {
+        backgroundColor: '#EDF2F7',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+    },
+    activeTag: {
+        backgroundColor: '#4A9EFF', // Or blueish color from design
+    },
+    tagText: {
+        color: '#718096',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    activeTagText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: 12,
         fontWeight: '600',
     },
-    logoutButton: {
-        marginTop: 20,
-        backgroundColor: '#E53E3E',
-        padding: 15,
-        borderRadius: 12,
+    mainButton: {
+        backgroundColor: '#2D3748',
+        width: '80%',
+        paddingVertical: 18,
+        borderRadius: 25,
         alignItems: 'center',
-        width: '100%',
+        shadowColor: '#2D3748',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
     },
-    logoutText: {
-        color: 'white',
-        fontSize: 16,
+    mainButtonText: {
+        color: '#fff',
+        fontSize: 18,
         fontWeight: '600',
     },
+    demoToggle: {
+        marginTop: 40,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    demoText: {
+        color: '#718096',
+    }
 });
 
 export default ProfileScreen;

@@ -5,11 +5,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
-import OnboardingScreen from './src/screens/OnboardingScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
-import HomeScreen from './src/screens/HomeScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
+import BottomTabNavigator from './src/navigation/BottomTabNavigator';
+import OnboardingScreen from './src/screens/OnboardingScreen';
+import ProductDetailsScreen from './src/screens/ProductDetailsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -34,8 +34,8 @@ const AppNav = () => {
       }}>
         {userToken !== null ? (
           <>
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Main" component={BottomTabNavigator} />
+            <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
           </>
         ) : (
           <>

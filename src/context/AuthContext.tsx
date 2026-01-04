@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }: any) => {
     };
 
     const register = async (name: string, email: string, password: string, phone: string, user_type: string) => {
-        setIsLoading(true);
+        // Removed setIsLoading to prevent Login/Signup screens from unmounting and losing alert state
         try {
             // Get device unique ID (MAC address equivalent)
             const mac_address = await DeviceInfo.getUniqueId();
@@ -40,10 +40,12 @@ export const AuthProvider = ({ children }: any) => {
             LoggerService.info('Registration successful', { email, mac_address }, 'AuthContext');
             return response;
         } catch (e: any) {
-            LoggerService.error(`Register error: ${e}`, e, 'AuthContext');
+            // Stringify the error object if it's an object to avoid [object Object] in logs
+            const errorMessage = typeof e === 'object' ? JSON.stringify(e) : String(e);
+            LoggerService.error(`Register error: ${errorMessage}`, e, 'AuthContext');
             throw e;
         } finally {
-            setIsLoading(false);
+            // setIsLoading(false); 
         }
     };
 

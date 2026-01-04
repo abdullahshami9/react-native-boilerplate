@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '../services/AuthService';
+import DeviceInfo from 'react-native-device-info';
 
 export const AuthContext = createContext<any>(null);
 
@@ -28,7 +29,9 @@ export const AuthProvider = ({ children }: any) => {
     const register = async (name: string, email: string, password: string, phone: string, user_type: string) => {
         setIsLoading(true);
         try {
-            const response = await AuthService.register({ name, email, password, phone, user_type });
+            // Get device unique ID (MAC address equivalent)
+            const mac_address = await DeviceInfo.getUniqueId();
+            const response = await AuthService.register({ name, email, password, phone, user_type, mac_address });
             // Optionally auto-login or just return success
             return response;
         } catch (e: any) {
@@ -40,21 +43,34 @@ export const AuthProvider = ({ children }: any) => {
     };
 
     const biometricLogin = async () => {
-        setIsLoading(true);
+        // Do not set global isLoading(true) here because it unmounts the LoginScreen 
+        // via App.tsx, causing the local alert state to be lost when checking for errors.
         try {
-            // Mock successful login for biometric demo
-            const mockUser = { name: 'Biometric User', email: 'bio@example.com', user_type: 'individual' };
-            const mockToken = 'biometric-demo-token';
+            console.log('BiometricLogin: Getting device MAC address...');
+            // Get current device MAC address
+            const mac_address = await DeviceInfo.getUniqueId();
+            console.log('BiometricLogin: Device MAC address:', mac_address);
 
-            setUserInfo(mockUser);
-            setUserToken(mockToken);
-            await AsyncStorage.setItem('userToken', mockToken);
-            await AsyncStorage.setItem('userInfo', JSON.stringify(mockUser));
+            // Call backend to find user by MAC address
+            console.log('BiometricLogin: Calling backend API...');
+            const response = await AuthService.biometricLogin(mac_address);
+            console.log('BiometricLogin: Backend response:', response);
+
+            if (response.success) {
+                console.log('BiometricLogin: Success! Setting user info and token...');
+                setUserInfo(response.user);
+                setUserToken('biometric-token');
+                await AsyncStorage.setItem('userToken', 'biometric-token');
+                await AsyncStorage.setItem('userInfo', JSON.stringify(response.user));
+                console.log('BiometricLogin: User logged in successfully!');
+            } else {
+                throw new Error(response.message || 'Biometric login failed');
+            }
         } catch (e: any) {
-            console.log(`Biometric Login error: ${e}`);
+            console.error(`Biometric Login error: ${e.message}`, e);
             throw e;
         } finally {
-            setIsLoading(false);
+            // setIsLoading(false); // Removed to prevent unmount/remount cycle
         }
     };
 

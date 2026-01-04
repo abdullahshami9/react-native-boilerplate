@@ -12,7 +12,7 @@ const SignupScreen = ({ navigation }: any) => {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const { register } = useContext(AuthContext);
+    const { register, login } = useContext(AuthContext);
 
     // Alert State
     const [alertConfig, setAlertConfig] = useState<{
@@ -59,9 +59,10 @@ const SignupScreen = ({ navigation }: any) => {
         try {
             const result = await register('User', email, password, phone, userType);
             if (result.success) {
-                showAlert('Success', 'Account created! Please login.', 'success');
-                // We'll let user dismiss the alert, and we could optionally navigate them on dismiss.
-                // For now, let's keep it simple or hook into onDismiss for this specific case.
+                // Auto-login the user after successful registration
+                console.log('Registration successful, auto-logging in...');
+                await login(email, password);
+                // Navigation will happen automatically when userToken is set
             }
         } catch (error: any) {
             showAlert('Registration Failed', error.message || 'Something went wrong', 'error');

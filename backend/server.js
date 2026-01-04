@@ -39,6 +39,7 @@ db.connect((err) => {
         name VARCHAR(255),
         phone VARCHAR(50),
         user_type ENUM('individual', 'business') DEFAULT 'individual',
+        mac_address VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`;
 
@@ -58,13 +59,13 @@ db.connect((err) => {
 
 // Register
 app.post('/register', (req, res) => {
-    const { email, password, name, phone } = req.body;
+    const { email, password, name, phone, mac_address } = req.body;
     if (!email || !password) {
         return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    const query = 'INSERT INTO users (email, password, name, phone, user_type) VALUES (?, ?, ?, ?, ?)';
-    db.query(query, [email, password, name, phone, req.body.user_type || 'individual'], (err, result) => {
+    const query = 'INSERT INTO users (email, password, name, phone, user_type, mac_address) VALUES (?, ?, ?, ?, ?, ?)';
+    db.query(query, [email, password, name, phone, req.body.user_type || 'individual', mac_address || null], (err, result) => {
         if (err) {
             console.error(err);
             if (err.code === 'ER_DUP_ENTRY') {
@@ -112,6 +113,41 @@ app.post('/update-profile', (req, res) => {
             return res.status(500).json({ success: false, message: 'Database error' });
         }
         res.json({ success: true, message: 'Profile updated successfully' });
+    });
+});
+
+// Biometric Login - Validate MAC Address
+app.post('/biometric/login', (req, res) => {
+    console.log('=== Biometric Login Request ===');
+    console.log('Request body:', req.body);
+
+    const { mac_address } = req.body;
+    if (!mac_address) {
+        console.log('Missing MAC address');
+        return res.status(400).json({ success: false, message: 'MAC address is required' });
+    }
+
+    console.log('Looking up user with MAC address:', mac_address);
+    const query = 'SELECT * FROM users WHERE mac_address = ?';
+    db.query(query, [mac_address], (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ success: false, message: 'Database error' });
+        }
+        if (results.length === 0) {
+            console.log('No user found with this MAC address');
+            return res.status(404).json({
+                success: false,
+                message: 'Device not recognized. Please register a new account or login with your credentials to verify this device.'
+            });
+        }
+
+        const user = results[0];
+        console.log('User found:', user.email);
+        console.log('Biometric login successful for user:', user.id);
+
+        // MAC address found, login successful
+        res.json({ success: true, message: 'Biometric login successful', user });
     });
 });
 

@@ -28,7 +28,9 @@ const LoginScreen = ({ navigation }: any) => {
     });
 
     const showAlert = (title: string, message: string, type: 'error' | 'success' | 'info' = 'error') => {
+        console.log('showAlert called with:', { title, message, type });
         setAlertConfig({ visible: true, title, message, type });
+        console.log('Alert config set to visible');
     };
 
     const hideAlert = () => {
@@ -85,16 +87,39 @@ const LoginScreen = ({ navigation }: any) => {
 
     const handleBiometricLogin = async () => {
         try {
+            console.log('Starting biometric authentication...');
             const { success } = await rnBiometrics.simplePrompt({ promptMessage: 'Confirm fingerprint' });
+            console.log('Biometric prompt result:', success);
+
             if (success) {
-                // Mock login or use stored credentials
-                showAlert('Success', 'Biometric authentication successful', 'success');
-                // For demo purposes, we can log them in as a default user or re-use last known
-                await biometricLogin();
+                try {
+                    console.log('Calling biometricLogin...');
+                    await biometricLogin();
+                    console.log('BiometricLogin completed successfully!');
+                    // Don't show success alert - navigation will happen automatically when userToken is set
+                } catch (error: any) {
+                    // Handle specific error messages from backend
+                    console.error('BiometricLogin error caught:', error);
+                    console.error('Error message:', error.message);
+                    const errorMessage = error.message || 'Biometric authentication failed';
+                    console.log('Extracted error message:', errorMessage);
+
+                    // Check if it's a device not recognized error
+                    if (errorMessage.includes('Device not recognized')) {
+                        console.log('SHOWING DEVICE NOT RECOGNIZED ALERT');
+                        showAlert('Device Not Recognized', errorMessage, 'info');
+                    } else {
+                        console.log('SHOWING AUTHENTICATION FAILED ALERT');
+                        showAlert('Authentication Failed', errorMessage, 'error');
+                    }
+                }
             } else {
+                console.log('SHOWING CANCELLED ALERT');
                 showAlert('Error', 'Biometric authentication cancelled', 'error');
             }
         } catch (error) {
+            console.error('Biometric prompt error:', error);
+            console.log('SHOWING PROMPT FAILED ALERT');
             showAlert('Error', 'Biometric authentication failed', 'error');
         }
     };

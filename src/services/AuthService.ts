@@ -33,5 +33,15 @@ export const AuthService = {
         }
     },
 
+    biometricLogin: async (mac_address: string) => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/biometric/login`, { mac_address });
+            return response.data;
+        } catch (error: any) {
+            console.error('Biometric Login Error:', error);
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+
     // checkBiometric removed as per user request
 };

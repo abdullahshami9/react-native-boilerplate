@@ -32,28 +32,45 @@ db.connect((err) => {
     const initQuery = `
         CREATE DATABASE IF NOT EXISTS AppStarter;
         USE AppStarter;
-        CREATE TABLE IF NOT EXISTS users(
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        name VARCHAR(255),
-        phone VARCHAR(50),
-        user_type ENUM('individual', 'business') DEFAULT 'individual',
-        mac_address VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`;
+        CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL,
+            phone VARCHAR(255) NOT NULL,
+            user_type ENUM('Individual', 'Business') NOT NULL,
+            mac_address VARCHAR(255)
+        );
+
+        CREATE TABLE IF NOT EXISTS error_logs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            level VARCHAR(20) NOT NULL,
+            message TEXT NOT NULL,
+            details TEXT,
+            source VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
 
     db.query(initQuery, (err, result) => {
         if (err) {
             console.error('Error initializing database:', err);
         } else {
-            console.log('Database and Users table initialized.');
+            console.log('Database and Tables initialized.');
             // Reconnect to the specific database
             db.end();
             db = mysql.createConnection({ ...dbConfig, database: 'AppStarter' });
         }
     });
 });
+
+// Helper to log to DB internally (optional usage for backend errors)
+const logToDb = (level, message, details = '', source = 'Backend') => {
+    const query = 'INSERT INTO error_logs (level, message, details, source) VALUES (?, ?, ?, ?)';
+    db.query(query, [level, message, typeof details === 'object' ? JSON.stringify(details) : details, source], (err) => {
+        if (err) console.error('Failed to write to error_logs:', err);
+    });
+};
 
 // Routes
 
@@ -147,7 +164,25 @@ app.post('/biometric/login', (req, res) => {
         console.log('Biometric login successful for user:', user.id);
 
         // MAC address found, login successful
+        logToDb('INFO', 'Biometric login successful', { userId: user.id }, 'BiometricLogin');
         res.json({ success: true, message: 'Biometric login successful', user });
+    });
+});
+
+// Logging Endpoint
+app.post('/api/logs', (req, res) => {
+    const { level, message, details, source } = req.body;
+    const query = 'INSERT INTO error_logs (level, message, details, source) VALUES (?, ?, ?, ?)';
+
+    // Log to console as well for immediate dev feedback
+    console.log(`[${level}] ${source}: ${message}`, details ? details : '');
+
+    db.query(query, [level, message, typeof details === 'object' ? JSON.stringify(details) : details, source], (err) => {
+        if (err) {
+            console.error('Failed to save log to DB:', err);
+            return res.status(500).json({ success: false });
+        }
+        res.json({ success: true });
     });
 });
 

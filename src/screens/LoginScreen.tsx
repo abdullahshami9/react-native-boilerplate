@@ -2,11 +2,11 @@ import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, StatusBar as RNStatusBar, ScrollView } from 'react-native';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import { AuthContext } from '../context/AuthContext';
-
-const { width, height } = Dimensions.get('window');
-
 import CustomAlert from '../components/CustomAlert';
 import ReactNativeBiometrics, { BiometryTypes } from 'react-native-biometrics';
+import LoggerService from '../services/LoggerService';
+
+const { width, height } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }: any) => {
     const [email, setEmail] = useState('');
@@ -28,9 +28,9 @@ const LoginScreen = ({ navigation }: any) => {
     });
 
     const showAlert = (title: string, message: string, type: 'error' | 'success' | 'info' = 'error') => {
-        console.log('showAlert called with:', { title, message, type });
+        LoggerService.info('showAlert called', { title, message, type }, 'LoginScreen');
         setAlertConfig({ visible: true, title, message, type });
-        console.log('Alert config set to visible');
+        LoggerService.info('Alert config set to visible', undefined, 'LoginScreen');
     };
 
     const hideAlert = () => {
@@ -61,7 +61,7 @@ const LoginScreen = ({ navigation }: any) => {
     };
 
     const handleGoogleLogin = () => {
-        console.log('Google login clicked');
+        LoggerService.info('Google login clicked', undefined, 'LoginScreen');
     };
 
     const rnBiometrics = new ReactNativeBiometrics();
@@ -81,45 +81,44 @@ const LoginScreen = ({ navigation }: any) => {
                 }
             })
             .catch(() => {
-                console.log('biometrics failed');
+                LoggerService.info('biometrics failed or unavailable', undefined, 'LoginScreen');
             });
     }, []);
 
     const handleBiometricLogin = async () => {
         try {
-            console.log('Starting biometric authentication...');
+            LoggerService.info('Starting biometric authentication...', undefined, 'LoginScreen');
             const { success } = await rnBiometrics.simplePrompt({ promptMessage: 'Confirm fingerprint' });
-            console.log('Biometric prompt result:', success);
+            LoggerService.info('Biometric prompt result:', { success }, 'LoginScreen');
 
             if (success) {
                 try {
-                    console.log('Calling biometricLogin...');
+                    LoggerService.info('Calling biometricLogin...', undefined, 'LoginScreen');
                     await biometricLogin();
-                    console.log('BiometricLogin completed successfully!');
+                    LoggerService.info('BiometricLogin completed successfully!', undefined, 'LoginScreen');
                     // Don't show success alert - navigation will happen automatically when userToken is set
                 } catch (error: any) {
                     // Handle specific error messages from backend
-                    console.error('BiometricLogin error caught:', error);
-                    console.error('Error message:', error.message);
+                    LoggerService.error('BiometricLogin error caught:', error, 'LoginScreen');
+                    LoggerService.error('Error message:', { message: error.message }, 'LoginScreen');
                     const errorMessage = error.message || 'Biometric authentication failed';
-                    console.log('Extracted error message:', errorMessage);
 
                     // Check if it's a device not recognized error
                     if (errorMessage.includes('Device not recognized')) {
-                        console.log('SHOWING DEVICE NOT RECOGNIZED ALERT');
+                        LoggerService.info('SHOWING DEVICE NOT RECOGNIZED ALERT', undefined, 'LoginScreen');
                         showAlert('Device Not Recognized', errorMessage, 'info');
                     } else {
-                        console.log('SHOWING AUTHENTICATION FAILED ALERT');
+                        LoggerService.info('SHOWING AUTHENTICATION FAILED ALERT', undefined, 'LoginScreen');
                         showAlert('Authentication Failed', errorMessage, 'error');
                     }
                 }
             } else {
-                console.log('SHOWING CANCELLED ALERT');
+                LoggerService.info('SHOWING CANCELLED ALERT', undefined, 'LoginScreen');
                 showAlert('Error', 'Biometric authentication cancelled', 'error');
             }
         } catch (error) {
-            console.error('Biometric prompt error:', error);
-            console.log('SHOWING PROMPT FAILED ALERT');
+            LoggerService.error('Biometric prompt error:', error, 'LoginScreen');
+            LoggerService.info('SHOWING PROMPT FAILED ALERT', undefined, 'LoginScreen');
             showAlert('Error', 'Biometric authentication failed', 'error');
         }
     };
@@ -195,7 +194,7 @@ const LoginScreen = ({ navigation }: any) => {
                         </View>
 
                         {/* Forgot Password */}
-                        <TouchableOpacity style={styles.forgotPasswordContainer} onPress={() => console.log('Forgot password')}>
+                        <TouchableOpacity style={styles.forgotPasswordContainer} onPress={() => LoggerService.info('Forgot password clicked', undefined, 'LoginScreen')}>
                             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                         </TouchableOpacity>
 

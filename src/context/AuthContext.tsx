@@ -2,24 +2,29 @@ import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '../services/AuthService';
 import DeviceInfo from 'react-native-device-info';
+import LoggerService from '../services/LoggerService';
 
 export const AuthContext = createContext<any>(null);
 
 export const AuthProvider = ({ children }: any) => {
     const [isLoading, setIsLoading] = useState(false);
     const [userToken, setUserToken] = useState<string | null>(null);
-    const [userInfo, setUserInfo] = useState<any>(null);
+    const [userInfo, setUserInfo] = useState<any | null>(null);
 
-    const login = async (email: string, password: string) => {
+    const login = async (email: string, pass: string) => {
         setIsLoading(true);
         try {
-            const response = await AuthService.login({ email, password });
-            setUserInfo(response.user);
-            setUserToken(response.token || 'dummy-token'); // Ensure we have a token
-            AsyncStorage.setItem('userToken', response.token || 'dummy-token');
-            AsyncStorage.setItem('userInfo', JSON.stringify(response.user));
+            const response = await AuthService.login({ email, password: pass });
+            if (response.success) {
+                setUserInfo(response.user);
+                setUserToken(response.token);
+                AsyncStorage.setItem('userToken', response.token);
+                AsyncStorage.setItem('userInfo', JSON.stringify(response.user));
+                LoggerService.info('Login successful', { email }, 'AuthContext');
+            }
+            return response;
         } catch (e: any) {
-            console.log(`Login error: ${e}`);
+            LoggerService.error(`Login error: ${e.message}`, e, 'AuthContext');
             throw e;
         } finally {
             setIsLoading(false);
@@ -32,10 +37,10 @@ export const AuthProvider = ({ children }: any) => {
             // Get device unique ID (MAC address equivalent)
             const mac_address = await DeviceInfo.getUniqueId();
             const response = await AuthService.register({ name, email, password, phone, user_type, mac_address });
-            // Optionally auto-login or just return success
+            LoggerService.info('Registration successful', { email, mac_address }, 'AuthContext');
             return response;
         } catch (e: any) {
-            console.log(`Register error: ${e}`);
+            LoggerService.error(`Register error: ${e}`, e, 'AuthContext');
             throw e;
         } finally {
             setIsLoading(false);
@@ -46,28 +51,28 @@ export const AuthProvider = ({ children }: any) => {
         // Do not set global isLoading(true) here because it unmounts the LoginScreen 
         // via App.tsx, causing the local alert state to be lost when checking for errors.
         try {
-            console.log('BiometricLogin: Getting device MAC address...');
+            LoggerService.info('BiometricLogin: Getting device MAC address...', undefined, 'AuthContext');
             // Get current device MAC address
             const mac_address = await DeviceInfo.getUniqueId();
-            console.log('BiometricLogin: Device MAC address:', mac_address);
+            LoggerService.info('BiometricLogin: Device MAC address:', { mac_address }, 'AuthContext');
 
             // Call backend to find user by MAC address
-            console.log('BiometricLogin: Calling backend API...');
+            LoggerService.info('BiometricLogin: Calling backend API...', undefined, 'AuthContext');
             const response = await AuthService.biometricLogin(mac_address);
-            console.log('BiometricLogin: Backend response:', response);
+            LoggerService.info('BiometricLogin: Backend response:', response, 'AuthContext');
 
             if (response.success) {
-                console.log('BiometricLogin: Success! Setting user info and token...');
+                LoggerService.info('BiometricLogin: Success! Setting user info and token...', undefined, 'AuthContext');
                 setUserInfo(response.user);
                 setUserToken('biometric-token');
                 await AsyncStorage.setItem('userToken', 'biometric-token');
                 await AsyncStorage.setItem('userInfo', JSON.stringify(response.user));
-                console.log('BiometricLogin: User logged in successfully!');
+                LoggerService.info('BiometricLogin: User logged in successfully!', undefined, 'AuthContext');
             } else {
                 throw new Error(response.message || 'Biometric login failed');
             }
         } catch (e: any) {
-            console.error(`Biometric Login error: ${e.message}`, e);
+            LoggerService.error(`Biometric Login error: ${e.message}`, e, 'AuthContext');
             throw e;
         } finally {
             // setIsLoading(false); // Removed to prevent unmount/remount cycle
@@ -83,17 +88,33 @@ export const AuthProvider = ({ children }: any) => {
         setIsLoading(false);
     };
 
-    const updateProfile = async (data: any) => {
+    const updateProfile = async (name: string, phone: string) => {
         setIsLoading(true);
         try {
-            const response = await AuthService.updateProfile(data);
-            // Update local state merged with new data
-            const updatedUser = { ...userInfo, ...data };
-            setUserInfo(updatedUser);
-            AsyncStorage.setItem('userInfo', JSON.stringify(updatedUser)); // Persist update
-            return response;
+            const userInfo = await AsyncStorage.getItem('userInfo');
+            const token = await AsyncStorage.getItem('userToken');
+
+            if (userInfo && token) {
+                const user = JSON.parse(userInfo);
+                // We pass userId (or email) if backend needs it, usually token is enough for auth
+                // But updateProfile endpoint might need id. 
+                // Using existing user_id from stored info
+                const response = await AuthService.updateProfile({
+                    userId: user.id,
+                    name,
+                    phone
+                });
+
+                if (response.success) {
+                    const updatedUser = { ...user, name, phone };
+                    setUserInfo(updatedUser);
+                    AsyncStorage.setItem('userInfo', JSON.stringify(updatedUser));
+                    LoggerService.info('Profile updated successfully', { userId: user.id }, 'AuthContext');
+                }
+                return response;
+            }
         } catch (e: any) {
-            console.log(`Update Profile error: ${e}`);
+            LoggerService.error(`Update Profile error: ${e}`, e, 'AuthContext');
             throw e;
         } finally {
             setIsLoading(false);
@@ -104,12 +125,12 @@ export const AuthProvider = ({ children }: any) => {
         try {
             setIsLoading(true);
             let userToken = await AsyncStorage.getItem('userToken');
-            let userInfoStr = await AsyncStorage.getItem('userInfo');
+            let userInfo = await AsyncStorage.getItem('userInfo');
+            setUserInfo(userInfo ? JSON.parse(userInfo) : null);
             setUserToken(userToken);
-            if (userInfoStr) setUserInfo(JSON.parse(userInfoStr));
             setIsLoading(false);
-        } catch (e) {
-            console.log(`isLogged in error ${e}`);
+        } catch (e: any) {
+            LoggerService.error(`isLogged in error ${e}`, e, 'AuthContext');
         }
     };
 

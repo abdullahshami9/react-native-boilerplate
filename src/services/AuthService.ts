@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { CONFIG } from '../Config';
-// import ReactNativeBiometrics from 'react-native-biometrics'; // Skipping native link for stability unless requested
+import LoggerService from './LoggerService';
 
 export const AuthService = {
     register: async (userData: any) => {
@@ -8,7 +8,7 @@ export const AuthService = {
             const response = await axios.post(`${CONFIG.API_URL}/register`, userData);
             return response.data;
         } catch (error: any) {
-            console.error('Register Error:', error);
+            LoggerService.error('Register Error:', error, 'AuthService');
             throw error.response?.data || { message: 'Network Error' };
         }
     },
@@ -18,7 +18,7 @@ export const AuthService = {
             const response = await axios.post(`${CONFIG.API_URL}/login`, credentials);
             return response.data;
         } catch (error: any) {
-            console.error('Login Error:', error);
+            LoggerService.error('Login Error:', error, 'AuthService');
             throw error.response?.data || { message: 'Network Error' };
         }
     },
@@ -28,7 +28,7 @@ export const AuthService = {
             const response = await axios.post(`${CONFIG.API_URL}/update-profile`, userData);
             return response.data;
         } catch (error: any) {
-            console.error('Update Profile Error:', error);
+            LoggerService.error('Update Profile Error:', error, 'AuthService');
             throw error.response?.data || { message: 'Network Error' };
         }
     },
@@ -38,7 +38,7 @@ export const AuthService = {
             const response = await axios.post(`${CONFIG.API_URL}/biometric/login`, { mac_address });
             return response.data;
         } catch (error: any) {
-            console.error('Biometric Login Error:', error);
+            LoggerService.error('Biometric Login Error:', error, 'AuthService');
             throw error.response?.data || { message: 'Network Error' };
         }
     },

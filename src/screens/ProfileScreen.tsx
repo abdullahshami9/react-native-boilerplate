@@ -1,16 +1,65 @@
-import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import React, { useState, useContext, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput, Modal, TouchableWithoutFeedback, Platform, Animated, PanResponder } from 'react-native';
+import Svg, { Path, Circle, Line } from 'react-native-svg';
 import QRCode from 'react-native-qrcode-svg';
+import { BlurView } from "@react-native-community/blur";
 import { AuthContext } from '../context/AuthContext';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const ProfileScreen = ({ navigation }: any) => {
     const { logout, userInfo, updateProfile } = useContext(AuthContext);
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(userInfo?.name || '');
     const [phone, setPhone] = useState(userInfo?.phone || '');
+
+    // Settings Modal State
+    const [modalVisible, setModalVisible] = useState(false);
+    const [darkMode, setDarkMode] = useState(false);
+
+    // Animation Values
+    const slideAnim = useRef(new Animated.Value(height)).current;
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+
+    const pan = useRef(new Animated.ValueXY()).current;
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => false,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                // Only capture if dragging down significantly (threshold prevents taking button clicks)
+                return Math.abs(gestureState.dy) > 10;
+            },
+            onPanResponderMove: (_, gestureState) => {
+                if (gestureState.dy > 0) {
+                    // Move the sheet down with the gesture
+                    slideAnim.setValue(gestureState.dy);
+                    // Fade out blur based on drag distance (max 300px drag)
+                    const newOpacity = 1 - (gestureState.dy / 400);
+                    fadeAnim.setValue(Math.max(0, newOpacity));
+                }
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dy > 100) {
+                    // Close if dragged down enough
+                    closeModal();
+                } else {
+                    // Snap back to open if not dragged enough
+                    Animated.parallel([
+                        Animated.spring(slideAnim, {
+                            toValue: 0,
+                            useNativeDriver: true,
+                        }),
+                        Animated.timing(fadeAnim, {
+                            toValue: 1,
+                            duration: 200,
+                            useNativeDriver: true,
+                        })
+                    ]).start();
+                }
+            },
+        })
+    ).current;
 
     // We can keep the view toggle for design purposes if user is business, 
     // but the main request is "login user can edit their info".
@@ -19,9 +68,49 @@ const ProfileScreen = ({ navigation }: any) => {
     const isBusinessUser = userInfo?.user_type === 'business';
     const [isBusinessView, setIsBusinessView] = useState(isBusinessUser);
 
+    const openModal = () => {
+        setModalVisible(true);
+        // Reset values
+        slideAnim.setValue(height);
+        fadeAnim.setValue(0);
+
+        Animated.parallel([
+            Animated.spring(slideAnim, {
+                toValue: 0,
+                friction: 8,
+                useNativeDriver: true,
+            }),
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            })
+        ]).start();
+    };
+
+    const closeModal = () => {
+        Animated.parallel([
+            Animated.timing(slideAnim, {
+                toValue: height,
+                duration: 250,
+                useNativeDriver: true,
+            }),
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 250,
+                useNativeDriver: true,
+            })
+        ]).start(() => {
+            setModalVisible(false);
+            // Reset pan
+            pan.setValue({ x: 0, y: 0 });
+        });
+    };
+
     const handleSave = async () => {
         try {
-            await updateProfile({ id: userInfo.id, name, phone, email: userInfo.email });
+            // Fix: updateProfile expects (name, phone), not an object
+            await updateProfile(name, phone);
             setIsEditing(false);
             // Optionally show success alert
         } catch (error) {
@@ -30,31 +119,38 @@ const ProfileScreen = ({ navigation }: any) => {
         }
     };
 
+    const toggleDarkMode = () => setDarkMode(previousState => !previousState);
+
+    const handleEditProfile = () => {
+        closeModal();
+        setIsEditing(true);
+    };
+
+    const handleLogout = () => {
+        closeModal();
+        logout();
+    };
+
+    const handlePrintCard = () => {
+        closeModal();
+        console.log("Print Card");
+    };
+
+    const handleConnectSocials = () => {
+        closeModal();
+        console.log("Connect Socials");
+    };
+
     return (
         <View style={styles.container}>
             {/* Dark Header Background */}
             <View style={styles.headerBackground}>
                 {/* Header Top Bar */}
                 <View style={styles.headerTop}>
-                    <TouchableOpacity onPress={() => setIsEditing(!isEditing)} style={styles.iconButton}>
+                    <TouchableOpacity onPress={openModal} style={styles.iconButton}>
                         <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                            {isEditing ? (
-                                <Path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                            ) : (
-                                <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            )}
-                            {isEditing ? (
-                                <Path d="M17 21v-8h-6v8" /> // Save icon-ish
-                            ) : (
-                                <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            )}
-                        </Svg>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={logout} style={[styles.iconButton, { marginLeft: 15 }]}>
-                        <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                            <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                            <Path d="M16 17l5-5-5-5" />
-                            <Path d="M21 12H9" />
+                            <Circle cx="12" cy="12" r="3" />
+                            <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                         </Svg>
                     </TouchableOpacity>
                 </View>
@@ -129,6 +225,143 @@ const ProfileScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 )}
             </View>
+
+            {/* Custom Bottom Sheet (No Modal, Absolute Overlay) */}
+            {modalVisible && (
+                <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
+                    {/* Background Blur with Fade Animation */}
+                    <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
+                        <BlurView
+                            style={StyleSheet.absoluteFill}
+                            blurType="dark"
+                            blurAmount={10}
+                            reducedTransparencyFallbackColor="black"
+                        />
+                        {/* Tap background to close */}
+                        <TouchableWithoutFeedback onPress={closeModal}>
+                            <View style={styles.dismissArea} />
+                        </TouchableWithoutFeedback>
+                    </Animated.View>
+
+                    {/* Draggable Sheet */}
+                    <Animated.View
+                        style={[
+                            styles.modalContent,
+                            {
+                                transform: [{ translateY: slideAnim }]
+                            }
+                        ]}
+                        {...panResponder.panHandlers}
+                    >
+                        <View style={styles.modalHeader}>
+                            <View style={styles.modalHandle} />
+                        </View>
+
+                        <View style={styles.menuContainer}>
+                            {/* Edit Profile Option */}
+                            <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}>
+                                <View style={styles.iconContainer}>
+                                    <Svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+                                        <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                    </Svg>
+                                </View>
+                                <View style={styles.textContainer}>
+                                    <Text style={styles.menuItemText}>Edit Profile</Text>
+                                    <Text style={styles.menuItemSubText}>Update your personal information</Text>
+                                </View>
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#CBD5E0" strokeWidth="2">
+                                    <Path d="M9 18l6-6-6-6" />
+                                </Svg>
+                            </TouchableOpacity>
+
+                            <View style={styles.divider} />
+
+                            {/* Print Card Option */}
+                            <TouchableOpacity style={styles.menuItem} onPress={handlePrintCard}>
+                                <View style={styles.iconContainer}>
+                                    <Svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+                                        <Path d="M6 9V2h12v7" />
+                                        <Path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                        <Path d="M6 14h12v8H6z" />
+                                    </Svg>
+                                </View>
+                                <View style={styles.textContainer}>
+                                    <Text style={styles.menuItemText}>Print Card</Text>
+                                    <Text style={styles.menuItemSubText}>Share your profile card</Text>
+                                </View>
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#CBD5E0" strokeWidth="2">
+                                    <Path d="M9 18l6-6-6-6" />
+                                </Svg>
+                            </TouchableOpacity>
+
+                            <View style={styles.divider} />
+
+                            {/* Connect Socials Option */}
+                            <TouchableOpacity style={styles.menuItem} onPress={handleConnectSocials}>
+                                <View style={styles.iconContainer}>
+                                    <Svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+                                        <Path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+                                        <Path d="M2 9h4v12H2z" />
+                                        <Circle cx="4" cy="4" r="2" />
+                                    </Svg>
+                                </View>
+                                <View style={styles.textContainer}>
+                                    <Text style={styles.menuItemText}>Connect Socials</Text>
+                                    <Text style={styles.menuItemSubText}>Link your social accounts</Text>
+                                </View>
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#CBD5E0" strokeWidth="2">
+                                    <Path d="M9 18l6-6-6-6" />
+                                </Svg>
+                            </TouchableOpacity>
+
+                            <View style={styles.divider} />
+
+                            {/* Dark Mode Option */}
+                            <View style={styles.menuItem}>
+                                <View style={styles.iconContainer}>
+                                    <Svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+                                        <Path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                                    </Svg>
+                                </View>
+                                <View style={styles.textContainer}>
+                                    <Text style={styles.menuItemText}>Dark Mode</Text>
+                                    <Text style={styles.menuItemSubText}>Switch app appearance</Text>
+                                </View>
+                                <Switch
+                                    trackColor={{ false: "#E2E8F0", true: "#2D3748" }}
+                                    thumbColor={darkMode ? "#fff" : "#fff"}
+                                    ios_backgroundColor="#E2E8F0"
+                                    onValueChange={toggleDarkMode}
+                                    value={darkMode}
+                                />
+                            </View>
+
+                            <View style={styles.divider} />
+
+                            {/* Logout Option */}
+                            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+                                <View style={[styles.iconContainer, { backgroundColor: '#FFF5F5' }]}>
+                                    <Svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2">
+                                        <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                        <Path d="M16 17l5-5-5-5" />
+                                        <Path d="M21 12H9" />
+                                    </Svg>
+                                </View>
+                                <View style={styles.textContainer}>
+                                    <Text style={[styles.menuItemText, { color: '#E53E3E' }]}>Logout</Text>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Footer */}
+                        <View style={styles.modalFooter}>
+                            <Text style={styles.footerText}>App Version 1.0.0</Text>
+                            <Text style={styles.footerSubText}>by Programental</Text>
+                        </View>
+                    </Animated.View>
+                </View>
+            )}
         </View>
     );
 };
@@ -282,6 +515,95 @@ const styles = StyleSheet.create({
     },
     demoText: {
         color: '#718096',
+    },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'flex-end',
+    },
+    dismissArea: {
+        flex: 1,
+    },
+    modalContent: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        paddingHorizontal: 25,
+        paddingBottom: 80, // Increased to ensure footer is visible
+        paddingTop: 15,
+        elevation: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -5 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+    },
+    modalHeader: {
+        alignItems: 'center',
+        marginBottom: 25,
+        paddingVertical: 10, // Increase hit area
+    },
+    modalHandle: {
+        width: 50,
+        height: 6,
+        backgroundColor: '#E2E8F0',
+        borderRadius: 3,
+    },
+    menuContainer: {
+        marginBottom: 20,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    iconContainer: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        backgroundColor: '#EDF2F7',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 15,
+    },
+    textContainer: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    menuItemText: {
+        fontSize: 16,
+        color: '#2D3748',
+        fontWeight: '600',
+        marginBottom: 2,
+    },
+    menuItemSubText: {
+        fontSize: 12,
+        color: '#A0AEC0',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#F1F5F9',
+        marginVertical: 10,
+        marginLeft: 60, // Align with text
+    },
+    modalFooter: {
+        alignItems: 'center',
+        borderTopWidth: 1,
+        borderTopColor: '#F7FAFC',
+        paddingTop: 20,
+    },
+    footerText: {
+        fontSize: 13,
+        color: '#718096',
+        fontWeight: '600',
+    },
+    footerSubText: {
+        fontSize: 11,
+        color: '#A0AEC0',
+        marginTop: 4,
     }
 });
 

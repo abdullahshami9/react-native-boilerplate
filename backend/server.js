@@ -2,12 +2,25 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Ensure Upload Directories Exist
+const ensureDir = (dir) => {
+    if (!fs.existsSync(dir)){
+        fs.mkdirSync(dir, { recursive: true });
+    }
+};
+ensureDir(path.join(__dirname, 'uploads/profiles'));
+ensureDir(path.join(__dirname, 'uploads/products'));
 
 // Database Connection Config
 const dbConfig = {
@@ -28,10 +41,10 @@ db.connect((err) => {
     }
     console.log('Connected to MySQL server.');
 
-
     const initQuery = `
         CREATE DATABASE IF NOT EXISTS AppStarter;
         USE AppStarter;
+
         CREATE TABLE IF NOT EXISTS users (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
@@ -39,7 +52,8 @@ db.connect((err) => {
             password VARCHAR(255) NOT NULL,
             phone VARCHAR(255) NOT NULL,
             user_type ENUM('Individual', 'Business') NOT NULL,
-            mac_address VARCHAR(255)
+            mac_address VARCHAR(255),
+            profile_pic_url VARCHAR(255)
         );
 
         CREATE TABLE IF NOT EXISTS error_logs (
@@ -74,6 +88,7 @@ db.connect((err) => {
             price DECIMAL(10, 2) NOT NULL,
             description TEXT,
             image_url TEXT,
+            stock_quantity INT DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
@@ -87,6 +102,36 @@ db.connect((err) => {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (provider_id) REFERENCES users(id),
             FOREIGN KEY (customer_id) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS connections (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            follower_id INT NOT NULL,
+            following_id INT NOT NULL,
+            status ENUM('pending', 'accepted') DEFAULT 'accepted',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE KEY unique_connection (follower_id, following_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS orders (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            seller_id INT NOT NULL,
+            buyer_id INT,
+            total_amount DECIMAL(10, 2) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (seller_id) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS order_items (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            order_id INT NOT NULL,
+            product_id INT NOT NULL,
+            quantity INT NOT NULL,
+            price DECIMAL(10, 2) NOT NULL,
+            FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+            FOREIGN KEY (product_id) REFERENCES products(id)
         );
 
         CREATE TABLE IF NOT EXISTS generic (
@@ -104,143 +149,210 @@ db.connect((err) => {
             console.error('Error initializing database:', err);
         } else {
             console.log('Database and Tables initialized.');
-            // Reconnect to the specific database
             db.end();
             db = mysql.createConnection({ ...dbConfig, database: 'AppStarter' });
+
+            // Add column if not exists (Hack for existing db)
+            db.query("SHOW COLUMNS FROM products LIKE 'stock_quantity'", (e, r) => {
+                if(r && r.length === 0) {
+                     db.query("ALTER TABLE products ADD COLUMN stock_quantity INT DEFAULT 0", () => console.log("Added stock_quantity column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM users LIKE 'profile_pic_url'", (e, r) => {
+                 if(r && r.length === 0) {
+                      db.query("ALTER TABLE users ADD COLUMN profile_pic_url VARCHAR(255)", () => console.log("Added profile_pic_url column"));
+                 }
+            });
+            // Ensure appointments table exists (Hack if creating via initQuery failed previously)
+            db.query("SHOW TABLES LIKE 'appointments'", (e, r) => {
+                if(r && r.length === 0) {
+                    const create = `CREATE TABLE IF NOT EXISTS appointments (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        provider_id INT NOT NULL,
+                        customer_id INT NOT NULL,
+                        appointment_date DATETIME NOT NULL,
+                        status ENUM('pending', 'confirmed', 'cancelled') DEFAULT 'pending',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (provider_id) REFERENCES users(id),
+                        FOREIGN KEY (customer_id) REFERENCES users(id)
+                    )`;
+                    db.query(create, () => console.log("Created appointments table"));
+                }
+            });
         }
     });
 });
 
-// Helper to log to DB internally (optional usage for backend errors)
-const logToDb = (level, message, details = '', source = 'Backend') => {
-    const query = 'INSERT INTO error_logs (level, message, details, source) VALUES (?, ?, ?, ?)';
-    db.query(query, [level, message, typeof details === 'object' ? JSON.stringify(details) : details, source], (err) => {
-        if (err) console.error('Failed to write to error_logs:', err);
-    });
-};
+// Multer Storage Configuration
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = req.path.includes('profile') ? 'uploads/profiles/' : 'uploads/products/';
+        // Ensure directory exists (mkdir -p logic handled by shell usually but good to be safe)
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        // Expect fields: userId (for profile) OR productId, index (for products)
+        const ext = path.extname(file.originalname) || '.jpg';
+        // Sanitize input
+        const sanitize = (str) => String(str).replace(/[^a-zA-Z0-9_-]/g, '');
+
+        if (req.path.includes('profile')) {
+            const userId = sanitize(req.body.userId || 'unknown');
+            cb(null, `${userId}${ext}`);
+        } else {
+            const productId = sanitize(req.body.productId || 'unknown');
+            const index = sanitize(req.body.index || '0');
+            cb(null, `${productId}-${index}${ext}`);
+        }
+    }
+});
+const upload = multer({ storage });
+
 
 // Helper to execute query and log errors
 const dbQuery = (sql, params, reqOrUrl, callback) => {
     db.query(sql, params, (err, result) => {
         if (err) {
             const url = typeof reqOrUrl === 'string' ? reqOrUrl : (reqOrUrl?.originalUrl || 'Unknown');
+            console.error(`DB Error [${url}]:`, err.message);
             // Log error to generic table
             const logSql = "INSERT INTO generic (query, error, url) VALUES (?, ?, ?)";
-            // Use a fresh query call here to avoid infinite loops if the log query itself fails (though unlikely with simple structure)
             db.query(logSql, [sql, err.message, url], (logErr) => {
                 if (logErr) console.error("Failed to log database error:", logErr);
             });
         }
-        // Always execute the original callback
         if (callback) callback(err, result);
     });
 };
 
-// Routes
+// --- ROUTES ---
 
 // Register
 app.post('/register', (req, res) => {
     const { email, password, name, phone, mac_address } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ success: false, message: 'Email and password are required' });
-    }
+    if (!email || !password) return res.status(400).json({ success: false, message: 'Required fields missing' });
 
     const query = 'INSERT INTO users (email, password, name, phone, user_type, mac_address) VALUES (?, ?, ?, ?, ?, ?)';
     dbQuery(query, [email, password, name, phone, req.body.user_type || 'individual', mac_address || null], req, (err, result) => {
         if (err) {
-            console.error(err);
-            if (err.code === 'ER_DUP_ENTRY') {
-                return res.status(409).json({ success: false, message: 'Email already exists' });
-            }
+            if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ success: false, message: 'Email already exists' });
             return res.status(500).json({ success: false, message: 'Database error' });
         }
-        res.json({ success: true, message: 'User registered successfully', userId: result.insertId });
+        res.json({ success: true, message: 'User registered', userId: result.insertId });
     });
 });
 
 // Login
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ success: false, message: 'Email and password are required' });
-    }
-
     const query = 'SELECT * FROM users WHERE email = ? AND password = ?';
     dbQuery(query, [email, password], req, (err, results) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ success: false, message: 'Database error' });
-        }
-        if (results.length > 0) {
-            const user = results[0];
-            res.json({ success: true, message: 'Login successful', user });
-        } else {
-            res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
+        if (err || results.length === 0) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        res.json({ success: true, message: 'Login successful', user: results[0] });
     });
 });
 
 // Update Profile
 app.post('/update-profile', (req, res) => {
     const { id, name, phone, email } = req.body;
-    if (!id) {
-        return res.status(400).json({ success: false, message: 'User ID is required' });
-    }
-
     const query = 'UPDATE users SET name = ?, phone = ?, email = ? WHERE id = ?';
-    dbQuery(query, [name, phone, email, id], req, (err, result) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ success: false, message: 'Database error' });
-        }
-        res.json({ success: true, message: 'Profile updated successfully' });
+    dbQuery(query, [name, phone, email, id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
     });
 });
 
-// --- NEW RAABTAA FEATURES ---
+// --- UPLOADS ---
 
-// 1. Skills (For Individuals)
-app.post('/api/skills', (req, res) => {
-    const { user_id, skill_name } = req.body;
-    if (!user_id || !skill_name) return res.status(400).json({ success: false, message: 'Missing fields' });
+app.post('/api/upload/profile', upload.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
 
-    const query = 'INSERT INTO skills (user_id, skill_name) VALUES (?, ?)';
-    dbQuery(query, [user_id, skill_name], req, (err, result) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ success: false, message: 'Database error' });
-        }
-        res.json({ success: true, message: 'Skill added', id: result.insertId });
+    // Update DB with URL/Path (Optional, but good for caching busting or knowing type)
+    const userId = req.body.userId;
+    // We store the relative path or filename.
+    // Since naming is fixed (userId.ext), we can just infer it, but user might change extensions.
+    // Better to update DB.
+    const fileUrl = `uploads/profiles/${req.file.filename}`;
+    const query = 'UPDATE users SET profile_pic_url = ? WHERE id = ?';
+
+    dbQuery(query, [fileUrl, userId], req, (err) => {
+        if (err) console.error("Failed to update profile pic url in db");
+        // We succeed even if db update fails because file is saved
+        res.json({ success: true, message: 'Profile uploaded', filePath: fileUrl });
     });
 });
 
-app.get('/api/skills/:userId', (req, res) => {
-    const query = 'SELECT * FROM skills WHERE user_id = ?';
+app.post('/api/upload/product', upload.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+
+    const productId = req.body.productId;
+    const index = req.body.index || 0;
+    const fileUrl = `uploads/products/${req.file.filename}`;
+
+    // If it's the main image (index 0), update product table
+    if (index == 0) {
+        const query = 'UPDATE products SET image_url = ? WHERE id = ?';
+        dbQuery(query, [fileUrl, productId], req, (err) => {
+             res.json({ success: true, message: 'Product image uploaded', filePath: fileUrl });
+        });
+    } else {
+        res.json({ success: true, message: 'Product image uploaded', filePath: fileUrl });
+    }
+});
+
+// --- CONNECTIONS ---
+
+app.post('/api/connections', (req, res) => {
+    const { follower_id, following_id, action } = req.body; // action: 'follow', 'unfollow'
+
+    if (action === 'unfollow') {
+        const query = 'DELETE FROM connections WHERE follower_id = ? AND following_id = ?';
+        dbQuery(query, [follower_id, following_id], req, (err) => {
+            if (err) return res.status(500).json({ success: false });
+            res.json({ success: true, message: 'Unfollowed' });
+        });
+    } else {
+        const query = 'INSERT INTO connections (follower_id, following_id, status) VALUES (?, ?, "accepted") ON DUPLICATE KEY UPDATE status="accepted"';
+        dbQuery(query, [follower_id, following_id], req, (err) => {
+            if (err) return res.status(500).json({ success: false });
+            res.json({ success: true, message: 'Followed' });
+        });
+    }
+});
+
+app.get('/api/connections/:userId', (req, res) => {
+    // Get people the user is following
+    const query = `
+        SELECT u.id, u.name, u.email, u.user_type, u.profile_pic_url
+        FROM connections c
+        JOIN users u ON c.following_id = u.id
+        WHERE c.follower_id = ?
+    `;
     dbQuery(query, [req.params.userId], req, (err, results) => {
-        if (err) return res.status(500).json({ success: false, message: 'Database error' });
-        res.json({ success: true, skills: results });
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, connections: results });
     });
 });
 
-app.delete('/api/skills/:id', (req, res) => {
-    const query = 'DELETE FROM skills WHERE id = ?';
-    dbQuery(query, [req.params.id], req, (err) => {
-        if (err) return res.status(500).json({ success: false, message: 'Database error' });
-        res.json({ success: true, message: 'Skill removed' });
+app.get('/api/users/discover', (req, res) => {
+    // Simple discover: list all users except self
+    const excludeId = req.query.excludeId || 0;
+    const search = req.query.search ? `%${req.query.search}%` : '%';
+
+    const query = 'SELECT id, name, email, user_type, profile_pic_url FROM users WHERE id != ? AND name LIKE ? LIMIT 50';
+    dbQuery(query, [excludeId, search], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, users: results });
     });
 });
 
-// 2. Products (For Businesses)
+// --- PRODUCTS & INVENTORY ---
+
 app.post('/api/products', (req, res) => {
-    const { user_id, name, price, description, image_url } = req.body;
-    if (!user_id || !name || !price) return res.status(400).json({ success: false, message: 'Missing fields' });
-
-    const query = 'INSERT INTO products (user_id, name, price, description, image_url) VALUES (?, ?, ?, ?, ?)';
-    dbQuery(query, [user_id, name, price, description || '', image_url || ''], req, (err, result) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ success: false, message: 'Database error' });
-        }
+    const { user_id, name, price, description, image_url, stock_quantity } = req.body;
+    const query = 'INSERT INTO products (user_id, name, price, description, image_url, stock_quantity) VALUES (?, ?, ?, ?, ?, ?)';
+    dbQuery(query, [user_id, name, price, description || '', image_url || '', stock_quantity || 0], req, (err, result) => {
+        if (err) return res.status(500).json({ success: false });
         res.json({ success: true, message: 'Product added', id: result.insertId });
     });
 });
@@ -248,82 +360,159 @@ app.post('/api/products', (req, res) => {
 app.get('/api/products/:userId', (req, res) => {
     const query = 'SELECT * FROM products WHERE user_id = ?';
     dbQuery(query, [req.params.userId], req, (err, results) => {
-        if (err) return res.status(500).json({ success: false, message: 'Database error' });
+        if (err) return res.status(500).json({ success: false });
         res.json({ success: true, products: results });
     });
 });
 
-// 3. Availability (For Individuals)
-app.post('/api/availability', (req, res) => {
-    const { user_id, date, status } = req.body; // status: 'free', 'busy'
-    const query = 'INSERT INTO availability (user_id, date, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?';
-    dbQuery(query, [user_id, date, status, status], req, (err) => {
-        if (err) return res.status(500).json({ success: false, message: 'Database error' });
-        res.json({ success: true, message: 'Availability updated' });
+app.post('/api/products/:id/stock', (req, res) => {
+    const { stock } = req.body;
+    const query = 'UPDATE products SET stock_quantity = ? WHERE id = ?';
+    dbQuery(query, [stock, req.params.id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, message: 'Stock updated' });
     });
 });
 
-app.get('/api/availability/:userId', (req, res) => {
-    const query = 'SELECT * FROM availability WHERE user_id = ?';
+// --- SKILLS & AVAILABILITY ---
+
+app.post('/api/skills', (req, res) => {
+    const { user_id, skill_name } = req.body;
+    const query = 'INSERT INTO skills (user_id, skill_name) VALUES (?, ?)';
+    dbQuery(query, [user_id, skill_name], req, (err, result) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, id: result.insertId });
+    });
+});
+
+app.get('/api/skills/:userId', (req, res) => {
+    const query = 'SELECT * FROM skills WHERE user_id = ?';
     dbQuery(query, [req.params.userId], req, (err, results) => {
-        if (err) return res.status(500).json({ success: false, message: 'Database error' });
-        res.json({ success: true, availability: results });
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, skills: results });
     });
 });
 
-// Biometric Login - Validate MAC Address
-app.post('/biometric/login', (req, res) => {
-    console.log('=== Biometric Login Request ===');
-    console.log('Request body:', req.body);
-
-    const { mac_address } = req.body;
-    if (!mac_address) {
-        console.log('Missing MAC address');
-        return res.status(400).json({ success: false, message: 'MAC address is required' });
-    }
-
-    console.log('Looking up user with MAC address:', mac_address);
-    const query = 'SELECT * FROM users WHERE mac_address = ?';
-    dbQuery(query, [mac_address], req, (err, results) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).json({ success: false, message: 'Database error' });
-        }
-        if (results.length === 0) {
-            console.log('No user found with this MAC address');
-            return res.status(404).json({
-                success: false,
-                message: 'Device not recognized. Please register a new account or login with your credentials to verify this device.'
-            });
-        }
-
-        const user = results[0];
-        console.log('User found:', user.email);
-        console.log('Biometric login successful for user:', user.id);
-
-        // MAC address found, login successful
-        logToDb('INFO', 'Biometric login successful', { userId: user.id }, 'BiometricLogin');
-        res.json({ success: true, message: 'Biometric login successful', user });
-    });
-});
-
-// Logging Endpoint
-app.post('/api/logs', (req, res) => {
-    const { level, message, details, source } = req.body;
-    const query = 'INSERT INTO error_logs (level, message, details, source) VALUES (?, ?, ?, ?)';
-
-    // Log to console as well for immediate dev feedback
-    console.log(`[${level}] ${source}: ${message}`, details ? details : '');
-
-    db.query(query, [level, message, typeof details === 'object' ? JSON.stringify(details) : details, source], (err) => {
-        if (err) {
-            console.error('Failed to save log to DB:', err);
-            return res.status(500).json({ success: false });
-        }
+app.delete('/api/skills/:id', (req, res) => {
+    dbQuery('DELETE FROM skills WHERE id = ?', [req.params.id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
         res.json({ success: true });
     });
 });
 
+app.post('/api/availability', (req, res) => {
+    const { user_id, date, status } = req.body;
+    const query = 'INSERT INTO availability (user_id, date, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?';
+    dbQuery(query, [user_id, date, status, status], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
+    });
+});
+
+app.get('/api/availability/:userId', (req, res) => {
+    dbQuery('SELECT * FROM availability WHERE user_id = ?', [req.params.userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, availability: results });
+    });
+});
+
+// --- ORDERS & REPORTS ---
+
+app.post('/api/orders', (req, res) => {
+    const { seller_id, buyer_id, items } = req.body;
+    // items: [{ product_id, quantity, price }]
+
+    // Calculate total
+    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    const orderQuery = 'INSERT INTO orders (seller_id, buyer_id, total_amount) VALUES (?, ?, ?)';
+    dbQuery(orderQuery, [seller_id, buyer_id || null, total], req, (err, result) => {
+        if (err) return res.status(500).json({ success: false, message: 'Failed to create order' });
+
+        const orderId = result.insertId;
+        const itemValues = items.map(item => [orderId, item.product_id, item.quantity, item.price]);
+
+        const itemQuery = 'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ?';
+        db.query(itemQuery, [itemValues], (itemErr) => {
+            if (itemErr) {
+                console.error("Order Items Error:", itemErr);
+                // Should rollback, but simple implementation for now
+                return res.status(500).json({ success: false, message: 'Partial failure' });
+            }
+
+            // Update stock
+            items.forEach(item => {
+                 db.query('UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?', [item.quantity, item.product_id]);
+            });
+
+            res.json({ success: true, message: 'Order created', orderId });
+        });
+    });
+});
+
+app.get('/api/reports/sales/:userId', (req, res) => {
+    // Returns daily sales for the last 30 days
+    const query = `
+        SELECT
+            DATE(created_at) as date,
+            COUNT(*) as count,
+            SUM(total_amount) as total
+        FROM orders
+        WHERE seller_id = ?
+        GROUP BY DATE(created_at)
+        ORDER BY date DESC
+        LIMIT 30
+    `;
+    dbQuery(query, [req.params.userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+
+        // Also get Monthly total
+        const monthQuery = `
+            SELECT SUM(total_amount) as total
+            FROM orders
+            WHERE seller_id = ? AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())
+        `;
+        dbQuery(monthQuery, [req.params.userId], req, (err2, monthResult) => {
+             res.json({
+                 success: true,
+                 daily: results,
+                 monthlyTotal: monthResult[0]?.total || 0
+             });
+        });
+    });
+});
+
+// --- APPOINTMENTS (For Calendar) ---
+
+app.get('/api/appointments/:userId', (req, res) => {
+    // Get all appointments (both as provider and customer)
+    const query = `
+        SELECT a.*,
+            u1.name as provider_name,
+            u2.name as customer_name
+        FROM appointments a
+        JOIN users u1 ON a.provider_id = u1.id
+        JOIN users u2 ON a.customer_id = u2.id
+        WHERE a.provider_id = ? OR a.customer_id = ?
+    `;
+    dbQuery(query, [req.params.userId, req.params.userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, appointments: results });
+    });
+});
+
+// Biometric Login (Existing)
+app.post('/biometric/login', (req, res) => {
+    const { mac_address } = req.body;
+    if (!mac_address) return res.status(400).json({ success: false });
+
+    const query = 'SELECT * FROM users WHERE mac_address = ?';
+    dbQuery(query, [mac_address], req, (err, results) => {
+        if (err || results.length === 0) return res.status(404).json({ success: false });
+        res.json({ success: true, user: results[0] });
+    });
+});
+
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} `);
+    console.log(`Server running on port ${PORT}`);
 });

@@ -1,9 +1,10 @@
 import React, { useState, useContext, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput, Modal, TouchableWithoutFeedback, Platform, Animated, PanResponder } from 'react-native';
-import Svg, { Path, Circle, Line } from 'react-native-svg';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput, Modal, TouchableWithoutFeedback, Platform, Animated, PanResponder, Alert } from 'react-native';
+import Svg, { Path, Circle, Line, Plus, X, Trash } from 'react-native-svg';
 import QRCode from 'react-native-qrcode-svg';
 import { BlurView } from "@react-native-community/blur";
 import { AuthContext } from '../context/AuthContext';
+import { DataService } from '../services/DataService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -12,6 +13,15 @@ const ProfileScreen = ({ navigation }: any) => {
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(userInfo?.name || '');
     const [phone, setPhone] = useState(userInfo?.phone || '');
+
+    // Raabtaa Data State
+    const [skills, setSkills] = useState<any[]>([]);
+    const [products, setProducts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    // New Input State
+    const [newSkill, setNewSkill] = useState('');
+    const [newProduct, setNewProduct] = useState({ name: '', price: '' });
 
     // Settings Modal State
     const [modalVisible, setModalVisible] = useState(false);
@@ -61,12 +71,74 @@ const ProfileScreen = ({ navigation }: any) => {
         })
     ).current;
 
-    // We can keep the view toggle for design purposes if user is business, 
-    // but the main request is "login user can edit their info".
-    // We will assume "isBusiness" view logic remains for displaying different layouts if they ARE a business, 
-    // but let's base it on actual user_type for the default view.
     const isBusinessUser = userInfo?.user_type === 'business';
-    const [isBusinessView, setIsBusinessView] = useState(isBusinessUser);
+
+    useEffect(() => {
+        if (userInfo?.id) {
+            fetchData();
+        }
+    }, [userInfo?.id]);
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            if (isBusinessUser) {
+                const res = await DataService.getProducts(userInfo.id);
+                if (res.success) setProducts(res.products);
+            } else {
+                const res = await DataService.getSkills(userInfo.id);
+                if (res.success) setSkills(res.skills);
+            }
+        } catch (error) {
+            console.log("Error fetching profile data", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAddSkill = async () => {
+        if (!newSkill.trim()) return;
+        try {
+            const res = await DataService.addSkill(userInfo.id, newSkill);
+            if (res.success) {
+                setSkills([...skills, { id: res.id, skill_name: newSkill }]);
+                setNewSkill('');
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleDeleteSkill = async (id: number) => {
+        try {
+            const res = await DataService.deleteSkill(id);
+            if (res.success) {
+                setSkills(skills.filter(s => s.id !== id));
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleAddProduct = async () => {
+        if (!newProduct.name || !newProduct.price) return;
+        try {
+            const res = await DataService.addProduct({
+                user_id: userInfo.id,
+                name: newProduct.name,
+                price: newProduct.price,
+                description: 'New Product', // localized properly in real app
+                image_url: ''
+            });
+            if (res.success) {
+                await fetchData(); // Refresh list
+                setNewProduct({ name: '', price: '' });
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
 
     const openModal = () => {
         setModalVisible(true);
@@ -109,13 +181,10 @@ const ProfileScreen = ({ navigation }: any) => {
 
     const handleSave = async () => {
         try {
-            // Fix: updateProfile expects (name, phone), not an object
             await updateProfile(name, phone);
             setIsEditing(false);
-            // Optionally show success alert
         } catch (error) {
             console.error(error);
-            // Optionally show error alert
         }
     };
 
@@ -159,7 +228,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 <View style={styles.qrContainer}>
                     <View style={styles.qrWrapper}>
                         <QRCode
-                            value={userInfo?.email || "https://example.com"}
+                            value={`raabtaa://user/${userInfo?.id}` || "https://example.com"}
                             size={120}
                             backgroundColor="white"
                             color="black"
@@ -169,12 +238,12 @@ const ProfileScreen = ({ navigation }: any) => {
             </View>
 
             {/* Content Body */}
-            <View style={styles.contentContainer}>
+            <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
                 {/* Avatar */}
                 <View style={styles.avatarWrapper}>
                     <Image
                         source={{
-                            uri: isBusinessView
+                            uri: isBusinessUser
                                 ? 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?fit=crop&w=200&h=200'
                                 : 'https://randomuser.me/api/portraits/men/32.jpg'
                         }}
@@ -204,8 +273,84 @@ const ProfileScreen = ({ navigation }: any) => {
                         <>
                             <Text style={styles.nameText}>{userInfo?.name || 'Name'}</Text>
                             <Text style={styles.roleText}>{userInfo?.email}</Text>
-                            <Text style={[styles.roleText, { fontSize: 14, marginTop: 5 }]}>{userInfo?.phone}</Text>
+                            <View style={styles.userTypeBadge}>
+                                <Text style={styles.userTypeBadgeText}>{isBusinessUser ? 'Business' : 'Individual'}</Text>
+                            </View>
                         </>
+                    )}
+                </View>
+
+                {/* Dynamic Content Section */}
+                <View style={styles.sectionContainer}>
+                    <Text style={styles.sectionTitle}>{isBusinessUser ? 'Product Catalog' : 'Professional Skills'}</Text>
+
+                    {/* Skills List (Individual) */}
+                    {!isBusinessUser && (
+                        <View>
+                            <View style={styles.tagsContainer}>
+                                {skills.map((skill: any, index: number) => (
+                                    <TouchableOpacity key={index} style={styles.tag} onPress={() => isEditing && handleDeleteSkill(skill.id)}>
+                                        <Text style={styles.tagText}>{skill.skill_name}</Text>
+                                        {isEditing && (
+                                            <Svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="3" style={{ marginLeft: 5 }}>
+                                                <Path d="M18 6L6 18M6 6l12 12"></Path>
+                                            </Svg>
+                                        )}
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                            {isEditing && (
+                                <View style={styles.addInputRow}>
+                                    <TextInput
+                                        style={styles.smallInput}
+                                        placeholder="Add Skill..."
+                                        value={newSkill}
+                                        onChangeText={setNewSkill}
+                                    />
+                                    <TouchableOpacity onPress={handleAddSkill} style={styles.addButton}>
+                                        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3">
+                                            <Path d="M12 5v14M5 12h14"></Path>
+                                        </Svg>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </View>
+                    )}
+
+                    {/* Products List (Business) */}
+                    {isBusinessUser && (
+                        <View>
+                            {products.length === 0 && !isEditing && <Text style={{ color: '#A0AEC0', textAlign: 'center' }}>No products added.</Text>}
+                            {products.map((prod: any, index: number) => (
+                                <View key={index} style={styles.productListItem}>
+                                    <Text style={styles.productListItemName}>{prod.name}</Text>
+                                    <Text style={styles.productListItemPrice}>{prod.price} PKR</Text>
+                                </View>
+                            ))}
+
+                            {isEditing && (
+                                <View style={styles.addProductForm}>
+                                    <TextInput
+                                        style={[styles.smallInput, { flex: 2, marginRight: 5 }]}
+                                        placeholder="Product Name"
+                                        value={newProduct.name}
+                                        onChangeText={(t) => setNewProduct(prev => ({ ...prev, name: t }))}
+                                    />
+                                    <TextInput
+                                        style={[styles.smallInput, { flex: 1, marginRight: 5 }]}
+                                        placeholder="Price"
+                                        keyboardType="numeric"
+                                        value={newProduct.price}
+                                        onChangeText={(t) => setNewProduct(prev => ({ ...prev, price: t }))}
+                                    />
+                                    <TouchableOpacity onPress={handleAddProduct} style={styles.addButton}>
+                                        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3">
+                                            <Path d="M12 5v14M5 12h14"></Path>
+                                        </Svg>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </View>
                     )}
                 </View>
 
@@ -216,15 +361,9 @@ const ProfileScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 )}
 
-                {/* Normal Action Button (Hidden if editing maybe? or kept) */}
-                {!isEditing && (
-                    <TouchableOpacity style={styles.mainButton}>
-                        <Text style={styles.mainButtonText}>
-                            {isBusinessView ? 'View Products' : 'Connect'}
-                        </Text>
-                    </TouchableOpacity>
-                )}
-            </View>
+                {/* Bottom Spacer */}
+                <View style={{ height: 100 }} />
+            </ScrollView>
 
             {/* Custom Bottom Sheet (No Modal, Absolute Overlay) */}
             {modalVisible && (
@@ -373,7 +512,7 @@ const styles = StyleSheet.create({
     },
     headerBackground: {
         backgroundColor: '#2D3748',
-        height: '45%', // Takes up top portion
+        height: 280, // Increased height
         borderBottomLeftRadius: 40,
         borderBottomRightRadius: 40,
         alignItems: 'center',
@@ -423,12 +562,11 @@ const styles = StyleSheet.create({
         borderRadius: 15,
     },
     contentContainer: {
-        flex: 1,
         alignItems: 'center',
-        marginTop: -60, // Pull up to overlap
-        zIndex: 2,
+        paddingBottom: 50,
     },
     avatarWrapper: {
+        marginTop: -50, // Pull up
         width: 100,
         height: 100,
         borderRadius: 50,
@@ -437,12 +575,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 15,
+        marginBottom: 10,
         elevation: 5,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 5,
+        zIndex: 2,
     },
     avatar: {
         width: 92,
@@ -452,6 +591,7 @@ const styles = StyleSheet.create({
     infoSection: {
         alignItems: 'center',
         marginBottom: 20,
+        width: '100%',
     },
     nameText: {
         fontSize: 24,
@@ -460,35 +600,103 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
     roleText: {
-        fontSize: 16,
+        fontSize: 14,
         color: '#718096',
+    },
+    userTypeBadge: {
+        marginTop: 5,
+        backgroundColor: '#E2E8F0',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    userTypeBadgeText: {
+        fontSize: 12,
+        color: '#4A5568',
+        fontWeight: '600',
+    },
+    sectionContainer: {
+        width: '90%',
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 20,
+        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 2,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#2D3748',
+        marginBottom: 15,
     },
     tagsContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'center',
         gap: 10,
-        marginBottom: 30,
-        paddingHorizontal: 30,
+        marginBottom: 10,
     },
     tag: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: '#EDF2F7',
         paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 20,
     },
-    activeTag: {
-        backgroundColor: '#4A9EFF', // Or blueish color from design
-    },
     tagText: {
-        color: '#718096',
-        fontSize: 12,
-        fontWeight: '600',
+        color: '#4A5568',
+        fontSize: 14,
+        fontWeight: '500',
     },
-    activeTagText: {
-        color: '#fff',
-        fontSize: 12,
-        fontWeight: '600',
+    addInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    smallInput: {
+        flex: 1,
+        backgroundColor: '#F7FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        fontSize: 14,
+        marginRight: 10,
+    },
+    addButton: {
+        backgroundColor: '#4A9EFF',
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    addProductForm: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 10,
+        width: '100%',
+    },
+    productListItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F7FAFC',
+    },
+    productListItemName: {
+        fontSize: 16,
+        color: '#2D3748',
+    },
+    productListItemPrice: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#4A5568',
     },
     mainButton: {
         backgroundColor: '#2D3748',
@@ -501,6 +709,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 8,
         elevation: 5,
+        marginBottom: 20,
     },
     mainButtonText: {
         color: '#fff',

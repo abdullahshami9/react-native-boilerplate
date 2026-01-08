@@ -1,20 +1,55 @@
 
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, StatusBar as RNStatusBar, Dimensions, ScrollView, Animated, Switch } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, StatusBar as RNStatusBar, Dimensions, ScrollView, Animated, Switch, FlatList } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { AuthContext } from '../context/AuthContext';
+import { DataService } from '../services/DataService';
 
 const { width, height } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation, route }: any) => {
-    const user = route.params?.user || { name: 'User', email: 'user@example.com' };
-    const authContext = React.useContext(AuthContext);
+    const { userInfo, logout } = React.useContext(AuthContext);
+    const user = userInfo || route.params?.user || { name: 'User', email: 'user@example.com', user_type: 'individual' };
+
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const sidebarAnim = useRef(new Animated.Value(-width * 0.75)).current;
 
+    // Dynamic Data State
+    const [dashboardData, setDashboardData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
     const isFocused = useIsFocused();
+
+    useEffect(() => {
+        if (isFocused && user.id) {
+            fetchDashboardData();
+        }
+    }, [isFocused, user.id]);
+
+    const fetchDashboardData = async () => {
+        setLoading(true);
+        try {
+            if (user.user_type === 'business') {
+                // Fetch Products for Business
+                const res = await DataService.getProducts(user.id);
+                if (res.success) {
+                    setDashboardData(res.products);
+                }
+            } else {
+                // Fetch Availability/Appointments for Individual
+                const res = await DataService.getAvailability(user.id);
+                if (res.success) {
+                    setDashboardData(res.availability);
+                }
+            }
+        } catch (error) {
+            console.log("Error fetching dashboard data", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const toggleSidebar = () => {
         if (isSidebarOpen) {
@@ -38,6 +73,66 @@ const HomeScreen = ({ navigation, route }: any) => {
         iconColor: isDarkMode ? '#A0AEC0' : '#4A5568',
     };
 
+    const renderBusinessDashboard = () => (
+        <View>
+            <View style={[styles.sectionHeader, { marginTop: 20 }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Your Products</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                    <Text style={{ color: '#4A9EFF' }}>Manage</Text>
+                </TouchableOpacity>
+            </View>
+
+            {dashboardData.length === 0 ? (
+                <View style={[styles.emptyState, { backgroundColor: theme.cardBg }]}>
+                    <Text style={{ color: theme.subText }}>No products listed yet.</Text>
+                </View>
+            ) : (
+                <View style={styles.productList}>
+                    {dashboardData.map((prod: any, index: number) => (
+                        <View key={index} style={[styles.productCard, { backgroundColor: theme.cardBg }]}>
+                            <View style={styles.productIconPlaceholder}>
+                                <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
+                                    <Path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></Path>
+                                    <Path d="M3.27 6.96L12 12.01l8.73-5.05"></Path>
+                                    <Line x1="12" y1="22.08" x2="12" y2="12"></Line>
+                                </Svg>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.productName, { color: theme.text }]}>{prod.name}</Text>
+                                <Text style={[styles.productPrice, { color: theme.subText }]}>PKR {prod.price}</Text>
+                            </View>
+                        </View>
+                    ))}
+                </View>
+            )}
+        </View>
+    );
+
+    const renderIndividualDashboard = () => (
+        <View>
+            <View style={[styles.sectionHeader, { marginTop: 20 }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Unlock Availability</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                    <Text style={{ color: '#4A9EFF' }}>Update</Text>
+                </TouchableOpacity>
+            </View>
+            {dashboardData.length === 0 ? (
+                <View style={[styles.emptyState, { backgroundColor: theme.cardBg }]}>
+                    <Text style={{ color: theme.subText }}>Set your availability to get bookings.</Text>
+                </View>
+            ) : (
+                <View style={styles.availabilityList}>
+                    {dashboardData.map((slot: any, index: number) => (
+                        <View key={index} style={[styles.slotCard, { backgroundColor: slot.status === 'free' ? '#C6F6D5' : '#FED7D7' }]}>
+                            <Text style={{ color: '#2D3748', fontWeight: '600' }}>{new Date(slot.date).toDateString()}</Text>
+                            <Text style={{ color: '#2D3748', fontSize: 12 }}>{slot.status.toUpperCase()}</Text>
+                        </View>
+                    ))}
+                </View>
+            )}
+        </View>
+    );
+
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {isFocused && <RNStatusBar backgroundColor={theme.headerBg} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />}
@@ -51,7 +146,7 @@ const HomeScreen = ({ navigation, route }: any) => {
                         <Line x1="3" y1="18" x2="21" y2="18"></Line>
                     </Svg>
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Home</Text>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>{user.user_type === 'business' ? 'Business Hub' : 'My Dashboard'}</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Profile', { user })}>
                     <View style={styles.profileIconContainer}>
                         <Text style={styles.profileInitials}>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</Text>
@@ -61,19 +156,28 @@ const HomeScreen = ({ navigation, route }: any) => {
 
             {/* Main Content */}
             <ScrollView contentContainerStyle={styles.content}>
-                <View style={[styles.welcomeCard, { backgroundColor: '#4A5568' }]}>
+                <View style={[styles.welcomeCard, { backgroundColor: user.user_type === 'business' ? '#2B6CB0' : '#4A5568' }]}>
                     <Text style={styles.welcomeTitle}>Hello, {user.name}!</Text>
-                    <Text style={styles.welcomeSubtitle}>Welcome back to your dashboard.</Text>
+                    <Text style={styles.welcomeSubtitle}>
+                        {user.user_type === 'business'
+                            ? 'Manage your shop and sales here.'
+                            : 'Share your skills and manage appointments.'}
+                    </Text>
                 </View>
 
-                {/* Grid */}
+                {/* KPI/Grid */}
                 <View style={styles.grid}>
-                    {['Analytics', 'Reports', 'Settings', 'More'].map((item, index) => (
+                    {(user.user_type === 'business' ? ['Total Sales', 'Orders', 'Inventory', 'Analytics'] : ['Views', 'Bookings', 'Messages', 'Settings']).map((item, index) => (
                         <View key={index} style={[styles.card, { backgroundColor: theme.cardBg }]}>
-                            <Text style={[styles.cardText, { color: theme.text }]}>{item}</Text>
+                            <Text style={[styles.cardValue, { color: theme.text }]}>{Math.floor(Math.random() * 100)}</Text>
+                            <Text style={[styles.cardText, { color: theme.subText }]}>{item}</Text>
                         </View>
                     ))}
                 </View>
+
+                {/* Dashboard Content */}
+                {user.user_type === 'business' ? renderBusinessDashboard() : renderIndividualDashboard()}
+
             </ScrollView>
 
             {/* Bottom Navigation */}
@@ -115,6 +219,9 @@ const HomeScreen = ({ navigation, route }: any) => {
                     </View>
                     <Text style={[styles.sidebarName, { color: theme.text }]}>{user.name}</Text>
                     <Text style={[styles.sidebarEmail, { color: theme.subText }]}>{user.email}</Text>
+                    <View style={{ marginTop: 5, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: user.user_type === 'business' ? '#BEE3F8' : '#C6F6D5', borderRadius: 10 }}>
+                        <Text style={{ fontSize: 12, color: user.user_type === 'business' ? '#2A4365' : '#22543D', textTransform: 'uppercase' }}>{user.user_type}</Text>
+                    </View>
                 </View>
 
                 <View style={styles.sidebarMenu}>
@@ -131,7 +238,7 @@ const HomeScreen = ({ navigation, route }: any) => {
                         <Switch value={isDarkMode} onValueChange={toggleDarkMode} />
                     </View>
 
-                    <TouchableOpacity style={[styles.sidebarItem, { marginTop: 20 }]} onPress={() => { toggleSidebar(); authContext.logout(); }}>
+                    <TouchableOpacity style={[styles.sidebarItem, { marginTop: 20 }]} onPress={() => { toggleSidebar(); logout(); }}>
                         <Text style={[styles.sidebarItemText, { color: '#E53E3E' }]}>Logout</Text>
                     </TouchableOpacity>
                 </View>
@@ -160,6 +267,16 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '600',
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
     },
     profileIconContainer: {
         width: 35,
@@ -197,10 +314,11 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         justifyContent: 'space-between',
         gap: 15,
+        marginBottom: 20,
     },
     card: {
         width: (width - 55) / 2,
-        height: 120,
+        height: 100,
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
@@ -210,9 +328,56 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         elevation: 2,
     },
+    cardValue: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
     cardText: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '500',
+    },
+    emptyState: {
+        padding: 30,
+        alignItems: 'center',
+        borderRadius: 10,
+    },
+    productList: {
+        gap: 10,
+    },
+    productCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 15,
+        borderRadius: 12,
+        marginBottom: 10,
+    },
+    productIconPlaceholder: {
+        width: 50,
+        height: 50,
+        backgroundColor: '#EDF2F7',
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 15,
+    },
+    productName: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    productPrice: {
+        fontSize: 14,
+        marginTop: 2,
+    },
+    availabilityList: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    slotCard: {
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderRadius: 8,
     },
     bottomNav: {
         flexDirection: 'row',
@@ -264,6 +429,7 @@ const styles = StyleSheet.create({
     sidebarEmail: {
         fontSize: 14,
         marginTop: 5,
+        marginBottom: 5,
     },
     sidebarMenu: {
         flex: 1,

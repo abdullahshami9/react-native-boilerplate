@@ -50,6 +50,53 @@ db.connect((err) => {
             source VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS skills (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            skill_name VARCHAR(100) NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS availability (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            date DATE NOT NULL,
+            status ENUM('free', 'busy') DEFAULT 'free',
+            UNIQUE KEY unique_availability (user_id, date),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS products (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            price DECIMAL(10, 2) NOT NULL,
+            description TEXT,
+            image_url TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS appointments (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            provider_id INT NOT NULL,
+            customer_id INT NOT NULL,
+            appointment_date DATETIME NOT NULL,
+            status ENUM('pending', 'confirmed', 'cancelled') DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (provider_id) REFERENCES users(id),
+            FOREIGN KEY (customer_id) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS generic (
+          id int(11) NOT NULL AUTO_INCREMENT,
+          query text NOT NULL,
+          error text NOT NULL,
+          url text NOT NULL,
+          creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (id) USING BTREE
+        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
     `;
 
     db.query(initQuery, (err, result) => {
@@ -72,6 +119,23 @@ const logToDb = (level, message, details = '', source = 'Backend') => {
     });
 };
 
+// Helper to execute query and log errors
+const dbQuery = (sql, params, reqOrUrl, callback) => {
+    db.query(sql, params, (err, result) => {
+        if (err) {
+            const url = typeof reqOrUrl === 'string' ? reqOrUrl : (reqOrUrl?.originalUrl || 'Unknown');
+            // Log error to generic table
+            const logSql = "INSERT INTO generic (query, error, url) VALUES (?, ?, ?)";
+            // Use a fresh query call here to avoid infinite loops if the log query itself fails (though unlikely with simple structure)
+            db.query(logSql, [sql, err.message, url], (logErr) => {
+                if (logErr) console.error("Failed to log database error:", logErr);
+            });
+        }
+        // Always execute the original callback
+        if (callback) callback(err, result);
+    });
+};
+
 // Routes
 
 // Register
@@ -82,7 +146,7 @@ app.post('/register', (req, res) => {
     }
 
     const query = 'INSERT INTO users (email, password, name, phone, user_type, mac_address) VALUES (?, ?, ?, ?, ?, ?)';
-    db.query(query, [email, password, name, phone, req.body.user_type || 'individual', mac_address || null], (err, result) => {
+    dbQuery(query, [email, password, name, phone, req.body.user_type || 'individual', mac_address || null], req, (err, result) => {
         if (err) {
             console.error(err);
             if (err.code === 'ER_DUP_ENTRY') {
@@ -102,7 +166,7 @@ app.post('/login', (req, res) => {
     }
 
     const query = 'SELECT * FROM users WHERE email = ? AND password = ?';
-    db.query(query, [email, password], (err, results) => {
+    dbQuery(query, [email, password], req, (err, results) => {
         if (err) {
             console.error(err);
             return res.status(500).json({ success: false, message: 'Database error' });
@@ -124,12 +188,86 @@ app.post('/update-profile', (req, res) => {
     }
 
     const query = 'UPDATE users SET name = ?, phone = ?, email = ? WHERE id = ?';
-    db.query(query, [name, phone, email, id], (err, result) => {
+    dbQuery(query, [name, phone, email, id], req, (err, result) => {
         if (err) {
             console.error(err);
             return res.status(500).json({ success: false, message: 'Database error' });
         }
         res.json({ success: true, message: 'Profile updated successfully' });
+    });
+});
+
+// --- NEW RAABTAA FEATURES ---
+
+// 1. Skills (For Individuals)
+app.post('/api/skills', (req, res) => {
+    const { user_id, skill_name } = req.body;
+    if (!user_id || !skill_name) return res.status(400).json({ success: false, message: 'Missing fields' });
+
+    const query = 'INSERT INTO skills (user_id, skill_name) VALUES (?, ?)';
+    dbQuery(query, [user_id, skill_name], req, (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: 'Database error' });
+        }
+        res.json({ success: true, message: 'Skill added', id: result.insertId });
+    });
+});
+
+app.get('/api/skills/:userId', (req, res) => {
+    const query = 'SELECT * FROM skills WHERE user_id = ?';
+    dbQuery(query, [req.params.userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false, message: 'Database error' });
+        res.json({ success: true, skills: results });
+    });
+});
+
+app.delete('/api/skills/:id', (req, res) => {
+    const query = 'DELETE FROM skills WHERE id = ?';
+    dbQuery(query, [req.params.id], req, (err) => {
+        if (err) return res.status(500).json({ success: false, message: 'Database error' });
+        res.json({ success: true, message: 'Skill removed' });
+    });
+});
+
+// 2. Products (For Businesses)
+app.post('/api/products', (req, res) => {
+    const { user_id, name, price, description, image_url } = req.body;
+    if (!user_id || !name || !price) return res.status(400).json({ success: false, message: 'Missing fields' });
+
+    const query = 'INSERT INTO products (user_id, name, price, description, image_url) VALUES (?, ?, ?, ?, ?)';
+    dbQuery(query, [user_id, name, price, description || '', image_url || ''], req, (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: 'Database error' });
+        }
+        res.json({ success: true, message: 'Product added', id: result.insertId });
+    });
+});
+
+app.get('/api/products/:userId', (req, res) => {
+    const query = 'SELECT * FROM products WHERE user_id = ?';
+    dbQuery(query, [req.params.userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false, message: 'Database error' });
+        res.json({ success: true, products: results });
+    });
+});
+
+// 3. Availability (For Individuals)
+app.post('/api/availability', (req, res) => {
+    const { user_id, date, status } = req.body; // status: 'free', 'busy'
+    const query = 'INSERT INTO availability (user_id, date, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?';
+    dbQuery(query, [user_id, date, status, status], req, (err) => {
+        if (err) return res.status(500).json({ success: false, message: 'Database error' });
+        res.json({ success: true, message: 'Availability updated' });
+    });
+});
+
+app.get('/api/availability/:userId', (req, res) => {
+    const query = 'SELECT * FROM availability WHERE user_id = ?';
+    dbQuery(query, [req.params.userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false, message: 'Database error' });
+        res.json({ success: true, availability: results });
     });
 });
 
@@ -146,7 +284,7 @@ app.post('/biometric/login', (req, res) => {
 
     console.log('Looking up user with MAC address:', mac_address);
     const query = 'SELECT * FROM users WHERE mac_address = ?';
-    db.query(query, [mac_address], (err, results) => {
+    dbQuery(query, [mac_address], req, (err, results) => {
         if (err) {
             console.error('Database error:', err);
             return res.status(500).json({ success: false, message: 'Database error' });

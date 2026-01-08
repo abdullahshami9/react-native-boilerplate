@@ -11,19 +11,27 @@ const DiscoverScreen = ({ navigation }: any) => {
     const [search, setSearch] = useState('');
     const [filterType, setFilterType] = useState('All'); // 'All', 'Skills', 'Location'
     const [users, setUsers] = useState<any[]>([]);
+    const [businessProducts, setBusinessProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const { userInfo } = React.useContext(AuthContext);
 
     React.useEffect(() => {
-        fetchUsers();
+        fetchData();
     }, [search]); // Debounce usually recommended, but keeping simple
 
-    const fetchUsers = async () => {
+    const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await DataService.discoverUsers(search, userInfo?.id || 0);
-            if (res.success) {
-                setUsers(res.users);
+            const [usersRes, productsRes] = await Promise.all([
+                DataService.discoverUsers(search, userInfo?.id || 0),
+                DataService.discoverProducts(search)
+            ]);
+
+            if (usersRes.success) {
+                setUsers(usersRes.users);
+            }
+            if (productsRes.success) {
+                setBusinessProducts(productsRes.products);
             }
         } catch (error) {
             console.log(error);

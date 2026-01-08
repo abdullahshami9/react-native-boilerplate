@@ -7,7 +7,7 @@ import { CONFIG } from '../Config';
 
 const { width } = Dimensions.get('window');
 
-const ShopScreen = () => {
+const ShopScreen = ({ navigation }: any) => {
     const { userInfo: user } = React.useContext(AuthContext);
     const [activeTab, setActiveTab] = useState('Products');
     const [search, setSearch] = useState('');

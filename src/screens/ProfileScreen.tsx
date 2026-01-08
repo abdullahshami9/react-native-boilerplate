@@ -12,12 +12,14 @@ const { width, height } = Dimensions.get('window');
 
 // Calendar Contribution Graph Component
 const ContributionGraph = ({ appointments, onDateClick }: any) => {
-    // Generate dates for the last 90 days
+    // Generate dates for the last month to next month (approx 60 days)
+    // "Past one month and one month future" -> ~60 days centered on today
+    // Let's generate -30 to +30
     const today = new Date();
     const days = [];
-    for (let i = 89; i >= 0; i--) {
+    for (let i = -30; i <= 30; i++) {
         const d = new Date(today);
-        d.setDate(d.getDate() - i);
+        d.setDate(d.getDate() + i);
         days.push(d);
     }
 
@@ -40,10 +42,15 @@ const ContributionGraph = ({ appointments, onDateClick }: any) => {
             <View style={styles.calendarGrid}>
                 {days.map((date, index) => {
                     const dateStr = date.toISOString().split('T')[0];
+                    const isToday = dateStr === today.toISOString().split('T')[0];
                     return (
                         <TouchableOpacity
                             key={index}
-                            style={[styles.calendarCell, { backgroundColor: getColor(dateStr) }]}
+                            style={[
+                                styles.calendarCell,
+                                { backgroundColor: getColor(dateStr) },
+                                isToday && { borderWidth: 1, borderColor: '#2D3748' }
+                            ]}
                             onPress={() => onDateClick(dateStr)}
                         />
                     );
@@ -82,9 +89,15 @@ const ProfileScreen = ({ navigation }: any) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [darkMode, setDarkMode] = useState(false);
 
+    // Appointment Modal State
+    const [apptModalVisible, setApptModalVisible] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const [selectedAppts, setSelectedAppts] = useState<any[]>([]);
+
     // Animation Values
     const slideAnim = useRef(new Animated.Value(height)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
+    const scrollY = useRef(new Animated.Value(0)).current;
 
     const pan = useRef(new Animated.ValueXY()).current;
 
@@ -151,17 +164,19 @@ const ProfileScreen = ({ navigation }: any) => {
             const apptDate = a.appointment_date.split('T')[0];
             return apptDate === dateStr;
         });
-        if (dayAppointments.length > 0) {
-            let message = '';
-            dayAppointments.forEach((a: any) => {
-                const withUser = a.provider_id === userInfo.id ? a.customer_name : a.provider_name;
-                message += `${new Date(a.appointment_date).toLocaleTimeString()} with ${withUser} (${a.status})\n`;
-            });
-            Alert.alert(`Appointments on ${dateStr}`, message);
-        } else {
-            Alert.alert(`No appointments on ${dateStr}`);
-        }
+
+        setSelectedDate(dateStr);
+        setSelectedAppts(dayAppointments);
+        setApptModalVisible(true);
     };
+
+    const changeDate = (daysToAdd: number) => {
+        if (!selectedDate) return;
+        const d = new Date(selectedDate);
+        d.setDate(d.getDate() + daysToAdd);
+        const newDateStr = d.toISOString().split('T')[0];
+        handleDateClick(newDateStr);
+    }
 
     const handleAddSkill = async () => {
         if (!newSkill.trim()) return;
@@ -281,9 +296,34 @@ const ProfileScreen = ({ navigation }: any) => {
             : 'https://randomuser.me/api/portraits/men/32.jpg';
     };
 
+    const qrScale = scrollY.interpolate({
+        inputRange: [0, 100],
+        outputRange: [1, 0.4],
+        extrapolate: 'clamp'
+    });
+
+    const qrTranslateY = scrollY.interpolate({
+        inputRange: [0, 100],
+        outputRange: [0, -60],
+        extrapolate: 'clamp'
+    });
+
+    const qrTranslateX = scrollY.interpolate({
+        inputRange: [0, 100],
+        outputRange: [0, width / 2 - 60], // Move to right
+        extrapolate: 'clamp'
+    });
+
+    // Header height animation
+    const headerHeight = scrollY.interpolate({
+        inputRange: [0, 100],
+        outputRange: [280, 100],
+        extrapolate: 'clamp'
+    });
+
     return (
         <View style={styles.container}>
-            <View style={styles.headerBackground}>
+            <Animated.View style={[styles.headerBackground, { height: headerHeight }]}>
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={openModal} style={styles.iconButton}>
                         <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
@@ -292,14 +332,25 @@ const ProfileScreen = ({ navigation }: any) => {
                         </Svg>
                     </TouchableOpacity>
                 </View>
-                <View style={styles.qrContainer}>
+                <Animated.View style={[
+                    styles.qrContainer,
+                    { transform: [{ scale: qrScale }, { translateY: qrTranslateY }, { translateX: qrTranslateX }] }
+                ]}>
                     <View style={styles.qrWrapper}>
                         <QRCode value={`raabtaa://user/${userInfo?.id}` || "https://example.com"} size={120} backgroundColor="white" color="black" />
                     </View>
-                </View>
-            </View>
+                </Animated.View>
+            </Animated.View>
 
-            <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+            <Animated.ScrollView
+                contentContainerStyle={styles.contentContainer}
+                showsVerticalScrollIndicator={false}
+                onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                    { useNativeDriver: false }
+                )}
+                scrollEventThrottle={16}
+            >
                 <View style={styles.avatarWrapper}>
                     <Image source={{ uri: getProfilePicUrl() }} style={styles.avatar} />
                     {isEditing && (
@@ -414,6 +465,45 @@ const ProfileScreen = ({ navigation }: any) => {
                     </Animated.View>
                 </View>
             )}
+
+            {apptModalVisible && (
+                <Modal visible={apptModalVisible} transparent animationType="fade">
+                    <View style={styles.modalOverlay}>
+                        <BlurView style={StyleSheet.absoluteFill} blurType="dark" blurAmount={5} reducedTransparencyFallbackColor="black" />
+                        <View style={styles.apptModalContent}>
+                            <View style={styles.apptHeader}>
+                                <TouchableOpacity onPress={() => changeDate(-1)} style={styles.arrowButton}>
+                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2"><Path d="M15 18l-6-6 6-6"/></Svg>
+                                </TouchableOpacity>
+                                <Text style={styles.apptDateTitle}>{selectedDate ? new Date(selectedDate).toDateString() : ''}</Text>
+                                <TouchableOpacity onPress={() => changeDate(1)} style={styles.arrowButton}>
+                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2"><Path d="M9 18l6-6-6-6"/></Svg>
+                                </TouchableOpacity>
+                            </View>
+
+                            <ScrollView style={{ maxHeight: 300 }}>
+                                {selectedAppts.length > 0 ? (
+                                    selectedAppts.map((a: any, i) => (
+                                        <View key={i} style={styles.apptItem}>
+                                            <Text style={styles.apptTime}>{new Date(a.appointment_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+                                            <View>
+                                                <Text style={styles.apptName}>{a.provider_id === userInfo.id ? a.customer_name : a.provider_name}</Text>
+                                                <Text style={[styles.apptStatus, { color: a.status === 'confirmed' ? 'green' : '#718096' }]}>{a.status}</Text>
+                                            </View>
+                                        </View>
+                                    ))
+                                ) : (
+                                    <Text style={styles.noApptText}>No appointments for this date.</Text>
+                                )}
+                            </ScrollView>
+
+                            <TouchableOpacity style={styles.closeApptButton} onPress={() => setApptModalVisible(false)}>
+                                <Text style={styles.closeApptButtonText}>Close</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+            )}
         </View>
     );
 };
@@ -425,10 +515,10 @@ const styles = StyleSheet.create({
     iconButton: { padding: 5 },
     editForm: { width: '100%', paddingHorizontal: 40, alignItems: 'center' },
     input: { width: '100%', backgroundColor: '#fff', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingHorizontal: 15, paddingVertical: 10, fontSize: 16, color: '#2D3748', textAlign: 'center' },
-    qrContainer: { marginTop: 10, alignItems: 'center', justifyContent: 'center' },
-    qrWrapper: { padding: 10, backgroundColor: '#fff', borderRadius: 15 },
-    contentContainer: { alignItems: 'center', paddingBottom: 50 },
-    avatarWrapper: { marginTop: -50, width: 100, height: 100, borderRadius: 50, borderWidth: 4, borderColor: '#F7FAFC', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 10, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 5, zIndex: 2 },
+    qrContainer: { marginTop: 10, alignItems: 'center', justifyContent: 'center', position: 'absolute', top: 60, left: 0, right: 0, zIndex: 10 },
+    qrWrapper: { padding: 10, backgroundColor: '#fff', borderRadius: 20, shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 },
+    contentContainer: { alignItems: 'center', paddingBottom: 50, paddingTop: 260 }, // Padding top matches header height to start content below
+    avatarWrapper: { marginTop: -40, width: 100, height: 100, borderRadius: 50, borderWidth: 4, borderColor: '#F7FAFC', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 10, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 5, zIndex: 2 },
     avatar: { width: 92, height: 92, borderRadius: 46 },
     cameraIcon: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#4A9EFF', width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
     infoSection: { alignItems: 'center', marginBottom: 20, width: '100%' },
@@ -500,7 +590,19 @@ const styles = StyleSheet.create({
         fontSize: 10,
         color: '#718096',
         marginHorizontal: 4,
-    }
+    },
+    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+    apptModalContent: { width: '90%', backgroundColor: '#fff', borderRadius: 20, padding: 20, alignItems: 'center', elevation: 10 },
+    apptHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 20 },
+    arrowButton: { padding: 10 },
+    apptDateTitle: { fontSize: 18, fontWeight: 'bold', color: '#2D3748' },
+    apptItem: { flexDirection: 'row', alignItems: 'center', width: '100%', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EDF2F7' },
+    apptTime: { fontSize: 16, fontWeight: 'bold', color: '#2D3748', width: 80 },
+    apptName: { fontSize: 16, color: '#2D3748' },
+    apptStatus: { fontSize: 12, textTransform: 'capitalize' },
+    noApptText: { color: '#A0AEC0', marginVertical: 20 },
+    closeApptButton: { marginTop: 20, backgroundColor: '#2D3748', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 25 },
+    closeApptButtonText: { color: '#fff', fontWeight: '600' }
 });
 
 export default ProfileScreen;

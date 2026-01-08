@@ -10,6 +10,7 @@ const { width } = Dimensions.get('window');
 const DiscoverScreen = ({ navigation }: any) => {
     const [search, setSearch] = useState('');
     const [filterType, setFilterType] = useState('All'); // 'All', 'Skills', 'Location'
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [users, setUsers] = useState<any[]>([]);
     const [businessProducts, setBusinessProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -53,31 +54,49 @@ const DiscoverScreen = ({ navigation }: any) => {
                 <View style={{ width: 24 }} />
             </View>
 
-            <View style={styles.filterContainer}>
-                {['All', 'Skills', 'Location'].map((f) => (
-                    <TouchableOpacity
-                        key={f}
-                        style={[styles.filterChip, filterType === f && styles.activeFilterChip]}
-                        onPress={() => setFilterType(f)}
-                    >
-                        <Text style={[styles.filterText, filterType === f && styles.activeFilterText]}>{f}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-
             <View style={styles.searchContainer}>
                 <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={styles.searchIcon}>
                     <Circle cx="11" cy="11" r="8" />
                     <Path d="M21 21L16.65 16.65" />
                 </Svg>
+                {filterType !== 'All' && (
+                    <TouchableOpacity style={styles.inBarChip} onPress={() => setFilterType('All')}>
+                        <Text style={styles.inBarChipText}>{filterType}</Text>
+                        <Svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" style={{ marginLeft: 4 }}>
+                            <Path d="M18 6L6 18M6 6l12 12" />
+                        </Svg>
+                    </TouchableOpacity>
+                )}
                 <TextInput
                     style={styles.searchInput}
-                    placeholder={`Search by ${filterType.toLowerCase()}...`}
+                    placeholder={filterType === 'All' ? "Search..." : "Type to search..."}
                     placeholderTextColor="#A0AEC0"
                     value={search}
                     onChangeText={setSearch}
+                    onFocus={() => setIsSearchFocused(true)}
+                    // We don't blur immediately to allow clicking chips
                 />
             </View>
+
+            {isSearchFocused && (
+                <View style={styles.filterContainer}>
+                    {['All', 'Skills', 'Location'].map((f) => (
+                        <TouchableOpacity
+                            key={f}
+                            style={[styles.filterChip, filterType === f && styles.activeFilterChip]}
+                            onPress={() => {
+                                setFilterType(f);
+                                // Optional: setIsSearchFocused(false);
+                            }}
+                        >
+                            <Text style={[styles.filterText, filterType === f && styles.activeFilterText]}>{f}</Text>
+                        </TouchableOpacity>
+                    ))}
+                    <TouchableOpacity onPress={() => setIsSearchFocused(false)} style={{ marginLeft: 'auto' }}>
+                         <Text style={{color: '#A0AEC0'}}>Close</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {loading ? (
@@ -112,7 +131,7 @@ const DiscoverScreen = ({ navigation }: any) => {
                 <View style={styles.gridContainer}>
                     {businessProducts.map((item) => (
                         <View key={item.id} style={styles.productCard}>
-                            <Image source={{ uri: item.image }} style={styles.productImage} />
+                            <Image source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/150' }} style={styles.productImage} />
                             <View style={styles.productInfo}>
                                 <Text style={styles.productName}>{item.name}</Text>
                                 <Text style={styles.productPrice}>{item.price}</Text>
@@ -160,15 +179,30 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         paddingHorizontal: 15,
         height: 50,
-        marginBottom: 25,
+        marginBottom: 15,
         marginHorizontal: 20,
         borderWidth: 1,
         borderColor: '#E2E8F0',
+    },
+    inBarChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#2D3748',
+        borderRadius: 15,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        marginRight: 10,
+    },
+    inBarChipText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
     },
     filterContainer: {
         flexDirection: 'row',
         paddingHorizontal: 20,
         marginBottom: 15,
+        alignItems: 'center',
     },
     filterChip: {
         paddingHorizontal: 16,

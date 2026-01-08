@@ -1,42 +1,72 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, TextInput, ActivityIndicator } from 'react-native';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { AuthContext } from '../context/AuthContext';
+import { DataService } from '../services/DataService';
+import { CONFIG } from '../Config';
 
 const { width } = Dimensions.get('window');
 
 const ShopScreen = () => {
     const { userInfo: user } = React.useContext(AuthContext);
     const [activeTab, setActiveTab] = useState('Products');
+    const [search, setSearch] = useState('');
+    const [products, setProducts] = useState<any[]>([]);
+    const [businesses, setBusinesses] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    const products = [
-        { id: 1, name: 'Product', price: '$78.00', image: 'https://images.unsplash.com/photo-1571781348782-95c0a1e067e5?fit=crop&w=200&h=200' },
-        { id: 2, name: 'Product', price: '$30.00', image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?fit=crop&w=200&h=200' },
-        { id: 3, name: 'Product', price: '$78.00', image: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?fit=crop&w=200&h=200' },
-        { id: 4, name: 'Product', price: '$30.00', image: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?fit=crop&w=200&h=200' },
-    ];
+    useEffect(() => {
+        fetchData();
+    }, [activeTab, search]);
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            if (activeTab === 'Products') {
+                const res = await DataService.discoverProducts(search);
+                if (res.success) setProducts(res.products);
+            } else {
+                const res = await DataService.discoverUsers(search, user?.id || 0);
+                if (res.success) {
+                    // Filter only business users if needed, or just show all
+                     setBusinesses(res.users.filter((u: any) => u.user_type === 'Business'));
+                }
+            }
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton}>
+                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
                         <Path d="M19 12H5M12 19l-7-7 7-7" />
                     </Svg>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Shop</Text>
-                <View style={styles.headerRight}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2" style={{ marginRight: 15 }}>
-                        <Path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0" />
-                    </Svg>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
-                        <Path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                        <Path d="M3 6h18" />
-                        <Path d="M16 10a4 4 0 0 1-8 0" />
-                    </Svg>
-                </View>
+                <View style={{ width: 24 }} />
             </View>
+
+            {/* Search Bar */}
+             <View style={styles.searchContainer}>
+                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={styles.searchIcon}>
+                    <Circle cx="11" cy="11" r="8" />
+                    <Path d="M21 21L16.65 16.65" />
+                </Svg>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder={`Search ${activeTab}...`}
+                    placeholderTextColor="#A0AEC0"
+                    value={search}
+                    onChangeText={setSearch}
+                />
+            </View>
+
 
             {/* Tabs */}
             <View style={styles.tabContainer}>
@@ -48,29 +78,52 @@ const ShopScreen = () => {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.gridContainer}>
-                    {products.map((item) => (
-                        <View key={item.id} style={styles.productCard}>
-                            <View style={styles.imageContainer}>
-                                <Image source={{ uri: item.image }} style={styles.productImage} />
-                            </View>
-                            <View style={styles.productInfo}>
-                                <Text style={styles.productName}>{item.name}</Text>
-                                <Text style={styles.productPrice}>{item.price}</Text>
-                            </View>
-                        </View>
-                    ))}
-                </View>
-            </ScrollView>
+            {loading ? (
+                 <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+                     <ActivityIndicator size="large" color="#2D3748"/>
+                 </View>
+            ) : (
+                <ScrollView contentContainerStyle={styles.scrollContent}>
+                    <View style={styles.gridContainer}>
+                        {activeTab === 'Products' ? (
+                            products.map((item) => (
+                                <View key={item.id} style={styles.productCard}>
+                                    <View style={styles.imageContainer}>
+                                        <Image source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/150' }} style={styles.productImage} />
+                                    </View>
+                                    <View style={styles.productInfo}>
+                                        <Text style={styles.productName}>{item.name}</Text>
+                                        <Text style={styles.productPrice}>{item.price} PKR</Text>
+                                    </View>
+                                </View>
+                            ))
+                        ) : (
+                            businesses.map((item) => (
+                                 <View key={item.id} style={styles.productCard}>
+                                     <View style={styles.imageContainer}>
+                                         <Image source={{ uri: item.profile_pic_url ? `${CONFIG.API_URL}/${item.profile_pic_url}` : 'https://randomuser.me/api/portraits/men/32.jpg' }} style={styles.productImage} />
+                                     </View>
+                                     <View style={styles.productInfo}>
+                                         <Text style={styles.productName}>{item.name}</Text>
+                                         <Text style={styles.productPrice}>{item.email}</Text>
+                                     </View>
+                                 </View>
+                            ))
+                        )}
+                        {((activeTab === 'Products' && products.length === 0) || (activeTab === 'Business' && businesses.length === 0)) && (
+                            <Text style={{width: '100%', textAlign: 'center', marginTop: 50, color: '#A0AEC0'}}>No results found.</Text>
+                        )}
+                    </View>
+                </ScrollView>
+            )}
 
             {/* Floating Action Buttons - Only for Business Users */}
             {user?.user_type === 'business' && (
                 <View style={styles.fabContainer}>
-                    <TouchableOpacity style={styles.fabSecondary}>
+                    <TouchableOpacity style={styles.fabSecondary} onPress={() => (navigation as any).navigate('AddProduct')}>
                         <Text style={styles.fabSecondaryText}>Add Product</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.fabSecondary}>
+                    <TouchableOpacity style={styles.fabSecondary} onPress={() => (navigation as any).navigate('Inventory')}>
                         <Text style={styles.fabSecondaryText}>Manage Inventory</Text>
                     </TouchableOpacity>
                 </View>
@@ -104,6 +157,26 @@ const styles = StyleSheet.create({
         padding: 5,
         backgroundColor: '#EDF2F7',
         borderRadius: 20,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderRadius: 25,
+        paddingHorizontal: 15,
+        height: 50,
+        marginBottom: 15,
+        marginHorizontal: 20,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        color: '#2D3748',
+        fontSize: 16,
     },
     tabContainer: {
         flexDirection: 'row',

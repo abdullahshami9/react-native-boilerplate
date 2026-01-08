@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import Svg, { Path, Plus } from 'react-native-svg';
 import { DataService } from '../services/DataService';
 import { AuthContext } from '../context/AuthContext';
 import { CONFIG } from '../Config';
+import CustomAlert from '../components/CustomAlert';
 
 const InventoryScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);
@@ -12,11 +13,20 @@ const InventoryScreen = ({ navigation }: any) => {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [tempStock, setTempStock] = useState('');
 
+    // Alert State
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState('');
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertType, setAlertType] = useState<'error' | 'success'>('error');
+
     useEffect(() => {
-        if (userInfo?.id) {
-            fetchInventory();
-        }
-    }, [userInfo?.id]);
+        const unsubscribe = navigation.addListener('focus', () => {
+             if (userInfo?.id) {
+                fetchInventory();
+            }
+        });
+        return unsubscribe;
+    }, [navigation, userInfo?.id]);
 
     const fetchInventory = async () => {
         setLoading(true);
@@ -41,16 +51,26 @@ const InventoryScreen = ({ navigation }: any) => {
         try {
             const stock = parseInt(tempStock);
             if (isNaN(stock)) {
-                Alert.alert("Invalid input", "Please enter a valid number");
+                setAlertTitle("Invalid Input");
+                setAlertMessage("Please enter a valid number.");
+                setAlertType("error");
+                setAlertVisible(true);
                 return;
             }
             const res = await DataService.updateStock(id, stock);
             if (res.success) {
                 setProducts(prev => prev.map(p => p.id === id ? { ...p, stock_quantity: stock } : p));
                 setEditingId(null);
+                setAlertTitle("Success");
+                setAlertMessage("Stock updated successfully.");
+                setAlertType("success");
+                setAlertVisible(true);
             }
         } catch (error) {
-            Alert.alert("Error", "Failed to update stock");
+            setAlertTitle("Error");
+            setAlertMessage("Failed to update stock.");
+            setAlertType("error");
+            setAlertVisible(true);
         }
     };
 
@@ -64,7 +84,11 @@ const InventoryScreen = ({ navigation }: any) => {
                     </Svg>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Inventory Management</Text>
-                <View style={{ width: 24 }} />
+                <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddProduct')}>
+                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+                        <Path d="M12 5v14M5 12h14" />
+                     </Svg>
+                </TouchableOpacity>
             </View>
 
             {loading ? (
@@ -126,11 +150,19 @@ const InventoryScreen = ({ navigation }: any) => {
                     }}
                     ListEmptyComponent={
                         <View style={styles.center}>
-                            <Text style={{ color: '#A0AEC0' }}>No products found. Add products in Profile.</Text>
+                            <Text style={{ color: '#A0AEC0' }}>No products found. Add products to start selling.</Text>
                         </View>
                     }
                 />
             )}
+
+            <CustomAlert
+                visible={alertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                type={alertType}
+                onDismiss={() => setAlertVisible(false)}
+            />
         </View>
     );
 };
@@ -154,6 +186,11 @@ const styles = StyleSheet.create({
         color: '#2D3748',
     },
     backButton: {
+        padding: 5,
+        backgroundColor: '#EDF2F7',
+        borderRadius: 20,
+    },
+    addButton: {
         padding: 5,
         backgroundColor: '#EDF2F7',
         borderRadius: 20,

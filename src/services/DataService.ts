@@ -150,6 +150,15 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
+    discoverProducts: async (search: string) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/products/discover`, { params: { search } });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Discover Products Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
 
     // --- ORDERS ---
     createOrder: async (sellerId: number, items: any[]) => {

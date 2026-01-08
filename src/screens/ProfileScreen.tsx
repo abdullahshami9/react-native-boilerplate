@@ -23,6 +23,7 @@ const ContributionGraph = ({ appointments, onDateClick }: any) => {
 
     const getColor = (dateStr: string) => {
         const count = appointments.filter((a: any) => {
+            if (!a.appointment_date) return false;
             const apptDate = a.appointment_date.split('T')[0];
             return apptDate === dateStr;
         }).length;
@@ -146,6 +147,7 @@ const ProfileScreen = ({ navigation }: any) => {
 
     const handleDateClick = (dateStr: string) => {
         const dayAppointments = appointments.filter((a: any) => {
+            if (!a.appointment_date) return false;
             const apptDate = a.appointment_date.split('T')[0];
             return apptDate === dateStr;
         });
@@ -356,7 +358,7 @@ const ProfileScreen = ({ navigation }: any) => {
 
                     {isBusinessUser && (
                         <View>
-                            {products.length === 0 && !isEditing && <Text style={{ color: '#A0AEC0', textAlign: 'center' }}>No products added.</Text>}
+                            {products.length === 0 && !isEditing && <Text style={{ color: '#A0AEC0', textAlign: 'center', marginBottom: 10 }}>No products added.</Text>}
                             {products.map((prod: any, index: number) => (
                                 <View key={index} style={styles.productListItem}>
                                     <View style={{flexDirection:'row', alignItems:'center'}}>
@@ -369,24 +371,12 @@ const ProfileScreen = ({ navigation }: any) => {
                                     </View>
                                     <View style={{flexDirection: 'row', alignItems: 'center'}}>
                                          <Text style={styles.productListItemPrice}>{prod.price} PKR</Text>
-                                         {isEditing && (
-                                              <TouchableOpacity onPress={() => handleUploadProductImage(prod.id)} style={{marginLeft: 10, padding: 5}}>
-                                                  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A9EFF" strokeWidth="2">
-                                                     <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                                                     <Circle cx="12" cy="13" r="4"/>
-                                                  </Svg>
-                                              </TouchableOpacity>
-                                         )}
                                     </View>
                                 </View>
                             ))}
-                            {isEditing && (
-                                <View style={styles.addProductForm}>
-                                    <TextInput style={[styles.smallInput, { flex: 2, marginRight: 5 }]} placeholder="Product Name" value={newProduct.name} onChangeText={(t) => setNewProduct(prev => ({ ...prev, name: t }))} />
-                                    <TextInput style={[styles.smallInput, { flex: 1, marginRight: 5 }]} placeholder="Price" keyboardType="numeric" value={newProduct.price} onChangeText={(t) => setNewProduct(prev => ({ ...prev, price: t }))} />
-                                    <TouchableOpacity onPress={handleAddProduct} style={styles.addButton}><Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><Path d="M12 5v14M5 12h14"></Path></Svg></TouchableOpacity>
-                                </View>
-                            )}
+                            <TouchableOpacity style={[styles.mainButton, { marginTop: 15, width: '100%' }]} onPress={() => navigation.navigate('Inventory')}>
+                                <Text style={styles.mainButtonText}>Manage Inventory</Text>
+                            </TouchableOpacity>
                         </View>
                     )}
                 </View>

@@ -1,10 +1,10 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, StatusBar as RNStatusBar, Dimensions, ScrollView, Animated, Switch, FlatList } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { AuthContext } from '../context/AuthContext';
 import { DataService } from '../services/DataService';
+import { CONFIG } from '../Config';
 
 const { width, height } = Dimensions.get('window');
 
@@ -19,6 +19,7 @@ const HomeScreen = ({ navigation, route }: any) => {
     // Dynamic Data State
     const [dashboardData, setDashboardData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [reports, setReports] = useState<any>({ daily: [], monthlyTotal: 0 });
 
     const isFocused = useIsFocused();
 
@@ -36,6 +37,12 @@ const HomeScreen = ({ navigation, route }: any) => {
                 const res = await DataService.getProducts(user.id);
                 if (res.success) {
                     setDashboardData(res.products);
+                }
+
+                // Fetch Reports
+                const reportRes = await DataService.getSalesReport(user.id);
+                if (reportRes.success) {
+                    setReports({ daily: reportRes.daily, monthlyTotal: reportRes.monthlyTotal });
                 }
             } else {
                 // Fetch Availability/Appointments for Individual
@@ -75,6 +82,38 @@ const HomeScreen = ({ navigation, route }: any) => {
 
     const renderBusinessDashboard = () => (
         <View>
+            {/* Financial Summary */}
+            <View style={styles.summaryContainer}>
+                <View style={[styles.summaryCard, { backgroundColor: theme.cardBg }]}>
+                    <Text style={[styles.summaryLabel, { color: theme.subText }]}>Monthly Sales</Text>
+                    <Text style={[styles.summaryValue, { color: theme.text }]}>PKR {reports.monthlyTotal || 0}</Text>
+                </View>
+                <View style={[styles.summaryCard, { backgroundColor: theme.cardBg }]}>
+                    <Text style={[styles.summaryLabel, { color: theme.subText }]}>Products</Text>
+                    <Text style={[styles.summaryValue, { color: theme.text }]}>{dashboardData.length}</Text>
+                </View>
+            </View>
+
+            {/* Daily Sales Chart (Simple Bar) */}
+            {reports.daily && reports.daily.length > 0 && (
+                <View style={[styles.chartContainer, { backgroundColor: theme.cardBg }]}>
+                    <Text style={[styles.sectionTitle, { color: theme.text, fontSize: 16, marginBottom: 15 }]}>Last 7 Days Sales</Text>
+                    <View style={styles.chartBars}>
+                        {reports.daily.slice(0, 7).reverse().map((day: any, index: number) => {
+                            const maxVal = Math.max(...reports.daily.map((d: any) => d.total));
+                            const heightPct = maxVal > 0 ? (day.total / maxVal) * 100 : 0;
+                            return (
+                                <View key={index} style={styles.barWrapper}>
+                                    <View style={[styles.bar, { height: `${Math.max(heightPct, 5)}%`, backgroundColor: '#4A9EFF' }]} />
+                                    <Text style={[styles.barLabel, { color: theme.subText }]}>{new Date(day.date).getDate()}</Text>
+                                </View>
+                            );
+                        })}
+                    </View>
+                </View>
+            )}
+
+
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>Your Products</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
@@ -91,15 +130,23 @@ const HomeScreen = ({ navigation, route }: any) => {
                     {dashboardData.map((prod: any, index: number) => (
                         <View key={index} style={[styles.productCard, { backgroundColor: theme.cardBg }]}>
                             <View style={styles.productIconPlaceholder}>
-                                <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
-                                    <Path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></Path>
-                                    <Path d="M3.27 6.96L12 12.01l8.73-5.05"></Path>
-                                    <Line x1="12" y1="22.08" x2="12" y2="12"></Line>
-                                </Svg>
+                                {prod.image_url ? (
+                                    <Image
+                                        source={{ uri: `${CONFIG.API_URL}/${prod.image_url}?t=${new Date().getTime()}` }}
+                                        style={{ width: '100%', height: '100%', borderRadius: 8 }}
+                                    />
+                                ) : (
+                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
+                                        <Path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></Path>
+                                        <Path d="M3.27 6.96L12 12.01l8.73-5.05"></Path>
+                                        <Line x1="12" y1="22.08" x2="12" y2="12"></Line>
+                                    </Svg>
+                                )}
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={[styles.productName, { color: theme.text }]}>{prod.name}</Text>
                                 <Text style={[styles.productPrice, { color: theme.subText }]}>PKR {prod.price}</Text>
+                                <Text style={[styles.productStock, { color: prod.stock_quantity < 5 ? '#E53E3E' : theme.subText }]}>Stock: {prod.stock_quantity || 0}</Text>
                             </View>
                         </View>
                     ))}
@@ -133,6 +180,16 @@ const HomeScreen = ({ navigation, route }: any) => {
         </View>
     );
 
+    const getProfilePicUrl = () => {
+        if (user?.profile_pic_url) {
+            return `${CONFIG.API_URL}/${user.profile_pic_url}?t=${new Date().getTime()}`;
+        }
+        // Fallback or Random
+        return user.user_type === 'business'
+             ? 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?fit=crop&w=100&h=100'
+             : 'https://randomuser.me/api/portraits/men/32.jpg';
+    };
+
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {isFocused && <RNStatusBar backgroundColor={theme.headerBg} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />}
@@ -149,7 +206,7 @@ const HomeScreen = ({ navigation, route }: any) => {
                 <Text style={[styles.headerTitle, { color: theme.text }]}>{user.user_type === 'business' ? 'Business Hub' : 'My Dashboard'}</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Profile', { user })}>
                     <View style={styles.profileIconContainer}>
-                        <Text style={styles.profileInitials}>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</Text>
+                         <Image source={{ uri: getProfilePicUrl() }} style={{ width: 35, height: 35, borderRadius: 17.5 }} />
                     </View>
                 </TouchableOpacity>
             </View>
@@ -163,16 +220,6 @@ const HomeScreen = ({ navigation, route }: any) => {
                             ? 'Manage your shop and sales here.'
                             : 'Share your skills and manage appointments.'}
                     </Text>
-                </View>
-
-                {/* KPI/Grid */}
-                <View style={styles.grid}>
-                    {(user.user_type === 'business' ? ['Total Sales', 'Orders', 'Inventory', 'Analytics'] : ['Views', 'Bookings', 'Messages', 'Settings']).map((item, index) => (
-                        <View key={index} style={[styles.card, { backgroundColor: theme.cardBg }]}>
-                            <Text style={[styles.cardValue, { color: theme.text }]}>{Math.floor(Math.random() * 100)}</Text>
-                            <Text style={[styles.cardText, { color: theme.subText }]}>{item}</Text>
-                        </View>
-                    ))}
                 </View>
 
                 {/* Dashboard Content */}
@@ -189,20 +236,33 @@ const HomeScreen = ({ navigation, route }: any) => {
                     <Text style={[styles.navText, { color: '#4A9EFF' }]}>Home</Text>
                 </TouchableOpacity>
 
+                {user.user_type === 'business' && (
+                     <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Inventory')}>
+                        <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
+                            <Path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></Path>
+                            <Line x1="3" y1="6" x2="21" y2="6"></Line>
+                            <Path d="M16 10a4 4 0 0 1-8 0"></Path>
+                        </Svg>
+                        <Text style={[styles.navText, { color: theme.subText }]}>Inventory</Text>
+                    </TouchableOpacity>
+                )}
+
+                <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Connections')}>
+                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
+                         <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></Path>
+                         <Circle cx="9" cy="7" r="4"></Circle>
+                         <Path d="M23 21v-2a4 4 0 0 0-3-3.87"></Path>
+                         <Path d="M16 3.13a4 4 0 0 1 0 7.75"></Path>
+                     </Svg>
+                     <Text style={[styles.navText, { color: theme.subText }]}>Network</Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile', { user })}>
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.iconColor} strokeWidth="2">
                         <Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></Path>
                         <Circle cx="12" cy="7" r="4"></Circle>
                     </Svg>
                     <Text style={[styles.navText, { color: theme.subText }]}>Profile</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.navItem}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.iconColor} strokeWidth="2">
-                        <Circle cx="12" cy="12" r="3"></Circle>
-                        <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></Path>
-                    </Svg>
-                    <Text style={[styles.navText, { color: theme.subText }]}>Settings</Text>
                 </TouchableOpacity>
             </View>
 
@@ -214,8 +274,8 @@ const HomeScreen = ({ navigation, route }: any) => {
             {/* Sidebar Drawer */}
             <Animated.View style={[styles.sidebar, { transform: [{ translateX: sidebarAnim }], backgroundColor: theme.headerBg }]}>
                 <View style={styles.sidebarHeader}>
-                    <View style={[styles.profileIconContainer, { width: 60, height: 60, borderRadius: 30, marginBottom: 10 }]}>
-                        <Text style={[styles.profileInitials, { fontSize: 24 }]}>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</Text>
+                    <View style={[styles.profileIconContainer, { width: 60, height: 60, borderRadius: 30, marginBottom: 10, backgroundColor: 'transparent' }]}>
+                        <Image source={{ uri: getProfilePicUrl() }} style={{ width: 60, height: 60, borderRadius: 30 }} />
                     </View>
                     <Text style={[styles.sidebarName, { color: theme.text }]}>{user.name}</Text>
                     <Text style={[styles.sidebarEmail, { color: theme.subText }]}>{user.email}</Text>
@@ -228,9 +288,14 @@ const HomeScreen = ({ navigation, route }: any) => {
                     <TouchableOpacity style={styles.sidebarItem} onPress={() => { toggleSidebar(); navigation.navigate('Profile', { user }); }}>
                         <Text style={[styles.sidebarItemText, { color: theme.text }]}>Profile</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.sidebarItem} onPress={() => { }}>
-                        <Text style={[styles.sidebarItemText, { color: theme.text }]}>Settings</Text>
+                    <TouchableOpacity style={styles.sidebarItem} onPress={() => { toggleSidebar(); navigation.navigate('Connections'); }}>
+                        <Text style={[styles.sidebarItemText, { color: theme.text }]}>My Network</Text>
                     </TouchableOpacity>
+                     {user.user_type === 'business' && (
+                        <TouchableOpacity style={styles.sidebarItem} onPress={() => { toggleSidebar(); navigation.navigate('Inventory'); }}>
+                            <Text style={[styles.sidebarItemText, { color: theme.text }]}>Inventory</Text>
+                        </TouchableOpacity>
+                     )}
 
                     {/* Dark Mode Toggle */}
                     <View style={styles.sidebarItemRow}>
@@ -293,6 +358,7 @@ const styles = StyleSheet.create({
     },
     content: {
         padding: 20,
+        paddingBottom: 100
     },
     welcomeCard: {
         borderRadius: 15,
@@ -369,6 +435,11 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginTop: 2,
     },
+    productStock: {
+        fontSize: 12,
+        marginTop: 2,
+        fontWeight: '500',
+    },
     availabilityList: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -386,6 +457,8 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         borderTopWidth: 1,
         paddingBottom: 20,
+        position: 'absolute',
+        bottom: 0, left: 0, right: 0
     },
     navItem: {
         alignItems: 'center',
@@ -450,8 +523,55 @@ const styles = StyleSheet.create({
     sidebarItemText: {
         fontSize: 16,
         fontWeight: '500',
+    },
+    summaryContainer: {
+        flexDirection: 'row',
+        gap: 15,
+        marginBottom: 20,
+    },
+    summaryCard: {
+        flex: 1,
+        padding: 15,
+        borderRadius: 12,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 1,
+    },
+    summaryLabel: {
+        fontSize: 14,
+        marginBottom: 5,
+    },
+    summaryValue: {
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    chartContainer: {
+        padding: 15,
+        borderRadius: 15,
+        marginBottom: 20,
+    },
+    chartBars: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        height: 100,
+        paddingTop: 10,
+    },
+    barWrapper: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    bar: {
+        width: 10,
+        borderRadius: 5,
+    },
+    barLabel: {
+        fontSize: 10,
+        marginTop: 5,
     }
 });
 
 export default HomeScreen;
-

@@ -1,58 +1,166 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { DataService } from '../services/DataService';
+import { AuthContext } from '../context/AuthContext';
+import { CONFIG } from '../Config';
 
 const ConnectionsScreen = () => {
-    const connections = [
-        { id: 1, name: 'Aamisons', role: 'Skilled Individual', image: 'https://randomuser.me/api/portraits/men/32.jpg' },
-        { id: 2, name: 'Name Smith', role: 'User Photo', image: 'https://randomuser.me/api/portraits/men/44.jpg' },
-        { id: 3, name: 'Dartin Scare', role: 'Skilled Individual', image: 'https://randomuser.me/api/portraits/men/85.jpg' },
-        { id: 4, name: 'Justin Mare', role: 'Skilled Individual', image: 'https://randomuser.me/api/portraits/men/22.jpg' },
-    ];
+    const { userInfo } = useContext(AuthContext);
+    const [activeTab, setActiveTab] = useState('connections'); // 'connections' | 'discover'
+    const [connections, setConnections] = useState<any[]>([]);
+    const [discoverUsers, setDiscoverUsers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [searchText, setSearchText] = useState('');
+
+    useEffect(() => {
+        if (activeTab === 'connections') {
+            fetchConnections();
+        } else {
+            fetchDiscover();
+        }
+    }, [activeTab]);
+
+    const fetchConnections = async () => {
+        setLoading(true);
+        try {
+            const res = await DataService.getConnections(userInfo.id);
+            if (res.success) {
+                setConnections(res.connections);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchDiscover = async () => {
+        setLoading(true);
+        try {
+            const res = await DataService.discoverUsers(searchText, userInfo.id);
+            if (res.success) {
+                setDiscoverUsers(res.users);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSearch = () => {
+        if (activeTab === 'discover') {
+            fetchDiscover();
+        }
+    };
+
+    const handleConnect = async (userId: number, currentStatus: string) => {
+        try {
+            const action = currentStatus === 'accepted' ? 'unfollow' : 'follow';
+            const res = await DataService.toggleConnection(userInfo.id, userId, action);
+            if (res.success) {
+                if (activeTab === 'connections') {
+                    fetchConnections();
+                } else {
+                    // Update UI optimistically or refetch
+                    // For discover tab, maybe show 'Requested' or just button changes
+                    fetchDiscover();
+                }
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const renderItem = ({ item }: any) => {
+        const isConnected = connections.some(c => c.id === item.id);
+        const imageUrl = item.profile_pic_url
+            ? `${CONFIG.API_URL}/${item.profile_pic_url}`
+            : 'https://randomuser.me/api/portraits/men/32.jpg';
+
+        return (
+            <View style={styles.card}>
+                <Image source={{ uri: imageUrl }} style={styles.avatar} />
+                <View style={styles.info}>
+                    <Text style={styles.name}>{item.name}</Text>
+                    <Text style={styles.role}>{item.user_type} • {item.email}</Text>
+                </View>
+                {activeTab === 'discover' ? (
+                    <TouchableOpacity
+                        style={[styles.connectButton, isConnected && styles.connectedButton]}
+                        onPress={() => handleConnect(item.id, isConnected ? 'accepted' : 'none')}
+                    >
+                        <Text style={[styles.connectButtonText, isConnected && styles.connectedButtonText]}>
+                            {isConnected ? 'Following' : 'Follow'}
+                        </Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        style={[styles.connectButton, styles.disconnectButton]}
+                        onPress={() => handleConnect(item.id, 'accepted')}
+                    >
+                        <Text style={[styles.connectButtonText, styles.disconnectButtonText]}>
+                            Unfollow
+                        </Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+        );
+    };
 
     return (
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
-                        <Path d="M19 12H5M12 19l-7-7 7-7" />
-                    </Svg>
+                <Text style={styles.headerTitle}>Network</Text>
+            </View>
+
+            {/* Tabs */}
+            <View style={styles.tabs}>
+                <TouchableOpacity style={[styles.tab, activeTab === 'connections' && styles.activeTab]} onPress={() => setActiveTab('connections')}>
+                    <Text style={[styles.tabText, activeTab === 'connections' && styles.activeTabText]}>Following</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Connection</Text>
-                <View style={{ width: 24 }} />
+                <TouchableOpacity style={[styles.tab, activeTab === 'discover' && styles.activeTab]} onPress={() => setActiveTab('discover')}>
+                    <Text style={[styles.tabText, activeTab === 'discover' && styles.activeTabText]}>Discover</Text>
+                </TouchableOpacity>
             </View>
 
-            {/* Search */}
-            <View style={styles.searchContainer}>
-                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={styles.searchIcon}>
-                    <Circle cx="11" cy="11" r="8" />
-                    <Path d="M21 21L16.65 16.65" />
-                </Svg>
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search"
-                    placeholderTextColor="#A0AEC0"
-                />
-            </View>
+            {/* Search (only for discover) */}
+            {activeTab === 'discover' && (
+                <View style={styles.searchContainer}>
+                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={styles.searchIcon}>
+                        <Circle cx="11" cy="11" r="8" />
+                        <Path d="M21 21L16.65 16.65" />
+                    </Svg>
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search users..."
+                        placeholderTextColor="#A0AEC0"
+                        value={searchText}
+                        onChangeText={setSearchText}
+                        onSubmitEditing={handleSearch}
+                    />
+                </View>
+            )}
 
-            <FlatList
-                data={connections}
-                keyExtractor={(item) => item.id.toString()}
-                contentContainerStyle={styles.listContent}
-                renderItem={({ item }) => (
-                    <View style={styles.card}>
-                        <Image source={{ uri: item.image }} style={styles.avatar} />
-                        <View style={styles.info}>
-                            <Text style={styles.name}>{item.name}</Text>
-                            <Text style={styles.role}>{item.role}</Text>
+            {loading ? (
+                <View style={styles.center}><ActivityIndicator size="large" color="#2D3748" /></View>
+            ) : (
+                <FlatList
+                    data={activeTab === 'connections' ? connections : discoverUsers}
+                    keyExtractor={(item) => item.id.toString()}
+                    contentContainerStyle={styles.listContent}
+                    renderItem={renderItem}
+                    ListEmptyComponent={
+                        <View style={styles.center}>
+                            <Text style={{ color: '#A0AEC0', marginTop: 50 }}>
+                                {activeTab === 'connections' ? "You aren't following anyone yet." : "No users found."}
+                            </Text>
                         </View>
-                        <TouchableOpacity style={styles.connectButton}>
-                            <Text style={styles.connectButtonText}>Connect</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            />
+                    }
+                />
+            )}
         </View>
     );
 };
@@ -63,32 +171,49 @@ const styles = StyleSheet.create({
         backgroundColor: '#F7FAFC',
     },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         paddingTop: 50,
         paddingHorizontal: 20,
-        paddingBottom: 20,
+        paddingBottom: 15,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#EDF2F7',
     },
     headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: 22,
+        fontWeight: 'bold',
         color: '#2D3748',
     },
-    backButton: {
-        padding: 5,
-        backgroundColor: '#EDF2F7',
-        borderRadius: 20,
+    tabs: {
+        flexDirection: 'row',
+        padding: 10,
+        backgroundColor: '#fff',
+    },
+    tab: {
+        marginRight: 20,
+        paddingVertical: 10,
+        paddingHorizontal: 5,
+    },
+    activeTab: {
+        borderBottomWidth: 2,
+        borderBottomColor: '#2D3748',
+    },
+    tabText: {
+        fontSize: 16,
+        color: '#A0AEC0',
+        fontWeight: '600',
+    },
+    activeTabText: {
+        color: '#2D3748',
     },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#fff',
-        borderRadius: 25,
+        borderRadius: 10,
         paddingHorizontal: 15,
         height: 50,
-        marginHorizontal: 20,
-        marginBottom: 20,
+        margin: 20,
+        marginBottom: 10,
         borderWidth: 1,
         borderColor: '#E2E8F0',
     },
@@ -101,22 +226,27 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
     listContent: {
-        paddingHorizontal: 20,
+        padding: 20,
     },
     card: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fff', // Or transparent as per designs? Design looks like list items on white/grey bg
-        // Actually design has list items with avatars
-        paddingVertical: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#EDF2F7',
+        backgroundColor: '#fff',
+        padding: 15,
+        borderRadius: 12,
+        marginBottom: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
     },
     avatar: {
         width: 50,
         height: 50,
         borderRadius: 25,
         marginRight: 15,
+        backgroundColor: '#EDF2F7'
     },
     info: {
         flex: 1,
@@ -127,20 +257,38 @@ const styles = StyleSheet.create({
         color: '#2D3748',
     },
     role: {
-        fontSize: 14,
+        fontSize: 12,
         color: '#718096',
+        marginTop: 2,
     },
     connectButton: {
         backgroundColor: '#2D3748',
         paddingVertical: 8,
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
         borderRadius: 20,
+    },
+    connectedButton: {
+        backgroundColor: '#E2E8F0',
+    },
+    disconnectButton: {
+        backgroundColor: '#FFF5F5',
     },
     connectButtonText: {
         color: '#fff',
         fontSize: 12,
         fontWeight: '600',
     },
+    connectedButtonText: {
+        color: '#4A5568',
+    },
+    disconnectButtonText: {
+        color: '#E53E3E',
+    },
+    center: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    }
 });
 
 export default ConnectionsScreen;

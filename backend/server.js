@@ -346,6 +346,15 @@ app.get('/api/users/discover', (req, res) => {
     });
 });
 
+app.get('/api/products/discover', (req, res) => {
+    const search = req.query.search ? `%${req.query.search}%` : '%';
+    const query = 'SELECT * FROM products WHERE name LIKE ? LIMIT 50';
+    dbQuery(query, [search], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, products: results });
+    });
+});
+
 // --- PRODUCTS & INVENTORY ---
 
 app.post('/api/products', (req, res) => {

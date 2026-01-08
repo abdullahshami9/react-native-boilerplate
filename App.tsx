@@ -10,6 +10,8 @@ import SignupScreen from './src/screens/SignupScreen';
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import ProductDetailsScreen from './src/screens/ProductDetailsScreen';
+import InventoryScreen from './src/screens/InventoryScreen';
+import AddProductScreen from './src/screens/AddProductScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -36,6 +38,8 @@ const AppNav = () => {
           <>
             <Stack.Screen name="Main" component={BottomTabNavigator} />
             <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+            <Stack.Screen name="Inventory" component={InventoryScreen} />
+            <Stack.Screen name="AddProduct" component={AddProductScreen} />
           </>
         ) : (
           <>

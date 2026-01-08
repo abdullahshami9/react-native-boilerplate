@@ -1,27 +1,42 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { DataService } from '../services/DataService';
+import { AuthContext } from '../context/AuthContext';
+import { CONFIG } from '../Config';
 
 const { width } = Dimensions.get('window');
 
-const DiscoverScreen = () => {
+const DiscoverScreen = ({ navigation }: any) => {
     const [search, setSearch] = useState('');
+    const [filterType, setFilterType] = useState('All'); // 'All', 'Skills', 'Location'
+    const [users, setUsers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const { userInfo } = React.useContext(AuthContext);
 
-    const skilledIndividuals = [
-        { id: 1, name: 'Sons Mmoons', role: 'Artist', skills: ['Skill', 'Sketching'], image: 'https://randomuser.me/api/portraits/women/44.jpg' },
-        { id: 2, name: 'Bemn Bony', role: 'Student', skills: ['Academic', 'Education'], image: 'https://randomuser.me/api/portraits/men/32.jpg' },
-    ];
+    React.useEffect(() => {
+        fetchUsers();
+    }, [search]); // Debounce usually recommended, but keeping simple
 
-    const businessProducts = [
-        { id: 1, name: 'Product', price: '$30.00', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80' },
-        { id: 2, name: 'Product', price: '$30.00', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80' },
-    ];
+    const fetchUsers = async () => {
+        setLoading(true);
+        try {
+            const res = await DataService.discoverUsers(search, userInfo?.id || 0);
+            if (res.success) {
+                setUsers(res.users);
+            }
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton}>
+                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
                         <Path d="M19 12H5M12 19l-7-7 7-7" />
                     </Svg>
@@ -30,41 +45,53 @@ const DiscoverScreen = () => {
                 <View style={{ width: 24 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                {/* Search Bar */}
-                <View style={styles.searchContainer}>
-                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={styles.searchIcon}>
-                        <Circle cx="11" cy="11" r="8" />
-                        <Path d="M21 21L16.65 16.65" />
-                    </Svg>
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search"
-                        placeholderTextColor="#A0AEC0"
-                        value={search}
-                        onChangeText={setSearch}
-                    />
-                </View>
+            <View style={styles.filterContainer}>
+                {['All', 'Skills', 'Location'].map((f) => (
+                    <TouchableOpacity
+                        key={f}
+                        style={[styles.filterChip, filterType === f && styles.activeFilterChip]}
+                        onPress={() => setFilterType(f)}
+                    >
+                        <Text style={[styles.filterText, filterType === f && styles.activeFilterText]}>{f}</Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
 
-                {/* Skilled Individuals Horizontal Scroll */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-                    {skilledIndividuals.map((item) => (
-                        <View key={item.id} style={styles.card}>
-                            <Image source={{ uri: item.image }} style={styles.cardImage} />
-                            <Text style={styles.cardName}>{item.name}</Text>
-                            <View style={styles.skillsContainer}>
-                                {item.skills.map((skill, index) => (
-                                    <View key={index} style={styles.skillBadge}>
-                                        <Text style={styles.skillText}>{skill}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                            <TouchableOpacity style={styles.connectButton}>
-                                <Text style={styles.connectButtonText}>Connect</Text>
-                            </TouchableOpacity>
-                        </View>
-                    ))}
-                </ScrollView>
+            <View style={styles.searchContainer}>
+                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={styles.searchIcon}>
+                    <Circle cx="11" cy="11" r="8" />
+                    <Path d="M21 21L16.65 16.65" />
+                </Svg>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder={`Search by ${filterType.toLowerCase()}...`}
+                    placeholderTextColor="#A0AEC0"
+                    value={search}
+                    onChangeText={setSearch}
+                />
+            </View>
+
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                {loading ? (
+                    <ActivityIndicator size="large" color="#2D3748" style={{ marginTop: 20 }} />
+                ) : (
+                    <>
+                        <Text style={styles.sectionTitle}>People</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                            {users.map((item) => (
+                                <View key={item.id} style={styles.card}>
+                                    <Image source={{ uri: item.profile_pic_url ? `${CONFIG.API_URL}/${item.profile_pic_url}` : 'https://randomuser.me/api/portraits/men/32.jpg' }} style={styles.cardImage} />
+                                    <Text style={styles.cardName}>{item.name}</Text>
+                                    <Text style={styles.cardRole}>{item.user_type}</Text>
+                                    <TouchableOpacity style={styles.connectButton}>
+                                        <Text style={styles.connectButtonText}>Connect</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                            {users.length === 0 && <Text style={{ color: '#A0AEC0', padding: 20 }}>No users found.</Text>}
+                        </ScrollView>
+                    </>
+                )}
 
                 {/* Business Products */}
                 <View style={styles.sectionHeader}>
@@ -126,8 +153,32 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         height: 50,
         marginBottom: 25,
+        marginHorizontal: 20,
         borderWidth: 1,
         borderColor: '#E2E8F0',
+    },
+    filterContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: 20,
+        marginBottom: 15,
+    },
+    filterChip: {
+        paddingHorizontal: 16,
+        paddingVertical: 6,
+        backgroundColor: '#EDF2F7',
+        borderRadius: 20,
+        marginRight: 10,
+    },
+    activeFilterChip: {
+        backgroundColor: '#2D3748',
+    },
+    filterText: {
+        color: '#718096',
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    activeFilterText: {
+        color: '#fff',
     },
     searchIcon: {
         marginRight: 10,
@@ -166,24 +217,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#2D3748',
-        marginBottom: 8,
+        marginBottom: 4,
     },
-    skillsContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        gap: 5,
-        marginBottom: 15,
-    },
-    skillBadge: {
-        backgroundColor: '#EDF2F7',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 10,
-    },
-    skillText: {
-        fontSize: 10,
+    cardRole: {
+        fontSize: 12,
         color: '#718096',
+        marginBottom: 10,
     },
     connectButton: {
         backgroundColor: '#2D3748',

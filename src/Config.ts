@@ -1,6 +1,6 @@
 export const CONFIG = {
-    // API_URL: 'https://unflighty-doretha-nondevotional.ngrok-free.dev', // Ngrok Tunnel URL
-    API_URL: 'http://192.168.1.103:3000',
+    API_URL: 'https://unflighty-doretha-nondevotional.ngrok-free.dev', // Ngrok Tunnel URL
+    // API_URL: 'http://192.168.1.103:3000',
     ENABLE_BIOMETRIC: false, // User requested toggle
 };
 

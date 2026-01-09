@@ -355,10 +355,10 @@ const ProfileScreen = ({ navigation }: any) => {
                     <Image source={{ uri: getProfilePicUrl() }} style={styles.avatar} />
                     {isEditing && (
                         <TouchableOpacity style={styles.cameraIcon} onPress={handleUploadProfilePic}>
-                             <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                                <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                                <Circle cx="12" cy="13" r="4"/>
-                             </Svg>
+                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                                <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                <Circle cx="12" cy="13" r="4" />
+                            </Svg>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -382,7 +382,7 @@ const ProfileScreen = ({ navigation }: any) => {
 
                 {/* Calendar Component */}
                 <View style={styles.sectionContainer}>
-                     <ContributionGraph appointments={appointments} onDateClick={handleDateClick} />
+                    <ContributionGraph appointments={appointments} onDateClick={handleDateClick} />
                 </View>
 
                 <View style={styles.sectionContainer}>
@@ -412,16 +412,16 @@ const ProfileScreen = ({ navigation }: any) => {
                             {products.length === 0 && !isEditing && <Text style={{ color: '#A0AEC0', textAlign: 'center', marginBottom: 10 }}>No products added.</Text>}
                             {products.map((prod: any, index: number) => (
                                 <View key={index} style={styles.productListItem}>
-                                    <View style={{flexDirection:'row', alignItems:'center'}}>
-                                         {prod.image_url ? (
-                                             <Image source={{uri: `${CONFIG.API_URL}/${prod.image_url}?t=${new Date().getTime()}`}} style={{width: 30, height: 30, borderRadius: 5, marginRight: 10}} />
-                                         ) : (
-                                             <View style={{width: 30, height: 30, backgroundColor: '#EDF2F7', marginRight: 10, borderRadius: 5}}/>
-                                         )}
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        {prod.image_url ? (
+                                            <Image source={{ uri: `${CONFIG.API_URL}/${prod.image_url}?t=${new Date().getTime()}` }} style={{ width: 30, height: 30, borderRadius: 5, marginRight: 10 }} />
+                                        ) : (
+                                            <View style={{ width: 30, height: 30, backgroundColor: '#EDF2F7', marginRight: 10, borderRadius: 5 }} />
+                                        )}
                                         <Text style={styles.productListItemName}>{prod.name}</Text>
                                     </View>
-                                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                                         <Text style={styles.productListItemPrice}>{prod.price} PKR</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <Text style={styles.productListItemPrice}>{prod.price} PKR</Text>
                                     </View>
                                 </View>
                             ))}
@@ -439,7 +439,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 )}
 
                 <View style={{ height: 100 }} />
-            </ScrollView>
+            </Animated.ScrollView>
 
             {modalVisible && (
                 <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
@@ -473,11 +473,11 @@ const ProfileScreen = ({ navigation }: any) => {
                         <View style={styles.apptModalContent}>
                             <View style={styles.apptHeader}>
                                 <TouchableOpacity onPress={() => changeDate(-1)} style={styles.arrowButton}>
-                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2"><Path d="M15 18l-6-6 6-6"/></Svg>
+                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2"><Path d="M15 18l-6-6 6-6" /></Svg>
                                 </TouchableOpacity>
                                 <Text style={styles.apptDateTitle}>{selectedDate ? new Date(selectedDate).toDateString() : ''}</Text>
                                 <TouchableOpacity onPress={() => changeDate(1)} style={styles.arrowButton}>
-                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2"><Path d="M9 18l6-6-6-6"/></Svg>
+                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2"><Path d="M9 18l6-6-6-6" /></Svg>
                                 </TouchableOpacity>
                             </View>
 
@@ -485,7 +485,7 @@ const ProfileScreen = ({ navigation }: any) => {
                                 {selectedAppts.length > 0 ? (
                                     selectedAppts.map((a: any, i) => (
                                         <View key={i} style={styles.apptItem}>
-                                            <Text style={styles.apptTime}>{new Date(a.appointment_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+                                            <Text style={styles.apptTime}>{new Date(a.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                                             <View>
                                                 <Text style={styles.apptName}>{a.provider_id === userInfo.id ? a.customer_name : a.provider_name}</Text>
                                                 <Text style={[styles.apptStatus, { color: a.status === 'confirmed' ? 'green' : '#718096' }]}>{a.status}</Text>
@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
     editForm: { width: '100%', paddingHorizontal: 40, alignItems: 'center' },
     input: { width: '100%', backgroundColor: '#fff', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingHorizontal: 15, paddingVertical: 10, fontSize: 16, color: '#2D3748', textAlign: 'center' },
     qrContainer: { marginTop: 10, alignItems: 'center', justifyContent: 'center', position: 'absolute', top: 60, left: 0, right: 0, zIndex: 10 },
-    qrWrapper: { padding: 10, backgroundColor: '#fff', borderRadius: 20, shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 },
+    qrWrapper: { padding: 10, backgroundColor: '#fff', borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 },
     contentContainer: { alignItems: 'center', paddingBottom: 50, paddingTop: 260 }, // Padding top matches header height to start content below
     avatarWrapper: { marginTop: -40, width: 100, height: 100, borderRadius: 50, borderWidth: 4, borderColor: '#F7FAFC', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 10, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 5, zIndex: 2 },
     avatar: { width: 92, height: 92, borderRadius: 46 },

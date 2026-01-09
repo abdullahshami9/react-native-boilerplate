@@ -9,10 +9,9 @@ import { CONFIG } from '../Config';
 const { width, height } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation, route }: any) => {
-    const { userInfo, logout } = React.useContext(AuthContext);
+    const { userInfo, logout, isDarkMode, toggleTheme } = React.useContext(AuthContext);
     const user = userInfo || route.params?.user || { name: 'User', email: 'user@example.com', user_type: 'individual' };
 
-    const [isDarkMode, setIsDarkMode] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const sidebarAnim = useRef(new Animated.Value(-width * 0.75)).current;
 
@@ -66,8 +65,6 @@ const HomeScreen = ({ navigation, route }: any) => {
             Animated.timing(sidebarAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
         }
     };
-
-    const toggleDarkMode = () => setIsDarkMode(prev => !prev);
 
     const theme = {
         bg: isDarkMode ? '#1A202C' : '#F7FAFC',
@@ -300,7 +297,7 @@ const HomeScreen = ({ navigation, route }: any) => {
                     {/* Dark Mode Toggle */}
                     <View style={styles.sidebarItemRow}>
                         <Text style={[styles.sidebarItemText, { color: theme.text }]}>Dark Mode</Text>
-                        <Switch value={isDarkMode} onValueChange={toggleDarkMode} />
+                        <Switch value={isDarkMode} onValueChange={toggleTheme} />
                     </View>
 
                     <TouchableOpacity style={[styles.sidebarItem, { marginTop: 20 }]} onPress={() => { toggleSidebar(); logout(); }}>

@@ -7,7 +7,7 @@ import { CONFIG } from '../Config';
 import CustomAlert from '../components/CustomAlert';
 
 const InventoryScreen = ({ navigation }: any) => {
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, isDarkMode } = useContext(AuthContext);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -18,6 +18,16 @@ const InventoryScreen = ({ navigation }: any) => {
     const [alertTitle, setAlertTitle] = useState('');
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState<'error' | 'success'>('error');
+
+    const theme = {
+        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
+        text: isDarkMode ? '#F7FAFC' : '#2D3748',
+        subText: isDarkMode ? '#A0AEC0' : '#718096',
+        cardBg: isDarkMode ? '#2D3748' : '#fff',
+        inputBg: isDarkMode ? '#2D3748' : '#F7FAFC',
+        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+        headerBg: isDarkMode ? '#2D3748' : '#F7FAFC',
+    };
 
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
@@ -75,24 +85,24 @@ const InventoryScreen = ({ navigation }: any) => {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+            <View style={[styles.header, { backgroundColor: theme.headerBg }]}>
+                <TouchableOpacity style={[styles.backButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.goBack()}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
                         <Path d="M19 12H5M12 19l-7-7 7-7" />
                     </Svg>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Inventory Management</Text>
-                <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddProduct')}>
-                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Inventory Management</Text>
+                <TouchableOpacity style={[styles.addButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.navigate('AddProduct')}>
+                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
                         <Path d="M12 5v14M5 12h14" />
                      </Svg>
                 </TouchableOpacity>
             </View>
 
             {loading ? (
-                <View style={styles.center}><ActivityIndicator size="large" color="#2D3748" /></View>
+                <View style={styles.center}><ActivityIndicator size="large" color={theme.text} /></View>
             ) : (
                 <FlatList
                     data={products}
@@ -104,22 +114,22 @@ const InventoryScreen = ({ navigation }: any) => {
                             : null;
 
                         return (
-                            <View style={styles.card}>
+                            <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
                                 {imageUrl ? (
                                     <Image source={{ uri: imageUrl }} style={styles.image} />
                                 ) : (
-                                    <View style={styles.imagePlaceholder} />
+                                    <View style={[styles.imagePlaceholder, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} />
                                 )}
 
                                 <View style={styles.info}>
-                                    <Text style={styles.name}>{item.name}</Text>
-                                    <Text style={styles.price}>{item.price} PKR</Text>
+                                    <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
+                                    <Text style={[styles.price, { color: theme.subText }]}>{item.price} PKR</Text>
 
                                     {editingId === item.id ? (
                                         <View style={styles.stockEditContainer}>
-                                            <Text style={styles.stockLabel}>Qty:</Text>
+                                            <Text style={[styles.stockLabel, { color: theme.subText }]}>Qty:</Text>
                                             <TextInput
-                                                style={styles.stockInput}
+                                                style={[styles.stockInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]}
                                                 value={tempStock}
                                                 onChangeText={setTempStock}
                                                 keyboardType="numeric"
@@ -130,19 +140,19 @@ const InventoryScreen = ({ navigation }: any) => {
                                             </TouchableOpacity>
                                         </View>
                                     ) : (
-                                        <Text style={[styles.stock, item.stock_quantity < 5 && { color: '#E53E3E' }]}>
+                                        <Text style={[styles.stock, item.stock_quantity < 5 ? { color: '#E53E3E' } : { color: theme.subText }]}>
                                             Stock: {item.stock_quantity || 0}
                                         </Text>
                                     )}
                                 </View>
 
                                 {editingId !== item.id && (
-                                    <TouchableOpacity style={styles.editButton} onPress={() => handleEditStock(item)}>
-                                        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2" style={{ marginRight: 5 }}>
+                                    <TouchableOpacity style={[styles.editButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => handleEditStock(item)}>
+                                        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 5 }}>
                                             <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                                             <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                         </Svg>
-                                        <Text style={styles.editButtonText}>Edit</Text>
+                                        <Text style={[styles.editButtonText, { color: theme.text }]}>Edit</Text>
                                     </TouchableOpacity>
                                 )}
                             </View>

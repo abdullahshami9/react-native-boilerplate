@@ -10,6 +10,11 @@ export const AuthProvider = ({ children }: any) => {
     const [isLoading, setIsLoading] = useState(false);
     const [userToken, setUserToken] = useState<string | null>(null);
     const [userInfo, setUserInfo] = useState<any | null>(null);
+    const [isDarkMode, setIsDarkMode] = useState(false);
+
+    const toggleTheme = () => {
+        setIsDarkMode(prev => !prev);
+    };
 
     const login = async (email: string, pass: string) => {
         setIsLoading(true);
@@ -141,7 +146,7 @@ export const AuthProvider = ({ children }: any) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ login, logout, register, updateProfile, biometricLogin, isLoading, userToken, userInfo }}>
+        <AuthContext.Provider value={{ login, logout, register, updateProfile, biometricLogin, isLoading, userToken, userInfo, isDarkMode, toggleTheme }}>
             {children}
         </AuthContext.Provider>
     );

@@ -8,12 +8,22 @@ import { CONFIG } from '../Config';
 const { width } = Dimensions.get('window');
 
 const ShopScreen = ({ navigation }: any) => {
-    const { userInfo: user } = React.useContext(AuthContext);
+    const { userInfo: user, isDarkMode } = React.useContext(AuthContext);
     const [activeTab, setActiveTab] = useState('Products');
     const [search, setSearch] = useState('');
     const [products, setProducts] = useState<any[]>([]);
     const [businesses, setBusinesses] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+
+    const theme = {
+        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
+        text: isDarkMode ? '#F7FAFC' : '#2D3748',
+        subText: isDarkMode ? '#A0AEC0' : '#718096',
+        cardBg: isDarkMode ? '#2D3748' : '#F7FAFC', // Slightly different for Shop
+        inputBg: isDarkMode ? '#2D3748' : '#fff',
+        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+        headerBg: isDarkMode ? '#2D3748' : '#F7FAFC',
+    };
 
     useEffect(() => {
         fetchData();
@@ -40,26 +50,26 @@ const ShopScreen = ({ navigation }: any) => {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+            <View style={[styles.header, { backgroundColor: theme.bg }]}>
+                <TouchableOpacity style={[styles.backButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.goBack()}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
                         <Path d="M19 12H5M12 19l-7-7 7-7" />
                     </Svg>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Shop</Text>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Shop</Text>
                 <View style={{ width: 24 }} />
             </View>
 
             {/* Search Bar */}
-             <View style={styles.searchContainer}>
+             <View style={[styles.searchContainer, { backgroundColor: theme.inputBg, borderColor: theme.borderColor }]}>
                 <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={styles.searchIcon}>
                     <Circle cx="11" cy="11" r="8" />
                     <Path d="M21 21L16.65 16.65" />
                 </Svg>
                 <TextInput
-                    style={styles.searchInput}
+                    style={[styles.searchInput, { color: theme.text }]}
                     placeholder={`Search ${activeTab}...`}
                     placeholderTextColor="#A0AEC0"
                     value={search}
@@ -69,43 +79,43 @@ const ShopScreen = ({ navigation }: any) => {
 
 
             {/* Tabs */}
-            <View style={styles.tabContainer}>
-                <TouchableOpacity onPress={() => setActiveTab('Products')} style={[styles.tab, activeTab === 'Products' && styles.activeTab]}>
-                    <Text style={[styles.tabText, activeTab === 'Products' && styles.activeTabText]}>Products</Text>
+            <View style={[styles.tabContainer, { backgroundColor: theme.bg, borderBottomColor: theme.borderColor }]}>
+                <TouchableOpacity onPress={() => setActiveTab('Products')} style={[styles.tab, activeTab === 'Products' && [styles.activeTab, { borderBottomColor: theme.text }]]}>
+                    <Text style={[styles.tabText, { color: activeTab === 'Products' ? theme.text : theme.subText }]}>Products</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setActiveTab('Business')} style={[styles.tab, activeTab === 'Business' && styles.activeTab]}>
-                    <Text style={[styles.tabText, activeTab === 'Business' && styles.activeTabText]}>Business</Text>
+                <TouchableOpacity onPress={() => setActiveTab('Business')} style={[styles.tab, activeTab === 'Business' && [styles.activeTab, { borderBottomColor: theme.text }]]}>
+                    <Text style={[styles.tabText, { color: activeTab === 'Business' ? theme.text : theme.subText }]}>Business</Text>
                 </TouchableOpacity>
             </View>
 
             {loading ? (
                  <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-                     <ActivityIndicator size="large" color="#2D3748"/>
+                     <ActivityIndicator size="large" color={theme.text}/>
                  </View>
             ) : (
                 <ScrollView contentContainerStyle={styles.scrollContent}>
                     <View style={styles.gridContainer}>
                         {activeTab === 'Products' ? (
                             products.map((item) => (
-                                <View key={item.id} style={styles.productCard}>
-                                    <View style={styles.imageContainer}>
+                                <View key={item.id} style={[styles.productCard, { backgroundColor: theme.cardBg }]}>
+                                    <View style={[styles.imageContainer, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
                                         <Image source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/150' }} style={styles.productImage} />
                                     </View>
                                     <View style={styles.productInfo}>
-                                        <Text style={styles.productName}>{item.name}</Text>
-                                        <Text style={styles.productPrice}>{item.price} PKR</Text>
+                                        <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
+                                        <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price} PKR</Text>
                                     </View>
                                 </View>
                             ))
                         ) : (
                             businesses.map((item) => (
-                                 <View key={item.id} style={styles.productCard}>
-                                     <View style={styles.imageContainer}>
+                                 <View key={item.id} style={[styles.productCard, { backgroundColor: theme.cardBg }]}>
+                                     <View style={[styles.imageContainer, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
                                          <Image source={{ uri: item.profile_pic_url ? `${CONFIG.API_URL}/${item.profile_pic_url}` : 'https://randomuser.me/api/portraits/men/32.jpg' }} style={styles.productImage} />
                                      </View>
                                      <View style={styles.productInfo}>
-                                         <Text style={styles.productName}>{item.name}</Text>
-                                         <Text style={styles.productPrice}>{item.email}</Text>
+                                         <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
+                                         <Text style={[styles.productPrice, { color: theme.subText }]}>{item.email}</Text>
                                      </View>
                                  </View>
                             ))

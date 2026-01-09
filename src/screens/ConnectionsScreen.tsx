@@ -6,12 +6,24 @@ import { AuthContext } from '../context/AuthContext';
 import { CONFIG } from '../Config';
 
 const ConnectionsScreen = () => {
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, isDarkMode } = useContext(AuthContext);
     const [activeTab, setActiveTab] = useState('connections'); // 'connections' | 'discover'
     const [connections, setConnections] = useState<any[]>([]);
     const [discoverUsers, setDiscoverUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchText, setSearchText] = useState('');
+
+    const theme = {
+        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
+        text: isDarkMode ? '#F7FAFC' : '#2D3748',
+        subText: isDarkMode ? '#A0AEC0' : '#718096',
+        cardBg: isDarkMode ? '#2D3748' : '#fff',
+        inputBg: isDarkMode ? '#2D3748' : '#fff',
+        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+        headerBg: isDarkMode ? '#2D3748' : '#fff',
+        tabText: isDarkMode ? '#A0AEC0' : '#A0AEC0',
+        activeTabText: isDarkMode ? '#F7FAFC' : '#2D3748',
+    };
 
     useEffect(() => {
         if (activeTab === 'connections') {
@@ -80,27 +92,27 @@ const ConnectionsScreen = () => {
             : 'https://randomuser.me/api/portraits/men/32.jpg';
 
         return (
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}>
                 <Image source={{ uri: imageUrl }} style={styles.avatar} />
                 <View style={styles.info}>
-                    <Text style={styles.name}>{item.name}</Text>
-                    <Text style={styles.role}>{item.user_type} • {item.email}</Text>
+                    <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
+                    <Text style={[styles.role, { color: theme.subText }]}>{item.user_type} • {item.email}</Text>
                 </View>
                 {activeTab === 'discover' ? (
                     <TouchableOpacity
-                        style={[styles.connectButton, isConnected && styles.connectedButton]}
+                        style={[styles.connectButton, isConnected && styles.connectedButton, { backgroundColor: isConnected ? (isDarkMode ? '#4A5568' : '#E2E8F0') : (isDarkMode ? '#4A5568' : '#2D3748') }]}
                         onPress={() => handleConnect(item.id, isConnected ? 'accepted' : 'none')}
                     >
-                        <Text style={[styles.connectButtonText, isConnected && styles.connectedButtonText]}>
+                        <Text style={[styles.connectButtonText, isConnected && styles.connectedButtonText, { color: isConnected ? theme.text : '#fff' }]}>
                             {isConnected ? 'Following' : 'Follow'}
                         </Text>
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity
-                        style={[styles.connectButton, styles.disconnectButton]}
+                        style={[styles.connectButton, styles.disconnectButton, { backgroundColor: isDarkMode ? '#4A5568' : '#FFF5F5' }]}
                         onPress={() => handleConnect(item.id, 'accepted')}
                     >
-                        <Text style={[styles.connectButtonText, styles.disconnectButtonText]}>
+                        <Text style={[styles.connectButtonText, styles.disconnectButtonText, { color: isDarkMode ? '#F56565' : '#E53E3E' }]}>
                             Unfollow
                         </Text>
                     </TouchableOpacity>
@@ -110,31 +122,31 @@ const ConnectionsScreen = () => {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Network</Text>
+            <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.borderColor }]}>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Network</Text>
             </View>
 
             {/* Tabs */}
-            <View style={styles.tabs}>
-                <TouchableOpacity style={[styles.tab, activeTab === 'connections' && styles.activeTab]} onPress={() => setActiveTab('connections')}>
-                    <Text style={[styles.tabText, activeTab === 'connections' && styles.activeTabText]}>Following</Text>
+            <View style={[styles.tabs, { backgroundColor: theme.headerBg }]}>
+                <TouchableOpacity style={[styles.tab, activeTab === 'connections' && [styles.activeTab, { borderBottomColor: theme.text }]]} onPress={() => setActiveTab('connections')}>
+                    <Text style={[styles.tabText, { color: activeTab === 'connections' ? theme.activeTabText : theme.tabText }]}>Following</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.tab, activeTab === 'discover' && styles.activeTab]} onPress={() => setActiveTab('discover')}>
-                    <Text style={[styles.tabText, activeTab === 'discover' && styles.activeTabText]}>Discover</Text>
+                <TouchableOpacity style={[styles.tab, activeTab === 'discover' && [styles.activeTab, { borderBottomColor: theme.text }]]} onPress={() => setActiveTab('discover')}>
+                    <Text style={[styles.tabText, { color: activeTab === 'discover' ? theme.activeTabText : theme.tabText }]}>Discover</Text>
                 </TouchableOpacity>
             </View>
 
             {/* Search (only for discover) */}
             {activeTab === 'discover' && (
-                <View style={styles.searchContainer}>
+                <View style={[styles.searchContainer, { backgroundColor: theme.inputBg, borderColor: theme.borderColor }]}>
                     <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={styles.searchIcon}>
                         <Circle cx="11" cy="11" r="8" />
                         <Path d="M21 21L16.65 16.65" />
                     </Svg>
                     <TextInput
-                        style={styles.searchInput}
+                        style={[styles.searchInput, { color: theme.text }]}
                         placeholder="Search users..."
                         placeholderTextColor="#A0AEC0"
                         value={searchText}
@@ -145,7 +157,7 @@ const ConnectionsScreen = () => {
             )}
 
             {loading ? (
-                <View style={styles.center}><ActivityIndicator size="large" color="#2D3748" /></View>
+                <View style={styles.center}><ActivityIndicator size="large" color={theme.text} /></View>
             ) : (
                 <FlatList
                     data={activeTab === 'connections' ? connections : discoverUsers}

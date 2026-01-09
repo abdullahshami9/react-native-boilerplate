@@ -70,7 +70,7 @@ const ContributionGraph = ({ appointments, onDateClick }: any) => {
 };
 
 const ProfileScreen = ({ navigation }: any) => {
-    const { logout, userInfo, updateProfile } = useContext(AuthContext);
+    const { logout, userInfo, updateProfile, isDarkMode, toggleTheme } = useContext(AuthContext);
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(userInfo?.name || '');
     const [phone, setPhone] = useState(userInfo?.phone || '');
@@ -87,7 +87,6 @@ const ProfileScreen = ({ navigation }: any) => {
 
     // Settings Modal State
     const [modalVisible, setModalVisible] = useState(false);
-    const [darkMode, setDarkMode] = useState(false);
 
     // Business Card Modal State
     const [businessCardVisible, setBusinessCardVisible] = useState(false);
@@ -131,6 +130,16 @@ const ProfileScreen = ({ navigation }: any) => {
     ).current;
 
     const isBusinessUser = userInfo?.user_type === 'business';
+
+    const theme = {
+        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
+        text: isDarkMode ? '#F7FAFC' : '#2D3748',
+        subText: isDarkMode ? '#A0AEC0' : '#718096',
+        cardBg: isDarkMode ? '#2D3748' : '#fff',
+        inputBg: isDarkMode ? '#2D3748' : '#fff',
+        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+        headerBg: isDarkMode ? '#2D3748' : '#fff',
+    };
 
     useEffect(() => {
         if (userInfo?.id) {
@@ -285,7 +294,6 @@ const ProfileScreen = ({ navigation }: any) => {
         }
     };
 
-    const toggleDarkMode = () => setDarkMode(previousState => !previousState);
     const handleEditProfile = () => { closeModal(); setIsEditing(true); };
     const handleLogout = () => { closeModal(); logout(); };
 
@@ -308,6 +316,30 @@ const ProfileScreen = ({ navigation }: any) => {
     const HEADER_MIN_HEIGHT = 110;
     const SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
 
+    // Define transition points for Sticky Header elements
+    // We want Name -> Email -> Type to fade in sequentially in the header
+    // And fade out sequentially in the body
+
+    // Body Fades Out:
+    const bodyNameOpacity = scrollY.interpolate({
+        inputRange: [0, SCROLL_DISTANCE * 0.4],
+        outputRange: [1, 0],
+        extrapolate: 'clamp'
+    });
+
+    const bodyEmailOpacity = scrollY.interpolate({
+        inputRange: [0, SCROLL_DISTANCE * 0.6],
+        outputRange: [1, 0],
+        extrapolate: 'clamp'
+    });
+
+    const bodyTypeOpacity = scrollY.interpolate({
+        inputRange: [0, SCROLL_DISTANCE * 0.8],
+        outputRange: [1, 0],
+        extrapolate: 'clamp'
+    });
+
+    // Header Fades In:
     const headerHeight = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
         outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
@@ -320,16 +352,31 @@ const ProfileScreen = ({ navigation }: any) => {
         extrapolate: 'clamp'
     });
 
-    const headerInfoOpacity = scrollY.interpolate({
-        inputRange: [SCROLL_DISTANCE * 0.8, SCROLL_DISTANCE], // Fade in near the end of the scroll
+    // Sequential Header Opacity
+    const headerNameOpacity = scrollY.interpolate({
+        inputRange: [SCROLL_DISTANCE * 0.4, SCROLL_DISTANCE * 0.6],
         outputRange: [0, 1],
         extrapolate: 'clamp'
     });
 
+    const headerEmailOpacity = scrollY.interpolate({
+        inputRange: [SCROLL_DISTANCE * 0.6, SCROLL_DISTANCE * 0.8],
+        outputRange: [0, 1],
+        extrapolate: 'clamp'
+    });
+
+    const headerBadgeOpacity = scrollY.interpolate({
+        inputRange: [SCROLL_DISTANCE * 0.8, SCROLL_DISTANCE],
+        outputRange: [0, 1],
+        extrapolate: 'clamp'
+    });
+
+
     // QR Code Animation:
     // Starts Center (roughly), Moves to Top-Right NEXT to Icon
     // Final Scale: 0.25 (Very small, icon size)
-    // Final Pos: Right ~40 (Moved further right to overlap/align with settings icon)
+    // Final Pos: Right ~80 (to sit LEFT of the settings icon which is at Right 20)
+    // Settings icon container padding is 20 + icon width. Let's aim for Right 60-70.
     const qrScale = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
         outputRange: [1, 0.25],
@@ -338,13 +385,13 @@ const ProfileScreen = ({ navigation }: any) => {
 
     const qrTranslateY = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
-        outputRange: [0, -60], // Moved up slightly more to align with header height (110) vs container mount point
+        outputRange: [0, -65], // Moved up to align
         extrapolate: 'clamp'
     });
 
     const qrTranslateX = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
-        outputRange: [0, width / 2 - 40], // Pushed further right to hit the icon area
+        outputRange: [0, width / 2 - 80], // Pushed right, but left of icon.
         extrapolate: 'clamp'
     });
 
@@ -371,9 +418,9 @@ const ProfileScreen = ({ navigation }: any) => {
     });
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Absolute Header Layer */}
-            <Animated.View style={[styles.headerBackground, { height: headerHeight, borderBottomLeftRadius: headerBorderRadius, borderBottomRightRadius: headerBorderRadius }]}>
+            <Animated.View style={[styles.headerBackground, { height: headerHeight, borderBottomLeftRadius: headerBorderRadius, borderBottomRightRadius: headerBorderRadius, backgroundColor: isDarkMode ? '#2D3748' : '#2D3748' }]}>
                 {/* Fixed Top Bar (Settings) */}
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={openModal} style={styles.iconButton}>
@@ -384,16 +431,16 @@ const ProfileScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Header Profile Info (Visible on Scroll) */}
-                <Animated.View style={[styles.headerInfoContainer, { opacity: headerInfoOpacity }]}>
-                    <Text style={styles.headerNameText}>{userInfo?.name || 'User Name'}</Text>
-                    <Text style={styles.headerEmailText}>{userInfo?.email}</Text>
-                    <View style={styles.headerBadge}>
+                {/* Header Profile Info (Visible on Scroll) - Sequential Fade In */}
+                <View style={styles.headerInfoContainer}>
+                    <Animated.Text style={[styles.headerNameText, { opacity: headerNameOpacity }]}>{userInfo?.name || 'User Name'}</Animated.Text>
+                    <Animated.Text style={[styles.headerEmailText, { opacity: headerEmailOpacity }]}>{userInfo?.email}</Animated.Text>
+                    <Animated.View style={[styles.headerBadge, { opacity: headerBadgeOpacity }]}>
                         <Text style={styles.headerBadgeText}>{isBusinessUser ? 'Business' : 'Individual'}</Text>
-                    </View>
-                </Animated.View>
+                    </Animated.View>
+                </View>
 
-                {/* QR Code */}
+                {/* QR Code - Transitioned */}
                 <Animated.View style={[
                     styles.qrContainer,
                     { transform: [{ scale: qrScale }, { translateY: qrTranslateY }, { translateX: qrTranslateX }] }
@@ -445,41 +492,41 @@ const ProfileScreen = ({ navigation }: any) => {
                 <View style={styles.infoSection}>
                     {isEditing ? (
                         <View style={styles.editForm}>
-                            <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Name" />
-                            <TextInput style={[styles.input, { marginTop: 10 }]} value={phone} onChangeText={setPhone} placeholder="Phone" keyboardType="phone-pad" />
+                            <TextInput style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]} value={name} onChangeText={setName} placeholder="Name" placeholderTextColor={theme.subText} />
+                            <TextInput style={[styles.input, { marginTop: 10, backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]} value={phone} onChangeText={setPhone} placeholder="Phone" keyboardType="phone-pad" placeholderTextColor={theme.subText} />
                         </View>
                     ) : (
                         <>
-                            <Text style={styles.nameText}>{userInfo?.name || 'Name'}</Text>
-                            <Text style={styles.roleText}>{userInfo?.email}</Text>
-                            <View style={styles.userTypeBadge}>
-                                <Text style={styles.userTypeBadgeText}>{isBusinessUser ? 'Business' : 'Individual'}</Text>
-                            </View>
+                            <Animated.Text style={[styles.nameText, { opacity: bodyNameOpacity, color: theme.text }]}>{userInfo?.name || 'Name'}</Animated.Text>
+                            <Animated.Text style={[styles.roleText, { opacity: bodyEmailOpacity, color: theme.subText }]}>{userInfo?.email}</Animated.Text>
+                            <Animated.View style={[styles.userTypeBadge, { opacity: bodyTypeOpacity, backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
+                                <Text style={[styles.userTypeBadgeText, { color: isDarkMode ? '#F7FAFC' : '#4A5568' }]}>{isBusinessUser ? 'Business' : 'Individual'}</Text>
+                            </Animated.View>
                         </>
                     )}
                 </View>
 
                 {/* Calendar Component */}
-                <View style={styles.sectionContainer}>
+                <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
                     <ContributionGraph appointments={appointments} onDateClick={handleDateClick} />
                 </View>
 
-                <View style={styles.sectionContainer}>
-                    <Text style={styles.sectionTitle}>{isBusinessUser ? 'Product Catalog' : 'Professional Skills'}</Text>
+                <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{isBusinessUser ? 'Product Catalog' : 'Professional Skills'}</Text>
 
                     {!isBusinessUser && (
                         <View>
                             <View style={styles.tagsContainer}>
                                 {skills.map((skill: any, index: number) => (
-                                    <TouchableOpacity key={index} style={styles.tag} onPress={() => isEditing && handleDeleteSkill(skill.id)}>
-                                        <Text style={styles.tagText}>{skill.skill_name}</Text>
+                                    <TouchableOpacity key={index} style={[styles.tag, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => isEditing && handleDeleteSkill(skill.id)}>
+                                        <Text style={[styles.tagText, { color: theme.text }]}>{skill.skill_name}</Text>
                                         {isEditing && <Svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="3" style={{ marginLeft: 5 }}><Path d="M18 6L6 18M6 6l12 12"></Path></Svg>}
                                     </TouchableOpacity>
                                 ))}
                             </View>
                             {isEditing && (
                                 <View style={styles.addInputRow}>
-                                    <TextInput style={styles.smallInput} placeholder="Add Skill..." value={newSkill} onChangeText={setNewSkill} />
+                                    <TextInput style={[styles.smallInput, { backgroundColor: theme.inputBg, borderColor: theme.borderColor, color: theme.text }]} placeholder="Add Skill..." placeholderTextColor={theme.subText} value={newSkill} onChangeText={setNewSkill} />
                                     <TouchableOpacity onPress={handleAddSkill} style={styles.addButton}><Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><Path d="M12 5v14M5 12h14"></Path></Svg></TouchableOpacity>
                                 </View>
                             )}
@@ -490,21 +537,21 @@ const ProfileScreen = ({ navigation }: any) => {
                         <View>
                             {products.length === 0 && !isEditing && <Text style={{ color: '#A0AEC0', textAlign: 'center', marginBottom: 10 }}>No products added.</Text>}
                             {products.map((prod: any, index: number) => (
-                                <View key={index} style={styles.productListItem}>
+                                <View key={index} style={[styles.productListItem, { borderBottomColor: theme.borderColor }]}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         {prod.image_url ? (
                                             <Image source={{ uri: `${CONFIG.API_URL}/${prod.image_url}?t=${new Date().getTime()}` }} style={{ width: 30, height: 30, borderRadius: 5, marginRight: 10 }} />
                                         ) : (
-                                            <View style={{ width: 30, height: 30, backgroundColor: '#EDF2F7', marginRight: 10, borderRadius: 5 }} />
+                                            <View style={{ width: 30, height: 30, backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7', marginRight: 10, borderRadius: 5 }} />
                                         )}
-                                        <Text style={styles.productListItemName}>{prod.name}</Text>
+                                        <Text style={[styles.productListItemName, { color: theme.text }]}>{prod.name}</Text>
                                     </View>
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <Text style={styles.productListItemPrice}>{prod.price} PKR</Text>
+                                        <Text style={[styles.productListItemPrice, { color: theme.subText }]}>{prod.price} PKR</Text>
                                     </View>
                                 </View>
                             ))}
-                            <TouchableOpacity style={[styles.mainButton, { marginTop: 15, width: '100%' }]} onPress={() => navigation.navigate('Inventory')}>
+                            <TouchableOpacity style={[styles.mainButton, { marginTop: 15, width: '100%', backgroundColor: isDarkMode ? '#4A5568' : '#2D3748' }]} onPress={() => navigation.navigate('Inventory')}>
                                 <Text style={styles.mainButtonText}>Manage Inventory</Text>
                             </TouchableOpacity>
                         </View>
@@ -558,15 +605,23 @@ const ProfileScreen = ({ navigation }: any) => {
                         <TouchableWithoutFeedback onPress={closeModal}><View style={styles.dismissArea} /></TouchableWithoutFeedback>
                     </Animated.View>
 
-                    <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]} {...panResponder.panHandlers}>
-                        <View style={styles.modalHeader}><View style={styles.modalHandle} /></View>
+                    <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }], backgroundColor: theme.cardBg }]} {...panResponder.panHandlers}>
+                        <View style={styles.modalHeader}><View style={[styles.modalHandle, { backgroundColor: theme.borderColor }]} /></View>
                         <View style={styles.menuContainer}>
                             <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}>
-                                <View style={styles.iconContainer}><Svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2"><Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></Svg></View>
-                                <View style={styles.textContainer}><Text style={styles.menuItemText}>Edit Profile</Text><Text style={styles.menuItemSubText}>Update your personal information</Text></View>
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#CBD5E0" strokeWidth="2"><Path d="M9 18l6-6-6-6" /></Svg>
+                                <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]}><Svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></Svg></View>
+                                <View style={styles.textContainer}><Text style={[styles.menuItemText, { color: theme.text }]}>Edit Profile</Text><Text style={[styles.menuItemSubText, { color: theme.subText }]}>Update your personal information</Text></View>
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2"><Path d="M9 18l6-6-6-6" /></Svg>
                             </TouchableOpacity>
-                            <View style={styles.divider} />
+                            <View style={[styles.divider, { backgroundColor: theme.borderColor }]} />
+                            <View style={styles.menuItem}>
+                                <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]}>
+                                   <Svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Circle cx="12" cy="12" r="5" /><Path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></Svg>
+                                </View>
+                                <View style={styles.textContainer}><Text style={[styles.menuItemText, { color: theme.text }]}>Dark Mode</Text><Text style={[styles.menuItemSubText, { color: theme.subText }]}>Toggle app theme</Text></View>
+                                <Switch value={isDarkMode} onValueChange={toggleTheme} />
+                            </View>
+                            <View style={[styles.divider, { backgroundColor: theme.borderColor }]} />
                             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
                                 <View style={[styles.iconContainer, { backgroundColor: '#FFF5F5' }]}><Svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2"><Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><Path d="M16 17l5-5-5-5" /><Path d="M21 12H9" /></Svg></View>
                                 <View style={styles.textContainer}><Text style={[styles.menuItemText, { color: '#E53E3E' }]}>Logout</Text></View>

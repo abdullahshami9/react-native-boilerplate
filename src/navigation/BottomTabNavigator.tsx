@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Platform, StatusBar } from 'react-native';
+import { View, Platform, StatusBar, Keyboard } from 'react-native';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
+import { AuthContext } from '../context/AuthContext';
 
 // Screens
 import DiscoverScreen from '../screens/DiscoverScreen';
@@ -12,14 +13,44 @@ import ProfileScreen from '../screens/ProfileScreen';
 const Tab = createBottomTabNavigator();
 
 const BottomTabNavigator = () => {
+    const { isDarkMode } = useContext(AuthContext);
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+    useEffect(() => {
+        const keyboardShowListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            () => {
+                setKeyboardVisible(true);
+            }
+        );
+        const keyboardHideListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => {
+                setKeyboardVisible(false);
+            }
+        );
+
+        return () => {
+            keyboardShowListener.remove();
+            keyboardHideListener.remove();
+        };
+    }, []);
+
+    const theme = {
+        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
+        tabBg: isDarkMode ? '#2D3748' : '#fff',
+        activeTint: isDarkMode ? '#F7FAFC' : '#2D3748',
+        inactiveTint: isDarkMode ? '#A0AEC0' : '#A0AEC0',
+    };
+
     return (
         <>
-            <StatusBar barStyle="dark-content" backgroundColor="#F7FAFC" />
+            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.bg} />
             <Tab.Navigator
                 screenOptions={{
                     headerShown: false,
                     tabBarStyle: {
-                        backgroundColor: '#fff',
+                        backgroundColor: theme.tabBg,
                         height: Platform.OS === 'ios' ? 85 : 65,
                         paddingBottom: Platform.OS === 'ios' ? 30 : 10,
                         paddingTop: 10,
@@ -35,10 +66,11 @@ const BottomTabNavigator = () => {
                         bottom: 0,
                         left: 0,
                         right: 0,
+                        display: isKeyboardVisible ? 'none' : 'flex'
                     },
                     tabBarShowLabel: false,
-                    tabBarActiveTintColor: '#2D3748',
-                    tabBarInactiveTintColor: '#A0AEC0',
+                    tabBarActiveTintColor: theme.activeTint,
+                    tabBarInactiveTintColor: theme.inactiveTint,
                 }}
             >
                 <Tab.Screen

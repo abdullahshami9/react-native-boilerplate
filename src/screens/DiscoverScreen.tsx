@@ -14,7 +14,16 @@ const DiscoverScreen = ({ navigation }: any) => {
     const [users, setUsers] = useState<any[]>([]);
     const [businessProducts, setBusinessProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    const { userInfo } = React.useContext(AuthContext);
+    const { userInfo, isDarkMode } = React.useContext(AuthContext);
+
+    const theme = {
+        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
+        text: isDarkMode ? '#F7FAFC' : '#2D3748',
+        subText: isDarkMode ? '#A0AEC0' : '#718096',
+        cardBg: isDarkMode ? '#2D3748' : '#fff',
+        inputBg: isDarkMode ? '#2D3748' : '#fff',
+        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+    };
 
     React.useEffect(() => {
         fetchData();
@@ -42,19 +51,19 @@ const DiscoverScreen = ({ navigation }: any) => {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+            <View style={[styles.header, { backgroundColor: theme.bg }]}>
+                <TouchableOpacity style={[styles.backButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.goBack()}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
                         <Path d="M19 12H5M12 19l-7-7 7-7" />
                     </Svg>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Discover</Text>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Discover</Text>
                 <View style={{ width: 24 }} />
             </View>
 
-            <View style={styles.searchContainer}>
+            <View style={[styles.searchContainer, { backgroundColor: theme.inputBg, borderColor: theme.borderColor }]}>
                 <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={styles.searchIcon}>
                     <Circle cx="11" cy="11" r="8" />
                     <Path d="M21 21L16.65 16.65" />
@@ -68,7 +77,7 @@ const DiscoverScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 )}
                 <TextInput
-                    style={styles.searchInput}
+                    style={[styles.searchInput, { color: theme.text }]}
                     placeholder={filterType === 'All' ? "Search..." : "Type to search..."}
                     placeholderTextColor="#A0AEC0"
                     value={search}
@@ -83,13 +92,13 @@ const DiscoverScreen = ({ navigation }: any) => {
                     {['All', 'Skills', 'Location'].map((f) => (
                         <TouchableOpacity
                             key={f}
-                            style={[styles.filterChip, filterType === f && styles.activeFilterChip]}
+                            style={[styles.filterChip, filterType === f && styles.activeFilterChip, { backgroundColor: filterType === f ? '#2D3748' : (isDarkMode ? '#4A5568' : '#EDF2F7') }]}
                             onPress={() => {
                                 setFilterType(f);
                                 // Optional: setIsSearchFocused(false);
                             }}
                         >
-                            <Text style={[styles.filterText, filterType === f && styles.activeFilterText]}>{f}</Text>
+                            <Text style={[styles.filterText, filterType === f && styles.activeFilterText, { color: filterType === f ? '#fff' : theme.subText }]}>{f}</Text>
                         </TouchableOpacity>
                     ))}
                     <TouchableOpacity onPress={() => setIsSearchFocused(false)} style={{ marginLeft: 'auto' }}>
@@ -100,17 +109,17 @@ const DiscoverScreen = ({ navigation }: any) => {
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {loading ? (
-                    <ActivityIndicator size="large" color="#2D3748" style={{ marginTop: 20 }} />
+                    <ActivityIndicator size="large" color={theme.text} style={{ marginTop: 20 }} />
                 ) : (
                     <>
-                        <Text style={styles.sectionTitle}>People</Text>
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>People</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
                             {users.map((item) => (
-                                <View key={item.id} style={styles.card}>
+                                <View key={item.id} style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}>
                                     <Image source={{ uri: item.profile_pic_url ? `${CONFIG.API_URL}/${item.profile_pic_url}` : 'https://randomuser.me/api/portraits/men/32.jpg' }} style={styles.cardImage} />
-                                    <Text style={styles.cardName}>{item.name}</Text>
-                                    <Text style={styles.cardRole}>{item.user_type}</Text>
-                                    <TouchableOpacity style={styles.connectButton}>
+                                    <Text style={[styles.cardName, { color: theme.text }]}>{item.name}</Text>
+                                    <Text style={[styles.cardRole, { color: theme.subText }]}>{item.user_type}</Text>
+                                    <TouchableOpacity style={[styles.connectButton, { backgroundColor: isDarkMode ? '#4A5568' : '#2D3748' }]}>
                                         <Text style={styles.connectButtonText}>Connect</Text>
                                     </TouchableOpacity>
                                 </View>
@@ -122,7 +131,7 @@ const DiscoverScreen = ({ navigation }: any) => {
 
                 {/* Business Products */}
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Business Product</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Business Product</Text>
                     <TouchableOpacity>
                         <Text style={styles.seeAllText}>See All</Text>
                     </TouchableOpacity>
@@ -130,11 +139,11 @@ const DiscoverScreen = ({ navigation }: any) => {
 
                 <View style={styles.gridContainer}>
                     {businessProducts.map((item) => (
-                        <View key={item.id} style={styles.productCard}>
+                        <View key={item.id} style={[styles.productCard, { backgroundColor: theme.cardBg }]}>
                             <Image source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/150' }} style={styles.productImage} />
                             <View style={styles.productInfo}>
-                                <Text style={styles.productName}>{item.name}</Text>
-                                <Text style={styles.productPrice}>{item.price}</Text>
+                                <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
+                                <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price}</Text>
                             </View>
                         </View>
                     ))}

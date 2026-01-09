@@ -1,5 +1,5 @@
 import React, { useState, useContext, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput, Modal, TouchableWithoutFeedback, Platform, Animated, PanResponder, Alert, Button } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput, Modal, TouchableWithoutFeedback, Platform, Animated, PanResponder, Alert, Button, Clipboard } from 'react-native';
 import Svg, { Path, Circle, Line, Plus, X, Trash, Rect } from 'react-native-svg';
 import QRCode from 'react-native-qrcode-svg';
 import { BlurView } from "@react-native-community/blur";
@@ -88,6 +88,9 @@ const ProfileScreen = ({ navigation }: any) => {
     // Settings Modal State
     const [modalVisible, setModalVisible] = useState(false);
     const [darkMode, setDarkMode] = useState(false);
+
+    // Business Card Modal State
+    const [businessCardVisible, setBusinessCardVisible] = useState(false);
 
     // Appointment Modal State
     const [apptModalVisible, setApptModalVisible] = useState(false);
@@ -296,34 +299,77 @@ const ProfileScreen = ({ navigation }: any) => {
             : 'https://randomuser.me/api/portraits/men/32.jpg';
     };
 
+    /* -------------------------------------------------------------------------- */
+    /*                                ANIMATIONS                                  */
+    /* -------------------------------------------------------------------------- */
+
+    // Header Height: shrinks from 280 -> 110
+    const HEADER_MAX_HEIGHT = 280;
+    const HEADER_MIN_HEIGHT = 110;
+    const SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
+
+    const headerHeight = scrollY.interpolate({
+        inputRange: [0, SCROLL_DISTANCE],
+        outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+        extrapolate: 'clamp'
+    });
+
+    const headerBorderRadius = scrollY.interpolate({
+        inputRange: [0, SCROLL_DISTANCE],
+        outputRange: [40, 20],
+        extrapolate: 'clamp'
+    });
+
+    // QR Code Animation:
+    // Starts Center (roughly), Moves to Top-Right NEXT to Icon
+    // Final Scale: 0.25 (Very small, icon size)
+    // Final Pos: Right ~25 (Exact overlap logic requires careful tuning)
+    // Currently Icon is paddingHorizontal: 20 from right.
     const qrScale = scrollY.interpolate({
-        inputRange: [0, 100],
-        outputRange: [1, 0.4],
+        inputRange: [0, SCROLL_DISTANCE],
+        outputRange: [1, 0.25],
         extrapolate: 'clamp'
     });
 
     const qrTranslateY = scrollY.interpolate({
-        inputRange: [0, 100],
-        outputRange: [0, -60],
+        inputRange: [0, SCROLL_DISTANCE],
+        outputRange: [0, -55], // Tuned to align vertically with settings icon
         extrapolate: 'clamp'
     });
 
     const qrTranslateX = scrollY.interpolate({
-        inputRange: [0, 100],
-        outputRange: [0, width / 2 - 60], // Move to right
+        inputRange: [0, SCROLL_DISTANCE],
+        outputRange: [0, width / 2 - 25], // Moves to align with Settings Icon
         extrapolate: 'clamp'
     });
 
-    // Header height animation
-    const headerHeight = scrollY.interpolate({
-        inputRange: [0, 100],
-        outputRange: [280, 100],
+    // Avatar Animation
+    // Starts: Centered below header
+    // Ends: Top-Left of header (Moved HIGHER as requested)
+
+    const avatarScale = scrollY.interpolate({
+        inputRange: [0, SCROLL_DISTANCE],
+        outputRange: [1, 0.5],
+        extrapolate: 'clamp'
+    });
+
+    const avatarTranslateY = scrollY.interpolate({
+        inputRange: [0, SCROLL_DISTANCE],
+        outputRange: [0, -210], // Moved UP SIGNIFICANTLY (was -195)
+        extrapolate: 'clamp'
+    });
+
+    const avatarTranslateX = scrollY.interpolate({
+        inputRange: [0, SCROLL_DISTANCE],
+        outputRange: [0, -width / 2 + 50], // Moving Left
         extrapolate: 'clamp'
     });
 
     return (
         <View style={styles.container}>
-            <Animated.View style={[styles.headerBackground, { height: headerHeight }]}>
+            {/* Absolute Header Layer */}
+            <Animated.View style={[styles.headerBackground, { height: headerHeight, borderBottomLeftRadius: headerBorderRadius, borderBottomRightRadius: headerBorderRadius }]}>
+                {/* Fixed Top Bar (Settings) */}
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={openModal} style={styles.iconButton}>
                         <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
@@ -332,36 +378,55 @@ const ProfileScreen = ({ navigation }: any) => {
                         </Svg>
                     </TouchableOpacity>
                 </View>
+
+                {/* QR Code */}
                 <Animated.View style={[
                     styles.qrContainer,
                     { transform: [{ scale: qrScale }, { translateY: qrTranslateY }, { translateX: qrTranslateX }] }
                 ]}>
-                    <View style={styles.qrWrapper}>
-                        <QRCode value={`raabtaa://user/${userInfo?.id}` || "https://example.com"} size={120} backgroundColor="white" color="black" />
+                    <TouchableOpacity onPress={() => setBusinessCardVisible(true)}>
+                        <View style={styles.qrWrapper}>
+                            <QRCode value={`raabtaa://user/${userInfo?.id}` || "https://example.com"} size={120} backgroundColor="white" color="black" />
+                        </View>
+                    </TouchableOpacity>
+                </Animated.View>
+
+                {/* Avatar (Now inside Header/Absolute but layered) */}
+                <Animated.View style={[
+                    styles.avatarContainerAbsolute,
+                    {
+                        transform: [
+                            { translateY: avatarTranslateY },
+                            { translateX: avatarTranslateX },
+                            { scale: avatarScale }
+                        ]
+                    }
+                ]}>
+                    <View style={styles.avatarWrapper}>
+                        <Image source={{ uri: getProfilePicUrl() }} style={styles.avatar} />
+                        {isEditing && (
+                            <TouchableOpacity style={styles.cameraIcon} onPress={handleUploadProfilePic}>
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                                    <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                    <Circle cx="12" cy="13" r="4" />
+                                </Svg>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </Animated.View>
             </Animated.View>
 
+            {/* Scrollable Content */}
             <Animated.ScrollView
+                style={{ flex: 1 }}
                 contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}
+                scrollEventThrottle={16}
                 onScroll={Animated.event(
                     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
                     { useNativeDriver: false }
                 )}
-                scrollEventThrottle={16}
             >
-                <View style={styles.avatarWrapper}>
-                    <Image source={{ uri: getProfilePicUrl() }} style={styles.avatar} />
-                    {isEditing && (
-                        <TouchableOpacity style={styles.cameraIcon} onPress={handleUploadProfilePic}>
-                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                                <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                                <Circle cx="12" cy="13" r="4" />
-                            </Svg>
-                        </TouchableOpacity>
-                    )}
-                </View>
 
                 <View style={styles.infoSection}>
                     {isEditing ? (
@@ -441,10 +506,41 @@ const ProfileScreen = ({ navigation }: any) => {
                 <View style={{ height: 100 }} />
             </Animated.ScrollView>
 
+            {/* Business Card Modal */}
+            {businessCardVisible && (
+                <Modal visible={businessCardVisible} transparent animationType="fade">
+                    <View style={styles.modalOverlay}>
+                        <BlurView style={StyleSheet.absoluteFill} blurType="light" blurAmount={3} reducedTransparencyFallbackColor="white" />
+                        <View style={styles.businessCardContainer}>
+                            <TouchableOpacity style={styles.closeCardButton} onPress={() => setBusinessCardVisible(false)}>
+                                <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2"><Line x1="18" y1="6" x2="6" y2="18"></Line><Line x1="6" y1="6" x2="18" y2="18"></Line></Svg>
+                            </TouchableOpacity>
+                            <View style={styles.cardHeader}>
+                                <Image source={{ uri: getProfilePicUrl() }} style={styles.cardAvatar} />
+                                <View style={{ marginLeft: 15 }}>
+                                    <Text style={styles.cardName}>{userInfo?.name || 'User Name'}</Text>
+                                    <Text style={styles.cardRole}>{isBusinessUser ? 'Business Account' : 'Individual Profile'}</Text>
+                                </View>
+                            </View>
+                            <View style={styles.cardQrBody}>
+                                <View style={styles.cardQrWrapper}>
+                                    <QRCode value={`raabtaa://user/${userInfo?.id}` || "https://example.com"} size={180} backgroundColor="white" color="black" />
+                                </View>
+                                <Text style={styles.scanText}>Scan to connect on Raabtaa</Text>
+                            </View>
+                            <View style={styles.cardFooter}>
+                                <Text style={styles.cardEmail}>{userInfo?.email}</Text>
+                                {userInfo?.phone && <Text style={styles.cardPhone}>{userInfo?.phone}</Text>}
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+            )}
+
             {modalVisible && (
                 <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
                     <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
-                        <BlurView style={StyleSheet.absoluteFill} blurType="dark" blurAmount={10} reducedTransparencyFallbackColor="black" />
+                        <BlurView style={StyleSheet.absoluteFill} blurType="light" blurAmount={3} reducedTransparencyFallbackColor="white" />
                         <TouchableWithoutFeedback onPress={closeModal}><View style={styles.dismissArea} /></TouchableWithoutFeedback>
                     </Animated.View>
 
@@ -469,7 +565,7 @@ const ProfileScreen = ({ navigation }: any) => {
             {apptModalVisible && (
                 <Modal visible={apptModalVisible} transparent animationType="fade">
                     <View style={styles.modalOverlay}>
-                        <BlurView style={StyleSheet.absoluteFill} blurType="dark" blurAmount={5} reducedTransparencyFallbackColor="black" />
+                        <BlurView style={StyleSheet.absoluteFill} blurType="light" blurAmount={3} reducedTransparencyFallbackColor="white" />
                         <View style={styles.apptModalContent}>
                             <View style={styles.apptHeader}>
                                 <TouchableOpacity onPress={() => changeDate(-1)} style={styles.arrowButton}>
@@ -510,18 +606,84 @@ const ProfileScreen = ({ navigation }: any) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F7FAFC' },
-    headerBackground: { backgroundColor: '#2D3748', height: 280, borderBottomLeftRadius: 40, borderBottomRightRadius: 40, alignItems: 'center', paddingTop: 50, position: 'relative', zIndex: 1 },
-    headerTop: { width: '100%', paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 10 },
+    // Absolute Header Layer
+    headerBackground: {
+        backgroundColor: '#2D3748',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+        alignItems: 'center',
+        // overflow: 'hidden' // Removed to allow avatar to slightly overlap if needed, preventing clip
+    },
+    headerTop: {
+        width: '100%',
+        paddingHorizontal: 20,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        marginTop: 50, // Space for status bar
+        zIndex: 20
+    },
     iconButton: { padding: 5 },
-    editForm: { width: '100%', paddingHorizontal: 40, alignItems: 'center' },
-    input: { width: '100%', backgroundColor: '#fff', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingHorizontal: 15, paddingVertical: 10, fontSize: 16, color: '#2D3748', textAlign: 'center' },
-    qrContainer: { marginTop: 10, alignItems: 'center', justifyContent: 'center', position: 'absolute', top: 60, left: 0, right: 0, zIndex: 10 },
-    qrWrapper: { padding: 10, backgroundColor: '#fff', borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 },
-    contentContainer: { alignItems: 'center', paddingBottom: 50, paddingTop: 260 }, // Padding top matches header height to start content below
-    avatarWrapper: { marginTop: -40, width: 100, height: 100, borderRadius: 50, borderWidth: 4, borderColor: '#F7FAFC', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 10, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 5, zIndex: 2 },
+
+    // QR Code
+    qrContainer: {
+        marginTop: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        // We rely on transforms for positioning
+    },
+    qrWrapper: {
+        padding: 10,
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 5
+    },
+
+    // Avatar Absolute Position
+    avatarContainerAbsolute: {
+        position: 'absolute',
+        top: 220, // Start position slightly overlapping bottom of header
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        zIndex: 30
+    },
+    avatarWrapper: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        borderWidth: 4,
+        borderColor: '#F7FAFC',
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5
+    },
     avatar: { width: 92, height: 92, borderRadius: 46 },
     cameraIcon: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#4A9EFF', width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+
+    // Scroll Content
+    contentContainer: {
+        alignItems: 'center',
+        paddingBottom: 50,
+        paddingTop: 300 // Space for the absolute header + avatar overlap
+    },
+
     infoSection: { alignItems: 'center', marginBottom: 20, width: '100%' },
+    editForm: { width: '100%', paddingHorizontal: 40, alignItems: 'center' },
+    input: { width: '100%', backgroundColor: '#fff', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingHorizontal: 15, paddingVertical: 10, fontSize: 16, color: '#2D3748', textAlign: 'center' },
+
     nameText: { fontSize: 24, fontWeight: 'bold', color: '#2D3748', marginBottom: 5 },
     roleText: { fontSize: 14, color: '#718096' },
     userTypeBadge: { marginTop: 5, backgroundColor: '#E2E8F0', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
@@ -602,7 +764,21 @@ const styles = StyleSheet.create({
     apptStatus: { fontSize: 12, textTransform: 'capitalize' },
     noApptText: { color: '#A0AEC0', marginVertical: 20 },
     closeApptButton: { marginTop: 20, backgroundColor: '#2D3748', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 25 },
-    closeApptButtonText: { color: '#fff', fontWeight: '600' }
+    closeApptButtonText: { color: '#fff', fontWeight: '600' },
+
+    // Business Card Styles
+    businessCardContainer: { width: '85%', backgroundColor: '#fff', borderRadius: 25, padding: 25, alignItems: 'center', elevation: 15, position: 'relative' },
+    closeCardButton: { position: 'absolute', top: 15, right: 15, padding: 5, zIndex: 10 },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginBottom: 20 },
+    cardAvatar: { width: 60, height: 60, borderRadius: 30 },
+    cardName: { fontSize: 20, fontWeight: 'bold', color: '#2D3748' },
+    cardRole: { fontSize: 14, color: '#718096', marginTop: 2 },
+    cardQrBody: { alignItems: 'center', marginVertical: 10 },
+    cardQrWrapper: { padding: 15, backgroundColor: '#fff', borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5, elevation: 3, borderWidth: 1, borderColor: '#EDF2F7' },
+    scanText: { marginTop: 15, color: '#A0AEC0', fontSize: 14 },
+    cardFooter: { marginTop: 20, alignItems: 'center', width: '100%', paddingTop: 15, borderTopWidth: 1, borderTopColor: '#EDF2F7' },
+    cardEmail: { fontSize: 16, color: '#4A5568', fontWeight: '500', marginBottom: 5 },
+    cardPhone: { fontSize: 16, color: '#4A5568' }
 });
 
 export default ProfileScreen;

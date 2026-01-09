@@ -320,11 +320,16 @@ const ProfileScreen = ({ navigation }: any) => {
         extrapolate: 'clamp'
     });
 
+    const headerInfoOpacity = scrollY.interpolate({
+        inputRange: [SCROLL_DISTANCE * 0.8, SCROLL_DISTANCE], // Fade in near the end of the scroll
+        outputRange: [0, 1],
+        extrapolate: 'clamp'
+    });
+
     // QR Code Animation:
     // Starts Center (roughly), Moves to Top-Right NEXT to Icon
     // Final Scale: 0.25 (Very small, icon size)
-    // Final Pos: Right ~25 (Exact overlap logic requires careful tuning)
-    // Currently Icon is paddingHorizontal: 20 from right.
+    // Final Pos: Right ~40 (Moved further right to overlap/align with settings icon)
     const qrScale = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
         outputRange: [1, 0.25],
@@ -333,13 +338,13 @@ const ProfileScreen = ({ navigation }: any) => {
 
     const qrTranslateY = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
-        outputRange: [0, -55], // Tuned to align vertically with settings icon
+        outputRange: [0, -60], // Moved up slightly more to align with header height (110) vs container mount point
         extrapolate: 'clamp'
     });
 
     const qrTranslateX = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
-        outputRange: [0, width / 2 - 25], // Moves to align with Settings Icon
+        outputRange: [0, width / 2 - 40], // Pushed further right to hit the icon area
         extrapolate: 'clamp'
     });
 
@@ -355,13 +360,13 @@ const ProfileScreen = ({ navigation }: any) => {
 
     const avatarTranslateY = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
-        outputRange: [0, -210], // Moved UP SIGNIFICANTLY (was -195)
+        outputRange: [0, -210],
         extrapolate: 'clamp'
     });
 
     const avatarTranslateX = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
-        outputRange: [0, -width / 2 + 50], // Moving Left
+        outputRange: [0, -width / 2 + 50],
         extrapolate: 'clamp'
     });
 
@@ -378,6 +383,15 @@ const ProfileScreen = ({ navigation }: any) => {
                         </Svg>
                     </TouchableOpacity>
                 </View>
+
+                {/* Header Profile Info (Visible on Scroll) */}
+                <Animated.View style={[styles.headerInfoContainer, { opacity: headerInfoOpacity }]}>
+                    <Text style={styles.headerNameText}>{userInfo?.name || 'User Name'}</Text>
+                    <Text style={styles.headerEmailText}>{userInfo?.email}</Text>
+                    <View style={styles.headerBadge}>
+                        <Text style={styles.headerBadgeText}>{isBusinessUser ? 'Business' : 'Individual'}</Text>
+                    </View>
+                </Animated.View>
 
                 {/* QR Code */}
                 <Animated.View style={[
@@ -626,6 +640,19 @@ const styles = StyleSheet.create({
         marginTop: 50, // Space for status bar
         zIndex: 20
     },
+    headerInfoContainer: {
+        position: 'absolute',
+        top: 50, // Align with headerTop vertical position roughly, but center horizontally
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        zIndex: 15
+    },
+    headerNameText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+    headerEmailText: { color: '#CBD5E0', fontSize: 10 },
+    headerBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginTop: 2 },
+    headerBadgeText: { color: 'white', fontSize: 10, fontWeight: '600' },
+
     iconButton: { padding: 5 },
 
     // QR Code

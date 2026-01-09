@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
-import Svg, { Path, Circle } from 'react-native-svg';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput, ActivityIndicator, Dimensions } from 'react-native';
+import Svg, { Path, Circle, Line } from 'react-native-svg';
 import { DataService } from '../services/DataService';
 import { AuthContext } from '../context/AuthContext';
 import { CONFIG } from '../Config';
 
-const ConnectionsScreen = () => {
+const { width } = Dimensions.get('window');
+
+const ConnectionsScreen = ({ navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
     const [activeTab, setActiveTab] = useState('connections'); // 'connections' | 'discover'
     const [connections, setConnections] = useState<any[]>([]);
@@ -21,8 +23,14 @@ const ConnectionsScreen = () => {
         inputBg: isDarkMode ? '#2D3748' : '#fff',
         borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
         headerBg: isDarkMode ? '#2D3748' : '#fff',
-        tabText: isDarkMode ? '#A0AEC0' : '#A0AEC0',
+        activeTabBg: isDarkMode ? '#4A5568' : '#E2E8F0',
+        inactiveTabBg: 'transparent',
         activeTabText: isDarkMode ? '#F7FAFC' : '#2D3748',
+        inactiveTabText: isDarkMode ? '#A0AEC0' : '#718096',
+        buttonBg: isDarkMode ? '#4A9EFF' : '#3182CE',
+        buttonText: '#fff',
+        disconnectBg: isDarkMode ? '#742A2A' : '#FED7D7',
+        disconnectText: isDarkMode ? '#FC8181' : '#C53030'
     };
 
     useEffect(() => {
@@ -75,8 +83,6 @@ const ConnectionsScreen = () => {
                 if (activeTab === 'connections') {
                     fetchConnections();
                 } else {
-                    // Update UI optimistically or refetch
-                    // For discover tab, maybe show 'Requested' or just button changes
                     fetchDiscover();
                 }
             }
@@ -89,35 +95,46 @@ const ConnectionsScreen = () => {
         const isConnected = connections.some(c => c.id === item.id);
         const imageUrl = item.profile_pic_url
             ? `${CONFIG.API_URL}/${item.profile_pic_url}`
-            : 'https://randomuser.me/api/portraits/men/32.jpg';
+            : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=200&h=200&fit=crop';
 
         return (
-            <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}>
+            <TouchableOpacity
+                activeOpacity={0.9}
+                style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}
+                onPress={() => navigation.navigate('Profile', { user: item })} // Assuming Profile can take user param
+            >
                 <Image source={{ uri: imageUrl }} style={styles.avatar} />
                 <View style={styles.info}>
-                    <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
-                    <Text style={[styles.role, { color: theme.subText }]}>{item.user_type} • {item.email}</Text>
+                    <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
+                    <Text style={[styles.role, { color: theme.subText }]} numberOfLines={1}>
+                        {item.user_type === 'business' ? 'Business Account' : 'Individual'}
+                    </Text>
+                    {item.email && <Text style={[styles.email, { color: theme.subText }]} numberOfLines={1}>{item.email}</Text>}
                 </View>
+
                 {activeTab === 'discover' ? (
                     <TouchableOpacity
-                        style={[styles.connectButton, isConnected && styles.connectedButton, { backgroundColor: isConnected ? (isDarkMode ? '#4A5568' : '#E2E8F0') : (isDarkMode ? '#4A5568' : '#2D3748') }]}
+                        style={[
+                            styles.actionButton,
+                            { backgroundColor: isConnected ? theme.activeTabBg : theme.buttonBg }
+                        ]}
                         onPress={() => handleConnect(item.id, isConnected ? 'accepted' : 'none')}
                     >
-                        <Text style={[styles.connectButtonText, isConnected && styles.connectedButtonText, { color: isConnected ? theme.text : '#fff' }]}>
+                        <Text style={[styles.actionButtonText, { color: isConnected ? theme.text : '#fff' }]}>
                             {isConnected ? 'Following' : 'Follow'}
                         </Text>
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity
-                        style={[styles.connectButton, styles.disconnectButton, { backgroundColor: isDarkMode ? '#4A5568' : '#FFF5F5' }]}
+                        style={[styles.actionButton, { backgroundColor: theme.disconnectBg }]}
                         onPress={() => handleConnect(item.id, 'accepted')}
                     >
-                        <Text style={[styles.connectButtonText, styles.disconnectButtonText, { color: isDarkMode ? '#F56565' : '#E53E3E' }]}>
+                        <Text style={[styles.actionButtonText, { color: theme.disconnectText }]}>
                             Unfollow
                         </Text>
                     </TouchableOpacity>
                 )}
-            </View>
+            </TouchableOpacity>
         );
     };
 
@@ -125,49 +142,67 @@ const ConnectionsScreen = () => {
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Header */}
             <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.borderColor }]}>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Network</Text>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>My Network</Text>
             </View>
 
-            {/* Tabs */}
-            <View style={[styles.tabs, { backgroundColor: theme.headerBg }]}>
-                <TouchableOpacity style={[styles.tab, activeTab === 'connections' && [styles.activeTab, { borderBottomColor: theme.text }]]} onPress={() => setActiveTab('connections')}>
-                    <Text style={[styles.tabText, { color: activeTab === 'connections' ? theme.activeTabText : theme.tabText }]}>Following</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.tab, activeTab === 'discover' && [styles.activeTab, { borderBottomColor: theme.text }]]} onPress={() => setActiveTab('discover')}>
-                    <Text style={[styles.tabText, { color: activeTab === 'discover' ? theme.activeTabText : theme.tabText }]}>Discover</Text>
-                </TouchableOpacity>
+            {/* Custom Tab Bar */}
+            <View style={styles.tabContainer}>
+                <View style={[styles.tabWrapper, { backgroundColor: theme.inputBg, borderColor: theme.borderColor }]}>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'connections' && { backgroundColor: theme.activeTabBg }]}
+                        onPress={() => setActiveTab('connections')}
+                    >
+                        <Text style={[styles.tabText, { color: activeTab === 'connections' ? theme.activeTabText : theme.inactiveTabText }]}>Following</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'discover' && { backgroundColor: theme.activeTabBg }]}
+                        onPress={() => setActiveTab('discover')}
+                    >
+                        <Text style={[styles.tabText, { color: activeTab === 'discover' ? theme.activeTabText : theme.inactiveTabText }]}>Discover</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Search (only for discover) */}
             {activeTab === 'discover' && (
-                <View style={[styles.searchContainer, { backgroundColor: theme.inputBg, borderColor: theme.borderColor }]}>
-                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={styles.searchIcon}>
-                        <Circle cx="11" cy="11" r="8" />
-                        <Path d="M21 21L16.65 16.65" />
-                    </Svg>
-                    <TextInput
-                        style={[styles.searchInput, { color: theme.text }]}
-                        placeholder="Search users..."
-                        placeholderTextColor="#A0AEC0"
-                        value={searchText}
-                        onChangeText={setSearchText}
-                        onSubmitEditing={handleSearch}
-                    />
+                <View style={styles.searchSection}>
+                    <View style={[styles.searchContainer, { backgroundColor: theme.inputBg, borderColor: theme.borderColor }]}>
+                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2" style={styles.searchIcon}>
+                            <Circle cx="11" cy="11" r="8" />
+                            <Path d="M21 21L16.65 16.65" />
+                        </Svg>
+                        <TextInput
+                            style={[styles.searchInput, { color: theme.text }]}
+                            placeholder="Find people & businesses..."
+                            placeholderTextColor={theme.subText}
+                            value={searchText}
+                            onChangeText={setSearchText}
+                            onSubmitEditing={handleSearch}
+                            returnKeyType="search"
+                        />
+                    </View>
                 </View>
             )}
 
             {loading ? (
-                <View style={styles.center}><ActivityIndicator size="large" color={theme.text} /></View>
+                <View style={styles.center}><ActivityIndicator size="large" color={theme.buttonBg} /></View>
             ) : (
                 <FlatList
                     data={activeTab === 'connections' ? connections : discoverUsers}
                     keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={styles.listContent}
                     renderItem={renderItem}
+                    showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
                         <View style={styles.center}>
-                            <Text style={{ color: '#A0AEC0', marginTop: 50 }}>
-                                {activeTab === 'connections' ? "You aren't following anyone yet." : "No users found."}
+                            <Svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="1" style={{marginBottom: 10}}>
+                                <Circle cx="12" cy="12" r="10"></Circle>
+                                <Path d="M16 16s-1.5-2-4-2-4 2-4 2"></Path>
+                                <Line x1="9" y1="9" x2="9.01" y2="9"></Line>
+                                <Line x1="15" y1="9" x2="15.01" y2="9"></Line>
+                            </Svg>
+                            <Text style={{ color: theme.subText, fontSize: 16 }}>
+                                {activeTab === 'connections' ? "Your network is empty." : "No users found."}
                             </Text>
                         </View>
                     }
@@ -180,128 +215,112 @@ const ConnectionsScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F7FAFC',
     },
     header: {
-        paddingTop: 50,
+        paddingTop: 60, // Status bar space
         paddingHorizontal: 20,
-        paddingBottom: 15,
-        backgroundColor: '#fff',
+        paddingBottom: 20,
         borderBottomWidth: 1,
-        borderBottomColor: '#EDF2F7',
     },
     headerTitle: {
-        fontSize: 22,
+        fontSize: 28,
         fontWeight: 'bold',
-        color: '#2D3748',
     },
-    tabs: {
+    tabContainer: {
+        paddingHorizontal: 20,
+        marginTop: 20,
+        marginBottom: 10
+    },
+    tabWrapper: {
         flexDirection: 'row',
-        padding: 10,
-        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 4,
+        borderWidth: 1,
     },
     tab: {
-        marginRight: 20,
+        flex: 1,
         paddingVertical: 10,
-        paddingHorizontal: 5,
-    },
-    activeTab: {
-        borderBottomWidth: 2,
-        borderBottomColor: '#2D3748',
+        alignItems: 'center',
+        borderRadius: 8,
     },
     tabText: {
-        fontSize: 16,
-        color: '#A0AEC0',
+        fontSize: 14,
         fontWeight: '600',
     },
-    activeTabText: {
-        color: '#2D3748',
+    searchSection: {
+        paddingHorizontal: 20,
+        marginBottom: 10,
     },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fff',
-        borderRadius: 10,
+        borderRadius: 12,
         paddingHorizontal: 15,
         height: 50,
-        margin: 20,
-        marginBottom: 10,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
     },
     searchIcon: {
         marginRight: 10,
     },
     searchInput: {
         flex: 1,
-        color: '#2D3748',
         fontSize: 16,
     },
     listContent: {
         padding: 20,
+        paddingBottom: 100, // Bottom Tab space
     },
     card: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fff',
-        padding: 20,
-        borderRadius: 20,
-        marginBottom: 15,
+        padding: 15,
+        borderRadius: 16,
+        marginBottom: 12,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 4,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 2,
         borderWidth: 1,
-        borderColor: '#EDF2F7',
     },
     avatar: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         marginRight: 15,
         backgroundColor: '#EDF2F7'
     },
     info: {
         flex: 1,
+        justifyContent: 'center',
     },
     name: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#2D3748',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 2,
     },
     role: {
-        fontSize: 14,
-        color: '#718096',
-        marginTop: 4,
+        fontSize: 12,
+        marginBottom: 2,
     },
-    connectButton: {
-        backgroundColor: '#2D3748',
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 25,
+    email: {
+        fontSize: 10,
     },
-    connectedButton: {
-        backgroundColor: '#E2E8F0',
+    actionButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        marginLeft: 10,
     },
-    disconnectButton: {
-        backgroundColor: '#FFF5F5',
-    },
-    connectButtonText: {
-        color: '#fff',
+    actionButtonText: {
         fontSize: 12,
         fontWeight: '600',
-    },
-    connectedButtonText: {
-        color: '#4A5568',
-    },
-    disconnectButtonText: {
-        color: '#E53E3E',
     },
     center: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
+        marginTop: 50
     }
 });
 

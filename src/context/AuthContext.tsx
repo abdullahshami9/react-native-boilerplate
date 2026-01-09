@@ -1,8 +1,11 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { NativeModules, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '../services/AuthService';
 import DeviceInfo from 'react-native-device-info';
 import LoggerService from '../services/LoggerService';
+
+const { NavBarColor } = NativeModules;
 
 export const AuthContext = createContext<any>(null);
 
@@ -11,6 +14,12 @@ export const AuthProvider = ({ children }: any) => {
     const [userToken, setUserToken] = useState<string | null>(null);
     const [userInfo, setUserInfo] = useState<any | null>(null);
     const [isDarkMode, setIsDarkMode] = useState(false);
+
+    useEffect(() => {
+        if (Platform.OS === 'android' && NavBarColor) {
+            NavBarColor.setBackgroundColor(isDarkMode ? '#1A202C' : '#FFFFFF', !isDarkMode);
+        }
+    }, [isDarkMode]);
 
     const toggleTheme = () => {
         setIsDarkMode(prev => !prev);

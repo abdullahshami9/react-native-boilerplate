@@ -373,10 +373,9 @@ const ProfileScreen = ({ navigation }: any) => {
 
 
     // QR Code Animation:
-    // Starts Center (roughly), Moves to Top-Right NEXT to Icon
+    // Starts Center (roughly), Moves to Top-Right OVER the Icon
     // Final Scale: 0.25 (Very small, icon size)
-    // Final Pos: Right ~80 (to sit LEFT of the settings icon which is at Right 20)
-    // Settings icon container padding is 20 + icon width. Let's aim for Right 60-70.
+    // Final Pos: Align with Settings Icon
     const qrScale = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
         outputRange: [1, 0.25],
@@ -385,13 +384,13 @@ const ProfileScreen = ({ navigation }: any) => {
 
     const qrTranslateY = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
-        outputRange: [0, -65], // Moved up to align
+        outputRange: [0, -60], // Adjust to align vertically with gear icon
         extrapolate: 'clamp'
     });
 
     const qrTranslateX = scrollY.interpolate({
         inputRange: [0, SCROLL_DISTANCE],
-        outputRange: [0, width / 2 - 80], // Pushed right, but left of icon.
+        outputRange: [0, width / 2 - 32], // Move to far right (width/2 is edge from center, -32 for padding/icon center)
         extrapolate: 'clamp'
     });
 
@@ -715,7 +714,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
         alignItems: 'center',
         justifyContent: 'center',
-        // We rely on transforms for positioning
+        zIndex: 50, // Ensure it's on top of everything
     },
     qrWrapper: {
         padding: 10,

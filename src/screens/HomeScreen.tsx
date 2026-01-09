@@ -75,6 +75,11 @@ const HomeScreen = ({ navigation, route }: any) => {
         navBg: isDarkMode ? '#171923' : '#fff',
         navBorder: isDarkMode ? '#2D3748' : '#E2E8F0',
         iconColor: isDarkMode ? '#A0AEC0' : '#4A5568',
+        // Ensure availability slots have dark mode colors
+        slotFreeBg: isDarkMode ? '#2F855A' : '#C6F6D5',
+        slotFreeText: isDarkMode ? '#F0FFF4' : '#22543D',
+        slotBusyBg: isDarkMode ? '#9B2C2C' : '#FED7D7',
+        slotBusyText: isDarkMode ? '#FFF5F5' : '#822727',
     };
 
     const renderBusinessDashboard = () => (
@@ -192,7 +197,7 @@ const HomeScreen = ({ navigation, route }: any) => {
             {isFocused && <RNStatusBar backgroundColor={theme.headerBg} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />}
 
             {/* Header */}
-            <View style={[styles.header, { backgroundColor: theme.headerBg }]}>
+            <View style={[styles.header, { backgroundColor: theme.headerBg, shadowColor: isDarkMode ? '#000' : '#000' }]}>
                 <TouchableOpacity onPress={toggleSidebar}>
                     <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <Line x1="3" y1="12" x2="21" y2="12"></Line>

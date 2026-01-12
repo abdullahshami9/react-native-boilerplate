@@ -5,6 +5,8 @@ const bodyParser = require('body-parser');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const { Server } = require("socket.io");
 
 const app = express();
 const PORT = 3000;
@@ -12,6 +14,14 @@ const PORT = 3000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 
 // Ensure Upload Directories Exist
 const ensureDir = (dir) => {
@@ -21,6 +31,7 @@ const ensureDir = (dir) => {
 };
 ensureDir(path.join(__dirname, 'uploads/profiles'));
 ensureDir(path.join(__dirname, 'uploads/products'));
+ensureDir(path.join(__dirname, 'uploads/certificates'));
 
 // Database Connection Config
 const dbConfig = {
@@ -134,6 +145,75 @@ db.connect((err) => {
             FOREIGN KEY (product_id) REFERENCES products(id)
         );
 
+        CREATE TABLE IF NOT EXISTS education (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            degree VARCHAR(255) NOT NULL,
+            institution VARCHAR(255) NOT NULL,
+            year VARCHAR(20),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS certificates (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            file_url VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS social_links (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            platform VARCHAR(50) NOT NULL,
+            url VARCHAR(255) NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS business_details (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            description TEXT,
+            industry VARCHAR(100),
+            category VARCHAR(100),
+            location_lat DECIMAL(10, 8),
+            location_lng DECIMAL(11, 8),
+            address TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS payment_methods (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            provider VARCHAR(50),
+            account_number VARCHAR(100),
+            account_title VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS chats (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user1_id INT NOT NULL,
+            user2_id INT NOT NULL,
+            last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user1_id) REFERENCES users(id),
+            FOREIGN KEY (user2_id) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS messages (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            chat_id INT NOT NULL,
+            sender_id INT NOT NULL,
+            content TEXT,
+            type ENUM('text', 'image') DEFAULT 'text',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,
+            FOREIGN KEY (sender_id) REFERENCES users(id)
+        );
+
         CREATE TABLE IF NOT EXISTS generic (
           id int(11) NOT NULL AUTO_INCREMENT,
           query text NOT NULL,
@@ -152,7 +232,7 @@ db.connect((err) => {
             db.end();
             db = mysql.createConnection({ ...dbConfig, database: 'AppStarter' });
 
-            // Add column if not exists (Hack for existing db)
+             // Add column if not exists (Hack for existing db)
             db.query("SHOW COLUMNS FROM products LIKE 'stock_quantity'", (e, r) => {
                 if(r && r.length === 0) {
                      db.query("ALTER TABLE products ADD COLUMN stock_quantity INT DEFAULT 0", () => console.log("Added stock_quantity column"));
@@ -186,7 +266,11 @@ db.connect((err) => {
 // Multer Storage Configuration
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const dir = req.path.includes('profile') ? 'uploads/profiles/' : 'uploads/products/';
+        let dir = 'uploads/';
+        if (req.path.includes('profile')) dir += 'profiles/';
+        else if (req.path.includes('product')) dir += 'products/';
+        else if (req.path.includes('certificate')) dir += 'certificates/';
+
         // Ensure directory exists (mkdir -p logic handled by shell usually but good to be safe)
         cb(null, dir);
     },
@@ -199,10 +283,13 @@ const storage = multer.diskStorage({
         if (req.path.includes('profile')) {
             const userId = sanitize(req.body.userId || 'unknown');
             cb(null, `${userId}${ext}`);
-        } else {
+        } else if (req.path.includes('product')) {
             const productId = sanitize(req.body.productId || 'unknown');
             const index = sanitize(req.body.index || '0');
             cb(null, `${productId}-${index}${ext}`);
+        } else {
+             // Generic fallback
+             cb(null, `${Date.now()}${ext}`);
         }
     }
 });
@@ -224,6 +311,49 @@ const dbQuery = (sql, params, reqOrUrl, callback) => {
         if (callback) callback(err, result);
     });
 };
+
+// --- SOCKET.IO ---
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    socket.on('join_room', (chatId) => {
+        socket.join(`chat_${chatId}`);
+        console.log(`User ${socket.id} joined room chat_${chatId}`);
+    });
+
+    socket.on('send_message', (data) => {
+        // data: { chatId, senderId, content, type }
+        const { chatId, senderId, content, type } = data;
+
+        // Save to DB
+        const query = 'INSERT INTO messages (chat_id, sender_id, content, type) VALUES (?, ?, ?, ?)';
+        db.query(query, [chatId, senderId, content, type || 'text'], (err, result) => {
+            if (err) {
+                console.error("Socket DB Error:", err);
+                return;
+            }
+
+            // Update last_message_at in chats table
+            db.query('UPDATE chats SET last_message_at = CURRENT_TIMESTAMP WHERE id = ?', [chatId]);
+
+            // Emit to room
+            const messageData = {
+                id: result.insertId,
+                chat_id: chatId,
+                sender_id: senderId,
+                content,
+                type: type || 'text',
+                created_at: new Date()
+            };
+            io.to(`chat_${chatId}`).emit('receive_message', messageData);
+        });
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
+});
+
 
 // --- ROUTES ---
 
@@ -261,6 +391,134 @@ app.post('/update-profile', (req, res) => {
         res.json({ success: true });
     });
 });
+
+// --- NEW API ENDPOINTS FOR PROFILE ENHANCEMENTS ---
+
+// Get User Full Profile (including education, skills, socials)
+app.get('/api/profile/:userId', (req, res) => {
+    const userId = req.params.userId;
+    const queries = `
+        SELECT * FROM education WHERE user_id = ?;
+        SELECT * FROM social_links WHERE user_id = ?;
+        SELECT * FROM certificates WHERE user_id = ?;
+        SELECT * FROM business_details WHERE user_id = ?;
+        SELECT * FROM payment_methods WHERE user_id = ?;
+    `;
+
+    dbQuery(queries, [userId, userId, userId, userId, userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        // results is array of arrays because of multipleStatements: true
+        res.json({
+            success: true,
+            education: results[0],
+            socials: results[1],
+            certificates: results[2],
+            business: results[3][0] || null,
+            payments: results[4]
+        });
+    });
+});
+
+app.post('/api/education', (req, res) => {
+    const { user_id, degree, institution, year } = req.body;
+    const query = 'INSERT INTO education (user_id, degree, institution, year) VALUES (?, ?, ?, ?)';
+    dbQuery(query, [user_id, degree, institution, year], req, (err, result) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, id: result.insertId });
+    });
+});
+
+app.post('/api/socials', (req, res) => {
+    const { user_id, platform, url } = req.body;
+    const query = 'INSERT INTO social_links (user_id, platform, url) VALUES (?, ?, ?)';
+    dbQuery(query, [user_id, platform, url], req, (err, result) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, id: result.insertId });
+    });
+});
+
+// --- BUSINESS ONBOARDING ---
+
+app.post('/api/business/onboarding', (req, res) => {
+    const { user_id, description, industry, category, location_lat, location_lng, address, payment_methods, socials } = req.body;
+
+    // Save business details
+    const bizQuery = `INSERT INTO business_details (user_id, description, industry, category, location_lat, location_lng, address)
+                      VALUES (?, ?, ?, ?, ?, ?, ?)
+                      ON DUPLICATE KEY UPDATE description=?, industry=?, category=?, location_lat=?, location_lng=?, address=?`;
+
+    dbQuery(bizQuery, [user_id, description, industry, category, location_lat, location_lng, address,
+                       description, industry, category, location_lat, location_lng, address], req, (err, result) => {
+        if (err) return res.status(500).json({ success: false, message: 'Failed to save business details' });
+
+        // Save Payment Methods if any
+        if (payment_methods && payment_methods.length > 0) {
+            const payValues = payment_methods.map(p => [user_id, p.provider, p.account_number, p.account_title]);
+            db.query('INSERT INTO payment_methods (user_id, provider, account_number, account_title) VALUES ?', [payValues], (e) => {
+                if(e) console.error("Payment methods save error", e);
+            });
+        }
+
+        // Save Socials if any (and passed here)
+        if (socials && socials.length > 0) {
+             const socValues = socials.map(s => [user_id, s.platform, s.url]);
+             db.query('INSERT INTO social_links (user_id, platform, url) VALUES ?', [socValues], (e) => {
+                 if(e) console.error("Socials save error", e);
+             });
+        }
+
+        res.json({ success: true, message: 'Onboarding complete' });
+    });
+});
+
+// --- CHAT API ---
+
+app.post('/api/chats/initiate', (req, res) => {
+    const { user1_id, user2_id } = req.body;
+    // Check if chat exists
+    const checkQuery = 'SELECT * FROM chats WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)';
+    dbQuery(checkQuery, [user1_id, user2_id, user2_id, user1_id], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+
+        if (results.length > 0) {
+            res.json({ success: true, chatId: results[0].id });
+        } else {
+            const createQuery = 'INSERT INTO chats (user1_id, user2_id) VALUES (?, ?)';
+            dbQuery(createQuery, [user1_id, user2_id], req, (err2, result) => {
+                if (err2) return res.status(500).json({ success: false });
+                res.json({ success: true, chatId: result.insertId });
+            });
+        }
+    });
+});
+
+app.get('/api/chats/:userId', (req, res) => {
+    // Get list of chats for a user with last message
+    const query = `
+        SELECT c.*,
+               u1.name as user1_name, u1.profile_pic_url as user1_pic,
+               u2.name as user2_name, u2.profile_pic_url as user2_pic,
+               (SELECT content FROM messages WHERE chat_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message
+        FROM chats c
+        JOIN users u1 ON c.user1_id = u1.id
+        JOIN users u2 ON c.user2_id = u2.id
+        WHERE c.user1_id = ? OR c.user2_id = ?
+        ORDER BY c.last_message_at DESC
+    `;
+    dbQuery(query, [req.params.userId, req.params.userId], req, (err, results) => {
+         if (err) return res.status(500).json({ success: false });
+         res.json({ success: true, chats: results });
+    });
+});
+
+app.get('/api/messages/:chatId', (req, res) => {
+    const query = 'SELECT * FROM messages WHERE chat_id = ? ORDER BY created_at ASC';
+    dbQuery(query, [req.params.chatId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, messages: results });
+    });
+});
+
 
 // --- UPLOADS ---
 
@@ -522,6 +780,6 @@ app.post('/biometric/login', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

@@ -52,6 +52,8 @@ export const AuthProvider = ({ children }: any) => {
             const mac_address = await DeviceInfo.getUniqueId();
             const response = await AuthService.register({ name, email, password, phone, user_type, mac_address });
             LoggerService.info('Registration successful', { email, mac_address }, 'AuthContext');
+
+            // Auto Login after register to simplify flow, if needed, or just return response
             return response;
         } catch (e: any) {
             // Stringify the error object if it's an object to avoid [object Object] in logs

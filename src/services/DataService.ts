@@ -189,5 +189,16 @@ export const DataService = {
             LoggerService.error('Get Appointments Error:', error, 'DataService');
             throw error.response?.data || { message: 'Network Error' };
         }
+    },
+
+    // --- CHAT ---
+    initiateChat: async (user1Id: number, user2Id: number) => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/chats/initiate`, { user1_id: user1Id, user2_id: user2Id });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Initiate Chat Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
     }
 };

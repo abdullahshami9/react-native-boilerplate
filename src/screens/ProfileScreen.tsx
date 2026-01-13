@@ -8,11 +8,12 @@ import { DataService } from '../services/DataService';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { CONFIG } from '../Config';
 import Animated, { useSharedValue, useAnimatedStyle, interpolate, Extrapolate, useAnimatedScrollHandler, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
+import CustomAlert from '../components/CustomAlert';
 
 const { width, height } = Dimensions.get('window');
 
 // Calendar Contribution Graph Component
-const ContributionGraph = ({ appointments, onDateClick }: any) => {
+const ContributionGraph = ({ data, onDateClick, isBusiness }: any) => {
     // Generate dates for the last month to next month (approx 60 days)
     const today = new Date();
     const days = [];
@@ -23,11 +24,20 @@ const ContributionGraph = ({ appointments, onDateClick }: any) => {
     }
 
     const getColor = (dateStr: string) => {
-        const count = appointments.filter((a: any) => {
-            if (!a.appointment_date) return false;
-            const apptDate = a.appointment_date.split('T')[0];
-            return apptDate === dateStr;
-        }).length;
+        let count = 0;
+        if (isBusiness) {
+            // Data is sales report array [{ date: 'YYYY-MM-DD', count: N, total: M }]
+            const dayData = data.find((d: any) => d.date.split('T')[0] === dateStr);
+            count = dayData ? dayData.count : 0;
+        } else {
+            // Data is appointments array
+            count = data.filter((a: any) => {
+                if (!a.appointment_date) return false;
+                const apptDate = a.appointment_date.split('T')[0];
+                return apptDate === dateStr;
+            }).length;
+        }
+
         if (count === 0) return '#EBEDF0';
         if (count === 1) return '#9BE9A8';
         if (count === 2) return '#40C463';
@@ -37,7 +47,7 @@ const ContributionGraph = ({ appointments, onDateClick }: any) => {
 
     return (
         <View style={styles.calendarContainer}>
-            <Text style={styles.calendarTitle}>Appointment Activity</Text>
+            <Text style={styles.calendarTitle}>{isBusiness ? 'Sales Activity' : 'Appointment Activity'}</Text>
             <View style={styles.calendarGrid}>
                 {days.map((date, index) => {
                     const dateStr = date.toISOString().split('T')[0];
@@ -69,6 +79,7 @@ const ProfileScreen = ({ navigation }: any) => {
     const [skills, setSkills] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [appointments, setAppointments] = useState<any[]>([]);
+    const [salesData, setSalesData] = useState<any[]>([]); // New state for sales
     const [education, setEducation] = useState<any[]>([]);
     const [socials, setSocials] = useState<any[]>([]);
 
@@ -78,16 +89,17 @@ const ProfileScreen = ({ navigation }: any) => {
     // Modals
     const [modalVisible, setModalVisible] = useState(false);
     const [businessCardVisible, setBusinessCardVisible] = useState(false);
-    const [apptModalVisible, setApptModalVisible] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<string | null>(null);
-    const [selectedAppts, setSelectedAppts] = useState<any[]>([]);
+
+    // Alert State
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState('');
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertType, setAlertType] = useState<'success' | 'error' | 'info'>('info');
 
     const isBusinessUser = userInfo?.user_type === 'business';
 
     // Reanimated Shared Values
     const scrollY = useSharedValue(0);
-    const modalY = useSharedValue(height);
-    const modalOpacity = useSharedValue(0);
 
     const theme = {
         bg: isDarkMode ? '#1A202C' : '#F7FAFC',
@@ -110,53 +122,75 @@ const ProfileScreen = ({ navigation }: any) => {
             if (isBusinessUser) {
                 const res = await DataService.getProducts(userInfo.id);
                 if (res.success) setProducts(res.products);
+
+                const salesRes = await DataService.getSalesReport(userInfo.id);
+                if (salesRes.success) setSalesData(salesRes.daily);
             } else {
                 const res = await DataService.getSkills(userInfo.id);
                 if (res.success) setSkills(res.skills);
             }
+
+            // Still fetch appointments for everyone (maybe business also has appointments?)
+            // Assuming business users primarily care about sales in the graph as per request
             const apptRes = await DataService.getAppointments(userInfo.id);
             if (apptRes.success) setAppointments(apptRes.appointments);
 
-            // Fetch extra profile details (Education, Socials) via DataService if endpoint exists or generic
-            // For now assume similar pattern or fetch from new endpoints
-            // Implementation of DataService.getProfileDetails would be ideal, here we can mock or use axios directly if service not updated
-            // Assuming we added getFullProfile to backend
         } catch (error) {
             console.log("Error fetching profile data", error);
         }
     };
 
     const handleDateClick = (dateStr: string) => {
-        const dayAppointments = appointments.filter((a: any) => {
-            if (!a.appointment_date) return false;
-            const apptDate = a.appointment_date.split('T')[0];
-            return apptDate === dateStr;
-        });
-        setSelectedDate(dateStr);
-        setSelectedAppts(dayAppointments);
-        setApptModalVisible(true);
+        if (isBusinessUser) {
+            const dayData = salesData.find((d: any) => d.date.split('T')[0] === dateStr);
+            if (dayData && dayData.count > 0) {
+                setAlertTitle('Sales Summary');
+                setAlertMessage(`Date: ${dateStr}\nOrders: ${dayData.count}\nTotal: $${dayData.total}`);
+                setAlertType('success');
+                setAlertVisible(true);
+            } else {
+                 setAlertTitle('No Sales');
+                 setAlertMessage(`No sales recorded for ${dateStr}.`);
+                 setAlertType('info');
+                 setAlertVisible(true);
+            }
+        } else {
+            const dayAppointments = appointments.filter((a: any) => {
+                if (!a.appointment_date) return false;
+                const apptDate = a.appointment_date.split('T')[0];
+                return apptDate === dateStr;
+            });
+
+            if (dayAppointments.length > 0) {
+                const details = dayAppointments.map((a: any) => {
+                     const time = new Date(a.appointment_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                     const withUser = a.provider_id === userInfo.id ? a.customer_name : a.provider_name;
+                     return `${time} - ${withUser} (${a.status})`;
+                }).join('\n');
+
+                setAlertTitle('Appointments');
+                setAlertMessage(`Date: ${dateStr}\n\n${details}`);
+                setAlertType('info');
+                setAlertVisible(true);
+            } else {
+                setAlertTitle('No Appointments');
+                setAlertMessage(`You have no appointments on ${dateStr}.`);
+                setAlertType('info');
+                setAlertVisible(true);
+            }
+        }
     };
 
-    const handleSave = async () => {
-        try {
-            await updateProfile(name, phone);
-            setIsEditing(false);
-        } catch (error) {
-            console.error(error);
-        }
+    const handleChatPress = async () => {
+        navigation.navigate('ChatList');
     };
 
     const openModal = () => {
         setModalVisible(true);
-        modalY.value = withSpring(0, { damping: 15 });
-        modalOpacity.value = withTiming(1, { duration: 300 });
     };
 
     const closeModal = () => {
-        modalY.value = withTiming(height, { duration: 250 });
-        modalOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
-            if (finished) runOnJS(setModalVisible)(false);
-        });
+        setModalVisible(false);
     };
 
     const handleEditProfile = () => { closeModal(); setIsEditing(true); };
@@ -193,7 +227,7 @@ const ProfileScreen = ({ navigation }: any) => {
     const qrStyle = useAnimatedStyle(() => {
         const scale = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [1, 0.3], Extrapolate.CLAMP);
         const translateX = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, width / 2 - 50], Extrapolate.CLAMP);
-        const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -90], Extrapolate.CLAMP); // Move up to header
+        const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -90], Extrapolate.CLAMP);
 
         return {
             transform: [
@@ -283,7 +317,7 @@ const ProfileScreen = ({ navigation }: any) => {
                      <TouchableOpacity style={styles.circleBtn} onPress={() => Linking.openURL(`tel:${userInfo?.phone}`)}>
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.12 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></Svg>
                      </TouchableOpacity>
-                     <TouchableOpacity style={styles.circleBtn} onPress={() => navigation.navigate('ChatList')}>
+                     <TouchableOpacity style={styles.circleBtn} onPress={handleChatPress}>
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
                      </TouchableOpacity>
                      {isBusinessUser && (
@@ -296,7 +330,7 @@ const ProfileScreen = ({ navigation }: any) => {
 
                 {/* Calendar */}
                 <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                     <ContributionGraph appointments={appointments} onDateClick={handleDateClick} />
+                     <ContributionGraph data={isBusinessUser ? salesData : appointments} onDateClick={handleDateClick} isBusiness={isBusinessUser} />
                 </View>
 
                 {/* Skills or Products */}
@@ -338,18 +372,34 @@ const ProfileScreen = ({ navigation }: any) => {
 
             </Animated.ScrollView>
 
-            {/* Modals reused from original code but with simplified implementation for brevity in this step */}
-            {modalVisible && (
-                 <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
-                    <TouchableWithoutFeedback onPress={closeModal}><View style={styles.dismissArea} /></TouchableWithoutFeedback>
-                    <Animated.View style={[styles.modalContent, { transform: [{ translateY: modalY }], backgroundColor: theme.cardBg }]}>
+             {/* Custom Alert */}
+             <CustomAlert
+                visible={alertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                type={alertType}
+                onDismiss={() => setAlertVisible(false)}
+             />
+
+            {/* Replaced Animated Modal with Standard Modal for stability */}
+            <Modal
+                visible={modalVisible}
+                transparent
+                animationType="slide"
+                onRequestClose={closeModal}
+            >
+                <View style={styles.settingsModalOverlay}>
+                    <TouchableWithoutFeedback onPress={closeModal}>
+                        <View style={styles.dismissArea} />
+                    </TouchableWithoutFeedback>
+                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
                         <View style={styles.menuContainer}>
                              <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}><Text style={[styles.menuItemText, {color:theme.text}]}>Edit Profile</Text></TouchableOpacity>
                              <TouchableOpacity style={styles.menuItem} onPress={handleLogout}><Text style={[styles.menuItemText, {color:'red'}]}>Logout</Text></TouchableOpacity>
                         </View>
-                    </Animated.View>
-                 </View>
-            )}
+                    </View>
+                </View>
+            </Modal>
 
              {/* Business Card Modal */}
              {businessCardVisible && (
@@ -430,13 +480,14 @@ const styles = StyleSheet.create({
 
     // Modal
     dismissArea: { flex: 1 },
-    modalContent: { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, elevation: 20 },
+    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+    settingsModalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+    modalContent: { borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, elevation: 20, paddingBottom: 50 },
     menuContainer: { gap: 15 },
     menuItem: { paddingVertical: 10 },
     menuItemText: { fontSize: 18, fontWeight: '600' },
 
     // Business Card Modal
-    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
     businessCardContainer: { width: '85%', backgroundColor: '#fff', borderRadius: 25, padding: 25, alignItems: 'center', elevation: 15 },
     closeCardButton: { position: 'absolute', top: 15, right: 15, padding: 5, zIndex: 10 },
     cardHeader: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginBottom: 20 },

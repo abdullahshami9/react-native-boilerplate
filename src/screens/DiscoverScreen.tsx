@@ -119,9 +119,26 @@ const DiscoverScreen = ({ navigation }: any) => {
                                     <Image source={{ uri: item.profile_pic_url ? `${CONFIG.API_URL}/${item.profile_pic_url}` : 'https://randomuser.me/api/portraits/men/32.jpg' }} style={styles.cardImage} />
                                     <Text style={[styles.cardName, { color: theme.text }]}>{item.name}</Text>
                                     <Text style={[styles.cardRole, { color: theme.subText }]}>{item.user_type}</Text>
-                                    <TouchableOpacity style={[styles.connectButton, { backgroundColor: isDarkMode ? '#4A5568' : '#2D3748' }]}>
-                                        <Text style={styles.connectButtonText}>Connect</Text>
-                                    </TouchableOpacity>
+                                    <View style={styles.actionButtons}>
+                                        <TouchableOpacity style={[styles.connectButton, { backgroundColor: isDarkMode ? '#4A5568' : '#2D3748' }]}>
+                                            <Text style={styles.connectButtonText}>Connect</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.messageButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]}
+                                            onPress={async () => {
+                                                try {
+                                                    const res = await DataService.initiateChat(userInfo.id, item.id);
+                                                    if (res.success) {
+                                                        navigation.navigate('Chat', { chatId: res.chatId, otherUser: { id: item.id, name: item.name, pic: item.profile_pic_url } });
+                                                    }
+                                                } catch (e) {
+                                                    console.error("Chat Error", e);
+                                                }
+                                            }}
+                                        >
+                                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
                             ))}
                             {users.length === 0 && <Text style={{ color: '#A0AEC0', padding: 20 }}>No users found.</Text>}
@@ -275,18 +292,29 @@ const styles = StyleSheet.create({
         color: '#718096',
         marginBottom: 10,
     },
+    actionButtons: {
+        flexDirection: 'row',
+        width: '100%',
+        gap: 5
+    },
     connectButton: {
         backgroundColor: '#2D3748',
         paddingVertical: 8,
-        paddingHorizontal: 25,
+        flex: 1,
         borderRadius: 20,
-        width: '100%',
         alignItems: 'center',
     },
     connectButtonText: {
         color: '#fff',
         fontSize: 12,
         fontWeight: '600',
+    },
+    messageButton: {
+        padding: 8,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#EDF2F7'
     },
     sectionHeader: {
         flexDirection: 'row',

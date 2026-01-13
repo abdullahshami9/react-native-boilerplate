@@ -15,6 +15,7 @@ import AddProductScreen from './src/screens/AddProductScreen';
 import BusinessOnboardingScreen from './src/screens/BusinessOnboardingScreen';
 import ChatListScreen from './src/screens/ChatListScreen';
 import ChatScreen from './src/screens/ChatScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -46,6 +47,7 @@ const AppNav = () => {
             <Stack.Screen name="AddProduct" component={AddProductScreen} />
             <Stack.Screen name="ChatList" component={ChatListScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />
+            <Stack.Screen name="UserProfile" component={ProfileScreen} />
           </>
         ) : (
           <>

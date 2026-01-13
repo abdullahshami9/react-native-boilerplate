@@ -69,11 +69,23 @@ const ContributionGraph = ({ data, onDateClick, isBusiness }: any) => {
     );
 };
 
-const ProfileScreen = ({ navigation }: any) => {
+
+const ProfileScreen = ({ navigation, route }: any) => {
     const { logout, userInfo, updateProfile, isDarkMode, toggleTheme } = useContext(AuthContext);
+
+    // VIEW MODE LOGIC
+    // If route.params.user exists, we are viewing someone else.
+    // Otherwise, we are viewing ourselves (userInfo).
+    const paramUser = route?.params?.user;
+    const isOwnProfile = !paramUser || (userInfo && paramUser.id === userInfo.id);
+    const displayedUser = isOwnProfile ? userInfo : paramUser;
+
     const [isEditing, setIsEditing] = useState(false);
-    const [name, setName] = useState(userInfo?.name || '');
-    const [phone, setPhone] = useState(userInfo?.phone || '');
+
+    // Edit State
+    const [editName, setEditName] = useState(displayedUser?.name || '');
+    const [editPhone, setEditPhone] = useState(displayedUser?.phone || '');
+
 
     // Data State
     const [skills, setSkills] = useState<any[]>([]);
@@ -96,7 +108,7 @@ const ProfileScreen = ({ navigation }: any) => {
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState<'success' | 'error' | 'info'>('info');
 
-    const isBusinessUser = userInfo?.user_type === 'business';
+    const isBusinessUser = displayedUser?.user_type === 'business';
 
     // Reanimated Shared Values
     const scrollY = useSharedValue(0);
@@ -112,27 +124,28 @@ const ProfileScreen = ({ navigation }: any) => {
     };
 
     useEffect(() => {
-        if (userInfo?.id) {
+        if (displayedUser?.id) {
             fetchData();
+            // Sync edit state when user changes
+            setEditName(displayedUser.name);
+            setEditPhone(displayedUser.phone);
         }
-    }, [userInfo?.id]);
+    }, [displayedUser?.id]);
 
     const fetchData = async () => {
         try {
             if (isBusinessUser) {
-                const res = await DataService.getProducts(userInfo.id);
+                const res = await DataService.getProducts(displayedUser.id);
                 if (res.success) setProducts(res.products);
 
-                const salesRes = await DataService.getSalesReport(userInfo.id);
+                const salesRes = await DataService.getSalesReport(displayedUser.id);
                 if (salesRes.success) setSalesData(salesRes.daily);
             } else {
-                const res = await DataService.getSkills(userInfo.id);
+                const res = await DataService.getSkills(displayedUser.id);
                 if (res.success) setSkills(res.skills);
             }
 
-            // Still fetch appointments for everyone (maybe business also has appointments?)
-            // Assuming business users primarily care about sales in the graph as per request
-            const apptRes = await DataService.getAppointments(userInfo.id);
+            const apptRes = await DataService.getAppointments(displayedUser.id);
             if (apptRes.success) setAppointments(apptRes.appointments);
 
         } catch (error) {
@@ -149,10 +162,10 @@ const ProfileScreen = ({ navigation }: any) => {
                 setAlertType('success');
                 setAlertVisible(true);
             } else {
-                 setAlertTitle('No Sales');
-                 setAlertMessage(`No sales recorded for ${dateStr}.`);
-                 setAlertType('info');
-                 setAlertVisible(true);
+                setAlertTitle('No Sales');
+                setAlertMessage(`No sales recorded for ${dateStr}.`);
+                setAlertType('info');
+                setAlertVisible(true);
             }
         } else {
             const dayAppointments = appointments.filter((a: any) => {
@@ -163,9 +176,9 @@ const ProfileScreen = ({ navigation }: any) => {
 
             if (dayAppointments.length > 0) {
                 const details = dayAppointments.map((a: any) => {
-                     const time = new Date(a.appointment_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                     const withUser = a.provider_id === userInfo.id ? a.customer_name : a.provider_name;
-                     return `${time} - ${withUser} (${a.status})`;
+                    const time = new Date(a.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const withUser = a.provider_id === displayedUser.id ? a.customer_name : a.provider_name;
+                    return `${time} - ${withUser} (${a.status})`;
                 }).join('\n');
 
                 setAlertTitle('Appointments');
@@ -196,9 +209,30 @@ const ProfileScreen = ({ navigation }: any) => {
     const handleEditProfile = () => { closeModal(); setIsEditing(true); };
     const handleLogout = () => { closeModal(); logout(); };
 
+    const handleSaveProfile = async () => {
+        try {
+            const res = await updateProfile(editName, editPhone);
+            if (res.success) {
+                setAlertTitle('Success');
+                setAlertMessage('Profile updated successfully.');
+                setAlertType('success');
+                setIsEditing(false);
+            } else {
+                setAlertTitle('Error');
+                setAlertMessage(res.message || 'Failed to update profile.');
+                setAlertType('error');
+            }
+        } catch (e: any) {
+            setAlertTitle('Error');
+            setAlertMessage(e.message || 'Failed to update profile.');
+            setAlertType('error');
+        }
+        setAlertVisible(true);
+    };
+
     const getProfilePicUrl = () => {
-        if (userInfo?.profile_pic_url) {
-            return `${CONFIG.API_URL}/${userInfo.profile_pic_url}?t=${new Date().getTime()}`;
+        if (displayedUser?.profile_pic_url) {
+            return `${CONFIG.API_URL}/${displayedUser.profile_pic_url}?t=${new Date().getTime()}`;
         }
         return isBusinessUser
             ? 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?fit=crop&w=200&h=200'
@@ -225,26 +259,28 @@ const ProfileScreen = ({ navigation }: any) => {
     });
 
     const qrStyle = useAnimatedStyle(() => {
-        const scale = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [1, 0.3], Extrapolate.CLAMP);
-        const translateX = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, width / 2 - 50], Extrapolate.CLAMP);
-        const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -90], Extrapolate.CLAMP);
+        // Shrink and move to top-right, next to settings icon
+        const scale = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [1, 0.25], Extrapolate.CLAMP);
+        const translateX = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, width / 2 - 40], Extrapolate.CLAMP); // End near right edge
+        const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -110], Extrapolate.CLAMP); // Move up into header
 
         return {
             transform: [
                 { translateX },
                 { translateY },
                 { scale }
-            ]
+            ],
+            opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.8], [1, 1], Extrapolate.CLAMP) // Keep visible
         };
     });
 
     const avatarStyle = useAnimatedStyle(() => {
-         const scale = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [1, 0.5], Extrapolate.CLAMP);
-         const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -220], Extrapolate.CLAMP);
-         const translateX = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -width / 2 + 50], Extrapolate.CLAMP);
-         return {
-             transform: [{ translateX }, { translateY }, { scale }]
-         };
+        const scale = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [1, 0.5], Extrapolate.CLAMP);
+        const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -220], Extrapolate.CLAMP);
+        const translateX = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -width / 2 + 50], Extrapolate.CLAMP);
+        return {
+            transform: [{ translateX }, { translateY }, { scale }]
+        };
     });
 
     const headerInfoOpacity = useAnimatedStyle(() => {
@@ -263,36 +299,47 @@ const ProfileScreen = ({ navigation }: any) => {
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Animated Header */}
             <Animated.View style={[styles.headerBackground, headerHeightStyle, { backgroundColor: '#2D3748' }]}>
-                 <View style={styles.headerTop}>
-                    <TouchableOpacity onPress={openModal} style={styles.iconButton}>
-                        <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                             <Circle cx="12" cy="12" r="3" />
-                             <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                        </Svg>
+                <View style={styles.headerTop}>
+                    {/* Only show Settings/Edit for own profile */}
+                    {isOwnProfile && (
+                        <TouchableOpacity onPress={openModal} style={styles.iconButton}>
+                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                                <Circle cx="12" cy="12" r="3" />
+                                <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                            </Svg>
+                        </TouchableOpacity>
+                    )}
+                    {/* Back button if viewing other profile */}
+                    {!isOwnProfile && (
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.iconButton, { marginRight: 'auto' }]}>
+                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                                <Path d="M19 12H5M12 19l-7-7 7-7" />
+                            </Svg>
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                {/* Header Compact Info */}
+                <Animated.View style={[styles.headerInfoContainer, headerInfoOpacity]}>
+                    <Text style={styles.headerNameText}>{displayedUser?.name}</Text>
+                    <Text style={styles.headerEmailText}>{displayedUser?.email}</Text>
+                </Animated.View>
+
+                {/* QR Code */}
+                <Animated.View style={[styles.qrContainer, qrStyle]}>
+                    <TouchableOpacity onPress={() => setBusinessCardVisible(true)}>
+                        <View style={styles.qrWrapper}>
+                            <QRCode value={`raabtaa://user/${displayedUser?.id}`} size={140} />
+                        </View>
                     </TouchableOpacity>
-                 </View>
+                </Animated.View>
 
-                 {/* Header Compact Info */}
-                 <Animated.View style={[styles.headerInfoContainer, headerInfoOpacity]}>
-                    <Text style={styles.headerNameText}>{userInfo?.name}</Text>
-                    <Text style={styles.headerEmailText}>{userInfo?.email}</Text>
-                 </Animated.View>
-
-                 {/* QR Code */}
-                 <Animated.View style={[styles.qrContainer, qrStyle]}>
-                     <TouchableOpacity onPress={() => setBusinessCardVisible(true)}>
-                         <View style={styles.qrWrapper}>
-                            <QRCode value={`raabtaa://user/${userInfo?.id}`} size={140} />
-                         </View>
-                     </TouchableOpacity>
-                 </Animated.View>
-
-                 {/* Avatar */}
-                 <Animated.View style={[styles.avatarContainerAbsolute, avatarStyle]}>
+                {/* Avatar */}
+                <Animated.View style={[styles.avatarContainerAbsolute, avatarStyle]}>
                     <View style={styles.avatarWrapper}>
                         <Image source={{ uri: getProfilePicUrl() }} style={styles.avatar} />
                     </View>
-                 </Animated.View>
+                </Animated.View>
             </Animated.View>
 
             <Animated.ScrollView
@@ -305,32 +352,32 @@ const ProfileScreen = ({ navigation }: any) => {
 
                 {/* Main Body Info */}
                 <Animated.View style={[styles.infoSection, bodyInfoOpacity]}>
-                     <Text style={[styles.nameText, { color: theme.text }]}>{userInfo?.name}</Text>
-                     <Text style={[styles.roleText, { color: theme.subText }]}>{userInfo?.email}</Text>
-                     <View style={[styles.userTypeBadge, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
+                    <Text style={[styles.nameText, { color: theme.text }]}>{displayedUser?.name}</Text>
+                    <Text style={[styles.roleText, { color: theme.subText }]}>{displayedUser?.email}</Text>
+                    <View style={[styles.userTypeBadge, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
                         <Text style={[styles.userTypeBadgeText, { color: isDarkMode ? '#F7FAFC' : '#4A5568' }]}>{isBusinessUser ? 'Business' : 'Individual'}</Text>
                     </View>
                 </Animated.View>
 
                 {/* Action Buttons */}
                 <View style={styles.actionRow}>
-                     <TouchableOpacity style={styles.circleBtn} onPress={() => Linking.openURL(`tel:${userInfo?.phone}`)}>
+                    <TouchableOpacity style={styles.circleBtn} onPress={() => Linking.openURL(`tel:${displayedUser?.phone}`)}>
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.12 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></Svg>
-                     </TouchableOpacity>
-                     <TouchableOpacity style={styles.circleBtn} onPress={handleChatPress}>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.circleBtn} onPress={handleChatPress}>
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
-                     </TouchableOpacity>
-                     {isBusinessUser && (
+                    </TouchableOpacity>
+                    {isBusinessUser && (
                         <View style={styles.locationSnippet}>
                             <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#718096" strokeWidth="2"><Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><Circle cx="12" cy="10" r="3" /></Svg>
                             <Text style={styles.locationText} numberOfLines={1}>Karachi, PK</Text>
                         </View>
-                     )}
+                    )}
                 </View>
 
                 {/* Calendar */}
                 <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                     <ContributionGraph data={isBusinessUser ? salesData : appointments} onDateClick={handleDateClick} isBusiness={isBusinessUser} />
+                    <ContributionGraph data={isBusinessUser ? salesData : appointments} onDateClick={handleDateClick} isBusiness={isBusinessUser} />
                 </View>
 
                 {/* Skills or Products */}
@@ -338,27 +385,30 @@ const ProfileScreen = ({ navigation }: any) => {
                     <Text style={[styles.sectionTitle, { color: theme.text }]}>{isBusinessUser ? 'Product Catalog' : 'Professional Skills'}</Text>
                     {!isBusinessUser && (
                         <View style={styles.tagsContainer}>
-                             {skills.map((s, i) => (
-                                 <View key={i} style={[styles.tag, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]}>
-                                     <Text style={[styles.tagText, { color: theme.text }]}>{s.skill_name}</Text>
-                                 </View>
-                             ))}
-                             {skills.length === 0 && <Text style={{color: '#aaa'}}>No skills added yet.</Text>}
+                            {skills.map((s, i) => (
+                                <View key={i} style={[styles.tag, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]}>
+                                    <Text style={[styles.tagText, { color: theme.text }]}>{s.skill_name}</Text>
+                                </View>
+                            ))}
+                            {skills.length === 0 && <Text style={{ color: '#aaa' }}>No skills added yet.</Text>}
                         </View>
                     )}
                     {isBusinessUser && (
-                         <View>
-                            {products.length === 0 && <Text style={{color: '#aaa'}}>No products found.</Text>}
+                        <View>
+                            {products.length === 0 && <Text style={{ color: '#aaa' }}>No products found.</Text>}
                             {products.slice(0, 3).map((p, i) => (
                                 <View key={i} style={styles.prodRow}>
                                     <Text style={[styles.prodName, { color: theme.text }]}>{p.name}</Text>
                                     <Text style={styles.prodPrice}>{p.price} PKR</Text>
                                 </View>
                             ))}
-                            <TouchableOpacity onPress={() => navigation.navigate('Inventory')}>
-                                <Text style={styles.seeMore}>Manage Inventory</Text>
-                            </TouchableOpacity>
-                         </View>
+                            {/* Inventory Link only for OWN profile */}
+                            {isOwnProfile && (
+                                <TouchableOpacity onPress={() => navigation.navigate('Inventory')}>
+                                    <Text style={styles.seeMore}>Manage Inventory</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
                     )}
                 </View>
 
@@ -366,20 +416,20 @@ const ProfileScreen = ({ navigation }: any) => {
                 {!isBusinessUser && (
                     <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Education</Text>
-                        <Text style={{color: '#aaa'}}>Add your educational background.</Text>
+                        <Text style={{ color: '#aaa' }}>Add your educational background.</Text>
                     </View>
                 )}
 
             </Animated.ScrollView>
 
-             {/* Custom Alert */}
-             <CustomAlert
+            {/* Custom Alert */}
+            <CustomAlert
                 visible={alertVisible}
                 title={alertTitle}
                 message={alertMessage}
                 type={alertType}
                 onDismiss={() => setAlertVisible(false)}
-             />
+            />
 
             {/* Replaced Animated Modal with Standard Modal for stability */}
             <Modal
@@ -394,15 +444,78 @@ const ProfileScreen = ({ navigation }: any) => {
                     </TouchableWithoutFeedback>
                     <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
                         <View style={styles.menuContainer}>
-                             <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}><Text style={[styles.menuItemText, {color:theme.text}]}>Edit Profile</Text></TouchableOpacity>
-                             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}><Text style={[styles.menuItemText, {color:'red'}]}>Logout</Text></TouchableOpacity>
+                            <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}><Text style={[styles.menuItemText, { color: theme.text }]}>Edit Profile</Text></TouchableOpacity>
+                            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}><Text style={[styles.menuItemText, { color: 'red' }]}>Logout</Text></TouchableOpacity>
                         </View>
                     </View>
                 </View>
             </Modal>
 
-             {/* Business Card Modal */}
-             {businessCardVisible && (
+            {/* Edit Profile Modal */}
+            <Modal
+                visible={isEditing}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setIsEditing(false)}
+            >
+                <View style={styles.settingsModalOverlay}>
+                    <TouchableWithoutFeedback onPress={() => setIsEditing(false)}>
+                        <View style={styles.dismissArea} />
+                    </TouchableWithoutFeedback>
+                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Edit Profile</Text>
+
+                        <View style={{ marginBottom: 15 }}>
+                            <Text style={{ color: theme.subText, marginBottom: 5 }}>Full Name</Text>
+                            <TextInput
+                                value={editName}
+                                onChangeText={setEditName}
+                                style={{
+                                    borderWidth: 1,
+                                    borderColor: theme.borderColor,
+                                    borderRadius: 10,
+                                    padding: 10,
+                                    color: theme.text,
+                                    backgroundColor: theme.bg
+                                }}
+                            />
+                        </View>
+
+                        <View style={{ marginBottom: 20 }}>
+                            <Text style={{ color: theme.subText, marginBottom: 5 }}>Phone</Text>
+                            <TextInput
+                                value={editPhone}
+                                onChangeText={setEditPhone}
+                                keyboardType="phone-pad"
+                                style={{
+                                    borderWidth: 1,
+                                    borderColor: theme.borderColor,
+                                    borderRadius: 10,
+                                    padding: 10,
+                                    color: theme.text,
+                                    backgroundColor: theme.bg
+                                }}
+                            />
+                        </View>
+
+                        <TouchableOpacity
+                            style={{ backgroundColor: '#4A9EFF', padding: 15, borderRadius: 12, alignItems: 'center' }}
+                            onPress={handleSaveProfile}
+                        >
+                            <Text style={{ color: 'white', fontWeight: 'bold' }}>Save Changes</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={{ marginTop: 10, padding: 10, alignItems: 'center' }}
+                            onPress={() => setIsEditing(false)}
+                        >
+                            <Text style={{ color: theme.subText }}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Business Card Modal */}
+            {businessCardVisible && (
                 <Modal visible={businessCardVisible} transparent animationType="fade">
                     <View style={styles.modalOverlay}>
                         <BlurView style={StyleSheet.absoluteFill} blurType="light" blurAmount={3} reducedTransparencyFallbackColor="white" />
@@ -413,13 +526,13 @@ const ProfileScreen = ({ navigation }: any) => {
                             <View style={styles.cardHeader}>
                                 <Image source={{ uri: getProfilePicUrl() }} style={styles.cardAvatar} />
                                 <View style={{ marginLeft: 15 }}>
-                                    <Text style={styles.cardName}>{userInfo?.name}</Text>
+                                    <Text style={styles.cardName}>{displayedUser?.name}</Text>
                                     <Text style={styles.cardRole}>{isBusinessUser ? 'Business Account' : 'Individual Profile'}</Text>
                                 </View>
                             </View>
                             <View style={styles.cardQrBody}>
                                 <View style={styles.cardQrWrapper}>
-                                    <QRCode value={`raabtaa://user/${userInfo?.id}`} size={180} />
+                                    <QRCode value={`raabtaa://user/${displayedUser?.id}`} size={180} />
                                 </View>
                                 <Text style={styles.scanText}>Scan to connect on Raabtaa</Text>
                             </View>
@@ -434,7 +547,7 @@ const ProfileScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
     container: { flex: 1 },
     headerBackground: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, alignItems: 'center' },
-    headerTop: { width: '100%', paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'flex-end', marginTop: 50, zIndex: 20 },
+    headerTop: { width: '100%', paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'flex-end', marginTop: Platform.OS === 'ios' ? 50 : 30, zIndex: 20 },
     iconButton: { padding: 5 },
     headerInfoContainer: { position: 'absolute', top: 50, left: 0, right: 0, alignItems: 'center' },
     headerNameText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
@@ -488,15 +601,16 @@ const styles = StyleSheet.create({
     menuItemText: { fontSize: 18, fontWeight: '600' },
 
     // Business Card Modal
-    businessCardContainer: { width: '85%', backgroundColor: '#fff', borderRadius: 25, padding: 25, alignItems: 'center', elevation: 15 },
-    closeCardButton: { position: 'absolute', top: 15, right: 15, padding: 5, zIndex: 10 },
-    cardHeader: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginBottom: 20 },
-    cardAvatar: { width: 60, height: 60, borderRadius: 30 },
-    cardName: { fontSize: 20, fontWeight: 'bold', color: '#2D3748' },
-    cardRole: { fontSize: 14, color: '#718096', marginTop: 2 },
     cardQrBody: { alignItems: 'center', marginVertical: 10 },
     cardQrWrapper: { padding: 15, backgroundColor: '#fff', borderRadius: 20, elevation: 3, borderWidth: 1, borderColor: '#EDF2F7' },
     scanText: { marginTop: 15, color: '#A0AEC0', fontSize: 14 },
+    cardName: { fontSize: 20, fontWeight: 'bold', color: '#2D3748' },
+    cardRole: { fontSize: 14, color: '#718096', marginTop: 2 },
+    closeCardButton: { position: 'absolute', top: 15, right: 15, padding: 5, zIndex: 10 },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginBottom: 20 },
+    cardAvatar: { width: 60, height: 60, borderRadius: 30 },
+    qrWrapper: { padding: 5, backgroundColor: '#fff', borderRadius: 10, elevation: 5 }, // Smaller padding for header
+
 });
 
 export default ProfileScreen;

@@ -32,8 +32,12 @@ export const AuthProvider = ({ children }: any) => {
             if (response.success) {
                 setUserInfo(response.user);
                 setUserToken(response.token);
-                AsyncStorage.setItem('userToken', response.token);
-                AsyncStorage.setItem('userInfo', JSON.stringify(response.user));
+                if (response.token) {
+                    await AsyncStorage.setItem('userToken', response.token);
+                }
+                if (response.user) {
+                    await AsyncStorage.setItem('userInfo', JSON.stringify(response.user));
+                }
                 LoggerService.info('Login successful', { email }, 'AuthContext');
             }
             return response;

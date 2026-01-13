@@ -101,7 +101,7 @@ const ConnectionsScreen = ({ navigation }: any) => {
             <TouchableOpacity
                 activeOpacity={0.9}
                 style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}
-                onPress={() => navigation.navigate('Profile', { user: item })} // Assuming Profile can take user param
+                onPress={() => navigation.navigate('UserProfile', { user: item })} // Navigate to UserProfile stack screen
             >
                 <Image source={{ uri: imageUrl }} style={styles.avatar} />
                 <View style={styles.info}>
@@ -195,7 +195,7 @@ const ConnectionsScreen = ({ navigation }: any) => {
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
                         <View style={styles.center}>
-                            <Svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="1" style={{marginBottom: 10}}>
+                            <Svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="1" style={{ marginBottom: 10 }}>
                                 <Circle cx="12" cy="12" r="10"></Circle>
                                 <Path d="M16 16s-1.5-2-4-2-4 2-4 2"></Path>
                                 <Line x1="9" y1="9" x2="9.01" y2="9"></Line>

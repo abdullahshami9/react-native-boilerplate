@@ -57,7 +57,8 @@ const SignupScreen = ({ navigation }: any) => {
         }
 
         try {
-            const result = await register('User', email, password, phone, userType);
+            // Defaulting to 'Individual' initially. User will select actual type in Tunnel.
+            const result = await register('User', email, password, phone, 'Individual');
             if (result.success) {
                 // Auto-login the user after successful registration
                 console.log('Registration successful, auto-logging in...');
@@ -73,7 +74,8 @@ const SignupScreen = ({ navigation }: any) => {
         console.log('Google sign up clicked');
     };
 
-    const [userType, setUserType] = useState<'individual' | 'business'>('individual');
+    // User Type logic moved to Tunnel flow
+    // const [userType, setUserType] = useState<'individual' | 'business'>('individual');
 
     return (
         <View style={styles.container}>
@@ -93,21 +95,7 @@ const SignupScreen = ({ navigation }: any) => {
                         <Text style={styles.welcomeText}>Let's get{'\n'}started</Text>
                     </View>
 
-                    {/* User Type Selection */}
-                    <View style={styles.userTypeContainer}>
-                        <TouchableOpacity
-                            style={[styles.userTypeButton, userType === 'individual' && styles.userTypeActive]}
-                            onPress={() => setUserType('individual')}
-                        >
-                            <Text style={[styles.userTypeText, userType === 'individual' && styles.userTypeActiveText]}>Personal</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.userTypeButton, userType === 'business' && styles.userTypeActive]}
-                            onPress={() => setUserType('business')}
-                        >
-                            <Text style={[styles.userTypeText, userType === 'business' && styles.userTypeActiveText]}>Business</Text>
-                        </TouchableOpacity>
-                    </View>
+                    {/* User Type Selection Removed */}
 
                     {/* Form Section */}
                     <View style={styles.formSection}>

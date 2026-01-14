@@ -490,11 +490,11 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
                 {/* Skills or Products */}
                 <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 15, position: 'relative' }}>
                         <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>{isBusinessUser ? 'Product Catalog' : 'Professional Skills'}</Text>
                         {/* Show Add Button for Skills if Own Profile & Individual */}
                         {isOwnProfile && !isBusinessUser && (
-                            <TouchableOpacity onPress={() => setAddSkillVisible(true)} style={{ padding: 5 }}>
+                            <TouchableOpacity onPress={() => setAddSkillVisible(true)} style={{ position: 'absolute', right: 0, padding: 5 }}>
                                 <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M12 5v14M5 12h14" /></Svg>
                             </TouchableOpacity>
                         )}
@@ -537,10 +537,10 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 {/* Education (Individual Only) */}
                 {!isBusinessUser && (
                     <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 15, position: 'relative' }}>
                             <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>Education</Text>
                             {isOwnProfile && (
-                                <TouchableOpacity onPress={() => setAddEduVisible(true)} style={{ padding: 5 }}>
+                                <TouchableOpacity onPress={() => setAddEduVisible(true)} style={{ position: 'absolute', right: 0, padding: 5 }}>
                                     <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M12 5v14M5 12h14" /></Svg>
                                 </TouchableOpacity>
                             )}
@@ -848,7 +848,7 @@ const styles = StyleSheet.create({
 
     // Calendar
     calendarContainer: { width: '100%' },
-    calendarTitle: { fontSize: 16, fontWeight: 'bold', color: '#2D3748', marginBottom: 10 },
+    calendarTitle: { fontSize: 16, fontWeight: 'bold', color: '#2D3748', marginBottom: 10, textAlign: 'center' },
     calendarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
     calendarCell: { width: (width * 0.9 - 40 - (12 * 4)) / 12, height: 15, borderRadius: 3, marginBottom: 4 },
 
@@ -858,8 +858,8 @@ const styles = StyleSheet.create({
     settingsModalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
     modalContent: { borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, elevation: 20, paddingBottom: 50 },
     menuContainer: { gap: 15 },
-    menuItem: { paddingVertical: 10 },
-    menuItemText: { fontSize: 18, fontWeight: '600' },
+    menuItem: { paddingVertical: 10, alignItems: 'center' },
+    menuItemText: { fontSize: 18, fontWeight: '600', textAlign: 'center' },
 
     // Business Card Modal
     cardQrBody: { alignItems: 'center', marginVertical: 10 },

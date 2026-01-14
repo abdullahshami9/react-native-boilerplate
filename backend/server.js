@@ -32,6 +32,7 @@ const ensureDir = (dir) => {
 ensureDir(path.join(__dirname, 'uploads/profiles'));
 ensureDir(path.join(__dirname, 'uploads/products'));
 ensureDir(path.join(__dirname, 'uploads/certificates'));
+ensureDir(path.join(__dirname, 'uploads/resumes'));
 
 // Database Connection Config
 const dbConfig = {
@@ -64,7 +65,10 @@ db.connect((err) => {
             phone VARCHAR(255) NOT NULL,
             user_type ENUM('Individual', 'Business') NOT NULL,
             mac_address VARCHAR(255),
-            profile_pic_url VARCHAR(255)
+            profile_pic_url VARCHAR(255),
+            is_tunnel_completed BOOLEAN DEFAULT 0,
+            address TEXT,
+            current_job_title VARCHAR(255)
         );
 
         CREATE TABLE IF NOT EXISTS error_logs (
@@ -177,11 +181,13 @@ db.connect((err) => {
             description TEXT,
             industry VARCHAR(100),
             category VARCHAR(100),
+            business_type VARCHAR(100),
             location_lat DECIMAL(10, 8),
             location_lng DECIMAL(11, 8),
             address TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE KEY unique_user_biz (user_id)
         );
 
         CREATE TABLE IF NOT EXISTS payment_methods (
@@ -243,6 +249,26 @@ db.connect((err) => {
                     db.query("ALTER TABLE users ADD COLUMN profile_pic_url VARCHAR(255)", () => console.log("Added profile_pic_url column"));
                 }
             });
+            db.query("SHOW COLUMNS FROM users LIKE 'is_tunnel_completed'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE users ADD COLUMN is_tunnel_completed BOOLEAN DEFAULT 0", () => console.log("Added is_tunnel_completed column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM users LIKE 'address'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE users ADD COLUMN address TEXT", () => console.log("Added address column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM users LIKE 'current_job_title'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE users ADD COLUMN current_job_title VARCHAR(255)", () => console.log("Added current_job_title column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM business_details LIKE 'business_type'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE business_details ADD COLUMN business_type VARCHAR(100)", () => console.log("Added business_type column"));
+                }
+            });
             // Ensure appointments table exists (Hack if creating via initQuery failed previously)
             db.query("SHOW TABLES LIKE 'appointments'", (e, r) => {
                 if (r && r.length === 0) {
@@ -283,6 +309,9 @@ const storage = multer.diskStorage({
         if (req.path.includes('profile')) {
             const userId = sanitize(req.body.userId || 'unknown');
             cb(null, `${userId}${ext}`);
+        } else if (req.path.includes('resume')) {
+            const userId = sanitize(req.body.userId || 'unknown');
+            cb(null, `${userId}${ext}`); // userId.pdf or userId.jpg
         } else if (req.path.includes('product')) {
             const productId = sanitize(req.body.productId || 'unknown');
             const index = sanitize(req.body.index || '0');
@@ -362,8 +391,9 @@ app.post('/register', (req, res) => {
     const { email, password, name, phone, mac_address } = req.body;
     if (!email || !password) return res.status(400).json({ success: false, message: 'Required fields missing' });
 
-    const query = 'INSERT INTO users (email, password, name, phone, user_type, mac_address) VALUES (?, ?, ?, ?, ?, ?)';
-    dbQuery(query, [email, password, name, phone, req.body.user_type || 'individual', mac_address || null], req, (err, result) => {
+    // Default user_type to 'Individual', will be updated in Tunnel
+    const query = 'INSERT INTO users (email, password, name, phone, user_type, mac_address, is_tunnel_completed) VALUES (?, ?, ?, ?, ?, ?, 0)';
+    dbQuery(query, [email, password, name, phone, req.body.user_type || 'Individual', mac_address || null], req, (err, result) => {
         if (err) {
             if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ success: false, message: 'Email already exists' });
             return res.status(500).json({ success: false, message: 'Database error' });
@@ -554,6 +584,15 @@ app.post('/api/upload/profile', upload.single('image'), (req, res) => {
         // We succeed even if db update fails because file is saved
         res.json({ success: true, message: 'Profile uploaded', filePath: fileUrl });
     });
+});
+
+app.post('/api/upload/resume', upload.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+
+    // In a real app we might store this path in a 'resumes' table or 'users' column.
+    // For now, we return the path so frontend can confirm upload.
+    const fileUrl = `uploads/resumes/${req.file.filename}`;
+    res.json({ success: true, message: 'Resume uploaded', filePath: fileUrl });
 });
 
 app.post('/api/upload/product', upload.single('image'), (req, res) => {
@@ -802,6 +841,115 @@ app.post('/biometric/login', (req, res) => {
     dbQuery(query, [mac_address], req, (err, results) => {
         if (err || results.length === 0) return res.status(404).json({ success: false });
         res.json({ success: true, user: results[0] });
+    });
+});
+
+// --- TUNNEL ENDPOINTS ---
+
+app.post('/api/tunnel/update-type', (req, res) => {
+    const { user_id, user_type } = req.body;
+    const query = 'UPDATE users SET user_type = ? WHERE id = ?';
+    dbQuery(query, [user_type, user_id], req, (err) => {
+        if (err) return res.status(500).json({ success: false, message: 'Failed to update user type' });
+        res.json({ success: true, message: 'User type updated' });
+    });
+});
+
+app.post('/api/tunnel/personal/skills', (req, res) => {
+    const { user_id, skills } = req.body; // skills is array of strings
+    if (!skills || !Array.isArray(skills)) return res.status(400).json({ success: false });
+
+    // Clear existing skills first? Or append? Assuming replace for tunnel.
+    db.query('DELETE FROM skills WHERE user_id = ?', [user_id], (err) => {
+        if (err) return res.status(500).json({ success: false });
+
+        if (skills.length === 0) return res.json({ success: true });
+
+        const values = skills.map(s => [user_id, s]);
+        const query = 'INSERT INTO skills (user_id, skill_name) VALUES ?';
+        db.query(query, [values], (err2) => {
+             if (err2) return res.status(500).json({ success: false });
+             res.json({ success: true });
+        });
+    });
+});
+
+app.post('/api/tunnel/personal/details', (req, res) => {
+    const { user_id, address, current_job_title } = req.body;
+    const query = 'UPDATE users SET address = ?, current_job_title = ? WHERE id = ?';
+    dbQuery(query, [address, current_job_title, user_id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
+    });
+});
+
+app.post('/api/tunnel/complete', (req, res) => {
+    const { user_id } = req.body;
+    const query = 'UPDATE users SET is_tunnel_completed = 1 WHERE id = ?';
+    dbQuery(query, [user_id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, message: 'Tunnel completed' });
+    });
+});
+
+app.post('/api/tunnel/business/location', (req, res) => {
+    const { user_id, address, location_lat, location_lng } = req.body;
+    const query = `INSERT INTO business_details (user_id, address, location_lat, location_lng)
+                   VALUES (?, ?, ?, ?)
+                   ON DUPLICATE KEY UPDATE address=VALUES(address), location_lat=VALUES(location_lat), location_lng=VALUES(location_lng)`;
+    dbQuery(query, [user_id, address, location_lat, location_lng], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
+    });
+});
+
+app.post('/api/tunnel/business/type', (req, res) => {
+    const { user_id, business_type, description, payment_methods, socials, phone, email } = req.body;
+
+    // Update business_details
+    const query = `INSERT INTO business_details (user_id, business_type, description)
+                   VALUES (?, ?, ?)
+                   ON DUPLICATE KEY UPDATE business_type=VALUES(business_type), description=VALUES(description)`;
+
+    dbQuery(query, [user_id, business_type, description], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+
+        // Update Payment Methods
+        // Simplification: Clear and re-insert or just append?
+        // Tunnel usually implies setting up fresh. Let's delete existing and insert.
+        if (payment_methods && payment_methods.length > 0) {
+             db.query('DELETE FROM payment_methods WHERE user_id = ?', [user_id], (e) => {
+                 if (!e) {
+                     const payValues = payment_methods.map(p => [user_id, p.provider, p.account_number, p.account_title]);
+                     db.query('INSERT INTO payment_methods (user_id, provider, account_number, account_title) VALUES ?', [payValues], (e2) => {
+                         if (e2) console.error("Payment methods save error", e2);
+                     });
+                 }
+             });
+        }
+
+        // Update Socials (Contact info might be here too if formatted as socials)
+        // Or if phone/email are in users table, we update them there?
+        // The screen has "Phone" and "Email".
+        if (phone || email) {
+            const userUpdate = 'UPDATE users SET phone = COALESCE(?, phone), email = COALESCE(?, email) WHERE id = ?';
+            db.query(userUpdate, [phone, email, user_id], (e) => {
+                 if (e) console.error("User contact update error", e);
+            });
+        }
+
+        res.json({ success: true });
+    });
+});
+
+app.post('/api/tunnel/business/industry', (req, res) => {
+    const { user_id, industry, category } = req.body;
+    const query = `INSERT INTO business_details (user_id, industry, category)
+                   VALUES (?, ?, ?)
+                   ON DUPLICATE KEY UPDATE industry=VALUES(industry), category=VALUES(category)`;
+    dbQuery(query, [user_id, industry, category], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
     });
 });
 

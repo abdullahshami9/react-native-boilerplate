@@ -143,6 +143,11 @@ export const AuthProvider = ({ children }: any) => {
         }
     };
 
+    const updateProfileLocal = async (updatedUser: any) => {
+        setUserInfo(updatedUser);
+        await AsyncStorage.setItem('userInfo', JSON.stringify(updatedUser));
+    };
+
     const isLoggedIn = async () => {
         try {
             setIsLoading(true);
@@ -161,7 +166,7 @@ export const AuthProvider = ({ children }: any) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ login, logout, register, updateProfile, biometricLogin, isLoading, userToken, userInfo, isDarkMode, toggleTheme }}>
+        <AuthContext.Provider value={{ login, logout, register, updateProfile, updateProfileLocal, biometricLogin, isLoading, userToken, userInfo, isDarkMode, toggleTheme }}>
             {children}
         </AuthContext.Provider>
     );

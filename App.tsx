@@ -18,10 +18,20 @@ import ChatListScreen from './src/screens/ChatListScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 
+// Tunnel Screens
+import ChooseProfileTypeScreen from './src/screens/tunnel/ChooseProfileTypeScreen';
+import PersonalSkillsScreen from './src/screens/tunnel/personal/PersonalSkillsScreen';
+import PersonalEducationScreen from './src/screens/tunnel/personal/PersonalEducationScreen';
+import PersonalLocationJobScreen from './src/screens/tunnel/personal/PersonalLocationJobScreen';
+import BusinessLocationScreen from './src/screens/tunnel/business/BusinessLocationScreen';
+import BusinessTypeContactScreen from './src/screens/tunnel/business/BusinessTypeContactScreen';
+import BusinessIndustryScreen from './src/screens/tunnel/business/BusinessIndustryScreen';
+import PaymentIntegrationScreen from './src/screens/tunnel/PaymentIntegrationScreen';
+
 const Stack = createNativeStackNavigator();
 
 const AppNav = () => {
-  const { isLoading, userToken } = useContext(AuthContext);
+  const { isLoading, userToken, userInfo } = useContext(AuthContext);
 
   if (isLoading) {
     return (
@@ -40,17 +50,40 @@ const AppNav = () => {
         gestureEnabled: true,
       }}>
         {userToken !== null ? (
-          <>
-            <Stack.Screen name="Main" component={BottomTabNavigator} />
-            <Stack.Screen name="BusinessOnboarding" component={BusinessOnboardingScreen} />
-            <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
-            <Stack.Screen name="Inventory" component={InventoryScreen} />
-            <Stack.Screen name="AddProduct" component={AddProductScreen} />
-            <Stack.Screen name="ChatList" component={ChatListScreen} />
-            <Stack.Screen name="Chat" component={ChatScreen} />
-            <Stack.Screen name="UserProfile" component={ProfileScreen} />
-          </>
+          // User is logged in
+          userInfo?.is_tunnel_completed ? (
+             // Main App Stack
+            <>
+              <Stack.Screen name="Main" component={BottomTabNavigator} />
+              <Stack.Screen name="BusinessOnboarding" component={BusinessOnboardingScreen} />
+              <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+              <Stack.Screen name="Inventory" component={InventoryScreen} />
+              <Stack.Screen name="AddProduct" component={AddProductScreen} />
+              <Stack.Screen name="ChatList" component={ChatListScreen} />
+              <Stack.Screen name="Chat" component={ChatScreen} />
+              <Stack.Screen name="UserProfile" component={ProfileScreen} />
+            </>
+          ) : (
+            // Tunnel Stack (Mandatory Onboarding)
+            <>
+              <Stack.Screen name="ChooseProfileType" component={ChooseProfileTypeScreen} />
+
+              {/* Personal Flow */}
+              <Stack.Screen name="PersonalSkills" component={PersonalSkillsScreen} />
+              <Stack.Screen name="PersonalEducation" component={PersonalEducationScreen} />
+              <Stack.Screen name="PersonalLocationJob" component={PersonalLocationJobScreen} />
+
+              {/* Business Flow */}
+              <Stack.Screen name="BusinessLocation" component={BusinessLocationScreen} />
+              <Stack.Screen name="BusinessTypeContact" component={BusinessTypeContactScreen} />
+              <Stack.Screen name="BusinessIndustry" component={BusinessIndustryScreen} />
+
+              {/* Common Final Step */}
+              <Stack.Screen name="PaymentIntegration" component={PaymentIntegrationScreen} />
+            </>
+          )
         ) : (
+          // Auth Stack
           <>
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />

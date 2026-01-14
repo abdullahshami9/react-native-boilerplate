@@ -25,7 +25,7 @@ const io = new Server(server, {
 
 // Ensure Upload Directories Exist
 const ensureDir = (dir) => {
-    if (!fs.existsSync(dir)){
+    if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
 };
@@ -232,20 +232,20 @@ db.connect((err) => {
             db.end();
             db = mysql.createConnection({ ...dbConfig, database: 'AppStarter' });
 
-             // Add column if not exists (Hack for existing db)
+            // Add column if not exists (Hack for existing db)
             db.query("SHOW COLUMNS FROM products LIKE 'stock_quantity'", (e, r) => {
-                if(r && r.length === 0) {
-                     db.query("ALTER TABLE products ADD COLUMN stock_quantity INT DEFAULT 0", () => console.log("Added stock_quantity column"));
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE products ADD COLUMN stock_quantity INT DEFAULT 0", () => console.log("Added stock_quantity column"));
                 }
             });
             db.query("SHOW COLUMNS FROM users LIKE 'profile_pic_url'", (e, r) => {
-                 if(r && r.length === 0) {
-                      db.query("ALTER TABLE users ADD COLUMN profile_pic_url VARCHAR(255)", () => console.log("Added profile_pic_url column"));
-                 }
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE users ADD COLUMN profile_pic_url VARCHAR(255)", () => console.log("Added profile_pic_url column"));
+                }
             });
             // Ensure appointments table exists (Hack if creating via initQuery failed previously)
             db.query("SHOW TABLES LIKE 'appointments'", (e, r) => {
-                if(r && r.length === 0) {
+                if (r && r.length === 0) {
                     const create = `CREATE TABLE IF NOT EXISTS appointments (
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         provider_id INT NOT NULL,
@@ -288,8 +288,8 @@ const storage = multer.diskStorage({
             const index = sanitize(req.body.index || '0');
             cb(null, `${productId}-${index}${ext}`);
         } else {
-             // Generic fallback
-             cb(null, `${Date.now()}${ext}`);
+            // Generic fallback
+            cb(null, `${Date.now()}${ext}`);
         }
     }
 });
@@ -424,7 +424,23 @@ app.post('/api/education', (req, res) => {
     const query = 'INSERT INTO education (user_id, degree, institution, year) VALUES (?, ?, ?, ?)';
     dbQuery(query, [user_id, degree, institution, year], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
-        res.json({ success: true, id: result.insertId });
+        res.json({ success: true, id: result.insertId, education: { id: result.insertId, user_id, degree, institution, year } });
+    });
+});
+
+app.get('/api/education/:userId', (req, res) => {
+    const query = 'SELECT * FROM education WHERE user_id = ?';
+    dbQuery(query, [req.params.userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, education: results });
+    });
+});
+
+app.delete('/api/education/:id', (req, res) => {
+    const query = 'DELETE FROM education WHERE id = ?';
+    dbQuery(query, [req.params.id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
     });
 });
 
@@ -448,27 +464,27 @@ app.post('/api/business/onboarding', (req, res) => {
                       ON DUPLICATE KEY UPDATE description=?, industry=?, category=?, location_lat=?, location_lng=?, address=?`;
 
     dbQuery(bizQuery, [user_id, description, industry, category, location_lat, location_lng, address,
-                       description, industry, category, location_lat, location_lng, address], req, (err, result) => {
-        if (err) return res.status(500).json({ success: false, message: 'Failed to save business details' });
+        description, industry, category, location_lat, location_lng, address], req, (err, result) => {
+            if (err) return res.status(500).json({ success: false, message: 'Failed to save business details' });
 
-        // Save Payment Methods if any
-        if (payment_methods && payment_methods.length > 0) {
-            const payValues = payment_methods.map(p => [user_id, p.provider, p.account_number, p.account_title]);
-            db.query('INSERT INTO payment_methods (user_id, provider, account_number, account_title) VALUES ?', [payValues], (e) => {
-                if(e) console.error("Payment methods save error", e);
-            });
-        }
+            // Save Payment Methods if any
+            if (payment_methods && payment_methods.length > 0) {
+                const payValues = payment_methods.map(p => [user_id, p.provider, p.account_number, p.account_title]);
+                db.query('INSERT INTO payment_methods (user_id, provider, account_number, account_title) VALUES ?', [payValues], (e) => {
+                    if (e) console.error("Payment methods save error", e);
+                });
+            }
 
-        // Save Socials if any (and passed here)
-        if (socials && socials.length > 0) {
-             const socValues = socials.map(s => [user_id, s.platform, s.url]);
-             db.query('INSERT INTO social_links (user_id, platform, url) VALUES ?', [socValues], (e) => {
-                 if(e) console.error("Socials save error", e);
-             });
-        }
+            // Save Socials if any (and passed here)
+            if (socials && socials.length > 0) {
+                const socValues = socials.map(s => [user_id, s.platform, s.url]);
+                db.query('INSERT INTO social_links (user_id, platform, url) VALUES ?', [socValues], (e) => {
+                    if (e) console.error("Socials save error", e);
+                });
+            }
 
-        res.json({ success: true, message: 'Onboarding complete' });
-    });
+            res.json({ success: true, message: 'Onboarding complete' });
+        });
 });
 
 // --- CHAT API ---
@@ -506,8 +522,8 @@ app.get('/api/chats/:userId', (req, res) => {
         ORDER BY c.last_message_at DESC
     `;
     dbQuery(query, [req.params.userId, req.params.userId], req, (err, results) => {
-         if (err) return res.status(500).json({ success: false });
-         res.json({ success: true, chats: results });
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, chats: results });
     });
 });
 
@@ -551,7 +567,7 @@ app.post('/api/upload/product', upload.single('image'), (req, res) => {
     if (index == 0) {
         const query = 'UPDATE products SET image_url = ? WHERE id = ?';
         dbQuery(query, [fileUrl, productId], req, (err) => {
-             res.json({ success: true, message: 'Product image uploaded', filePath: fileUrl });
+            res.json({ success: true, message: 'Product image uploaded', filePath: fileUrl });
         });
     } else {
         res.json({ success: true, message: 'Product image uploaded', filePath: fileUrl });
@@ -709,7 +725,7 @@ app.post('/api/orders', (req, res) => {
 
             // Update stock
             items.forEach(item => {
-                 db.query('UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?', [item.quantity, item.product_id]);
+                db.query('UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?', [item.quantity, item.product_id]);
             });
 
             res.json({ success: true, message: 'Order created', orderId });
@@ -740,16 +756,25 @@ app.get('/api/reports/sales/:userId', (req, res) => {
             WHERE seller_id = ? AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())
         `;
         dbQuery(monthQuery, [req.params.userId], req, (err2, monthResult) => {
-             res.json({
-                 success: true,
-                 daily: results,
-                 monthlyTotal: monthResult[0]?.total || 0
-             });
+            res.json({
+                success: true,
+                daily: results,
+                monthlyTotal: monthResult[0]?.total || 0
+            });
         });
     });
 });
 
 // --- APPOINTMENTS (For Calendar) ---
+
+app.post('/api/appointments', (req, res) => {
+    const { provider_id, customer_id, appointment_date } = req.body;
+    const query = 'INSERT INTO appointments (provider_id, customer_id, appointment_date, status) VALUES (?, ?, ?, "pending")';
+    dbQuery(query, [provider_id, customer_id, appointment_date], req, (err, result) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, message: 'Appointment booked', id: result.insertId });
+    });
+});
 
 app.get('/api/appointments/:userId', (req, res) => {
     // Get all appointments (both as provider and customer)

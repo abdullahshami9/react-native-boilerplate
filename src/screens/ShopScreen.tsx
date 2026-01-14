@@ -39,7 +39,7 @@ const ShopScreen = ({ navigation }: any) => {
                 const res = await DataService.discoverUsers(search, user?.id || 0);
                 if (res.success) {
                     // Filter only business users if needed, or just show all
-                     setBusinesses(res.users.filter((u: any) => u.user_type === 'Business'));
+                    setBusinesses(res.users.filter((u: any) => u.user_type === 'Business'));
                 }
             }
         } catch (error) {
@@ -63,7 +63,7 @@ const ShopScreen = ({ navigation }: any) => {
             </View>
 
             {/* Search Bar */}
-             <View style={[styles.searchContainer, { backgroundColor: theme.inputBg, borderColor: theme.borderColor }]}>
+            <View style={[styles.searchContainer, { backgroundColor: theme.inputBg, borderColor: theme.borderColor }]}>
                 <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={styles.searchIcon}>
                     <Circle cx="11" cy="11" r="8" />
                     <Path d="M21 21L16.65 16.65" />
@@ -89,15 +89,15 @@ const ShopScreen = ({ navigation }: any) => {
             </View>
 
             {loading ? (
-                 <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-                     <ActivityIndicator size="large" color={theme.text}/>
-                 </View>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={theme.text} />
+                </View>
             ) : (
                 <ScrollView contentContainerStyle={styles.scrollContent}>
                     <View style={styles.gridContainer}>
                         {activeTab === 'Products' ? (
                             products.map((item) => (
-                                <View key={item.id} style={[styles.productCard, { backgroundColor: theme.cardBg }]}>
+                                <TouchableOpacity key={item.id} style={[styles.productCard, { backgroundColor: theme.cardBg }]} onPress={() => (navigation as any).navigate('ProductDetails', { product: item })}>
                                     <View style={[styles.imageContainer, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
                                         <Image source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/150' }} style={styles.productImage} />
                                     </View>
@@ -105,23 +105,23 @@ const ShopScreen = ({ navigation }: any) => {
                                         <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
                                         <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price} PKR</Text>
                                     </View>
-                                </View>
+                                </TouchableOpacity>
                             ))
                         ) : (
                             businesses.map((item) => (
-                                 <View key={item.id} style={[styles.productCard, { backgroundColor: theme.cardBg }]}>
-                                     <View style={[styles.imageContainer, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
-                                         <Image source={{ uri: item.profile_pic_url ? `${CONFIG.API_URL}/${item.profile_pic_url}` : 'https://randomuser.me/api/portraits/men/32.jpg' }} style={styles.productImage} />
-                                     </View>
-                                     <View style={styles.productInfo}>
-                                         <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
-                                         <Text style={[styles.productPrice, { color: theme.subText }]}>{item.email}</Text>
-                                     </View>
-                                 </View>
+                                <View key={item.id} style={[styles.productCard, { backgroundColor: theme.cardBg }]}>
+                                    <View style={[styles.imageContainer, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
+                                        <Image source={{ uri: item.profile_pic_url ? `${CONFIG.API_URL}/${item.profile_pic_url}` : 'https://randomuser.me/api/portraits/men/32.jpg' }} style={styles.productImage} />
+                                    </View>
+                                    <View style={styles.productInfo}>
+                                        <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
+                                        <Text style={[styles.productPrice, { color: theme.subText }]}>{item.email}</Text>
+                                    </View>
+                                </View>
                             ))
                         )}
                         {((activeTab === 'Products' && products.length === 0) || (activeTab === 'Business' && businesses.length === 0)) && (
-                            <Text style={{width: '100%', textAlign: 'center', marginTop: 50, color: '#A0AEC0'}}>No results found.</Text>
+                            <Text style={{ width: '100%', textAlign: 'center', marginTop: 50, color: '#A0AEC0' }}>No results found.</Text>
                         )}
                     </View>
                 </ScrollView>

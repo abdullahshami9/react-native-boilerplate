@@ -32,6 +32,36 @@ export const DataService = {
         }
     },
 
+    // --- EDUCATION ---
+    addEducation: async (userId: number, eduData: any) => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/education`, { user_id: userId, ...eduData });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Add Education Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getEducation: async (userId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/education/${userId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Education Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    deleteEducation: async (eduId: number) => {
+        try {
+            const response = await axios.delete(`${CONFIG.API_URL}/api/education/${eduId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Delete Education Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+
+
     // --- PRODUCTS ---
     addProduct: async (productData: any) => {
         try {
@@ -181,6 +211,15 @@ export const DataService = {
     },
 
     // --- APPOINTMENTS ---
+    bookAppointment: async (providerId: number, customerId: number, date: string) => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/appointments`, { provider_id: providerId, customer_id: customerId, appointment_date: date });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Book Appointment Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
     getAppointments: async (userId: number) => {
         try {
             const response = await axios.get(`${CONFIG.API_URL}/api/appointments/${userId}`);

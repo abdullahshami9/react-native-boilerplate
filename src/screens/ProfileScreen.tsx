@@ -1,6 +1,6 @@
 import React, { useState, useContext, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput, Modal, TouchableWithoutFeedback, Platform, PanResponder, Alert, Linking } from 'react-native';
-import Svg, { Path, Circle, Line, Plus, X, Trash, Rect } from 'react-native-svg';
+import Svg, { Path, Circle, Line } from 'react-native-svg';
 import QRCode from 'react-native-qrcode-svg';
 import { BlurView } from "@react-native-community/blur";
 import { AuthContext } from '../context/AuthContext';
@@ -33,7 +33,8 @@ const ContributionGraph = ({ data, onDateClick, isBusiness }: any) => {
             // Data is appointments array
             count = data.filter((a: any) => {
                 if (!a.appointment_date) return false;
-                const apptDate = a.appointment_date.split('T')[0];
+                // SAFE DATE PARSING (Handle MySQL " " vs ISO "T")
+                const apptDate = a.appointment_date.replace(' ', 'T').split('T')[0];
                 return apptDate === dateStr;
             }).length;
         }
@@ -97,6 +98,16 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
     // New Input State
     const [newSkill, setNewSkill] = useState('');
+    const [newEduSchool, setNewEduSchool] = useState('');
+    const [newEduDegree, setNewEduDegree] = useState('');
+    const [newEduYear, setNewEduYear] = useState('');
+
+    // Add Item Modals
+    const [addSkillVisible, setAddSkillVisible] = useState(false);
+    const [addEduVisible, setAddEduVisible] = useState(false);
+    const [bookApptVisible, setBookApptVisible] = useState(false);
+    const [apptDate, setApptDate] = useState('');
+    const [apptTime, setApptTime] = useState('');
 
     // Modals
     const [modalVisible, setModalVisible] = useState(false);
@@ -121,6 +132,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
         inputBg: isDarkMode ? '#2D3748' : '#fff',
         borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
         headerBg: isDarkMode ? '#2D3748' : '#fff',
+        buttonBg: isDarkMode ? '#4A9EFF' : '#EDF2F7'
     };
 
     useEffect(() => {
@@ -143,6 +155,13 @@ const ProfileScreen = ({ navigation, route }: any) => {
             } else {
                 const res = await DataService.getSkills(displayedUser.id);
                 if (res.success) setSkills(res.skills);
+
+                const eduRes = await DataService.getEducation(displayedUser.id);
+                console.log('ProfileScreen: Fetched Education:', JSON.stringify(eduRes, null, 2));
+                if (eduRes.success) {
+                    setEducation(eduRes.education);
+                    console.log('ProfileScreen: setEducation called with:', eduRes.education);
+                }
             }
 
             const apptRes = await DataService.getAppointments(displayedUser.id);
@@ -170,7 +189,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
         } else {
             const dayAppointments = appointments.filter((a: any) => {
                 if (!a.appointment_date) return false;
-                const apptDate = a.appointment_date.split('T')[0];
+                const apptDate = a.appointment_date.replace(' ', 'T').split('T')[0];
                 return apptDate === dateStr;
             });
 
@@ -230,6 +249,81 @@ const ProfileScreen = ({ navigation, route }: any) => {
         setAlertVisible(true);
     };
 
+    const handleAddSkill = async () => {
+        if (!newSkill.trim()) return;
+        try {
+            const res = await DataService.addSkill(userInfo.id, newSkill);
+            if (res.success) {
+                setSkills([...skills, res.skill]);
+                setNewSkill('');
+                setAddSkillVisible(false);
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    const handleDeleteSkill = async (id: number) => {
+        try {
+            const res = await DataService.deleteSkill(id);
+            if (res.success) {
+                setSkills(skills.filter(s => s.id !== id));
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    const handleAddEducation = async () => {
+        if (!newEduSchool.trim() || !newEduDegree.trim()) return;
+        try {
+            // FIXED: Key changed from 'school' to 'institution'
+            const res = await DataService.addEducation(userInfo.id, { institution: newEduSchool, degree: newEduDegree, year: newEduYear });
+            if (res.success) {
+                // Refresh data from server to ensure we have the correct object (handling backend legacy/update issues)
+                fetchData();
+                setNewEduSchool('');
+                setNewEduDegree('');
+                setNewEduYear('');
+                setAddEduVisible(false);
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    const handleBookAppointment = async () => {
+        if (!apptDate || !apptTime) return;
+        try {
+            // Combine date and time to ISO string or MySQL format
+            const combinedDate = `${apptDate} ${apptTime}:00`; // Simple YYYY-MM-DD HH:MM:SS
+            const res = await DataService.bookAppointment(displayedUser.id, userInfo.id, combinedDate);
+            if (res.success) {
+                setAlertTitle('Success');
+                setAlertMessage('Appointment request sent!');
+                setAlertType('success');
+                setBookApptVisible(false);
+                fetchData(); // Refresh appointments
+            }
+        } catch (e: any) {
+            setAlertTitle('Error');
+            setAlertMessage(e.message || 'Booking failed');
+            setAlertType('error');
+        }
+        setAlertVisible(true);
+    };
+
+    const handleDeleteEdu = async (id: number) => {
+        console.log('ProfileScreen: Deleting Education ID:', id);
+        try {
+            const res = await DataService.deleteEducation(id);
+            console.log('ProfileScreen: Delete Response:', res);
+            if (res.success) {
+                setEducation(education.filter(e => e.id !== id));
+            }
+        } catch (e) {
+            console.error('ProfileScreen: Delete Error:', e);
+            setAlertTitle('Delete Failed');
+            setAlertMessage(JSON.stringify(e));
+            setAlertType('error');
+            setAlertVisible(true);
+        }
+    };
+
     const getProfilePicUrl = () => {
         if (displayedUser?.profile_pic_url) {
             return `${CONFIG.API_URL}/${displayedUser.profile_pic_url}?t=${new Date().getTime()}`;
@@ -261,8 +355,9 @@ const ProfileScreen = ({ navigation, route }: any) => {
     const qrStyle = useAnimatedStyle(() => {
         // Shrink and move to top-right, next to settings icon
         const scale = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [1, 0.25], Extrapolate.CLAMP);
-        const translateX = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, width / 2 - 40], Extrapolate.CLAMP); // End near right edge
-        const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -110], Extrapolate.CLAMP); // Move up into header
+        // MOVED LEFT: Changed from width/2 - 40 to width/2 - 80 to avoid overlap with settings icon
+        const translateX = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, width / 2 - 80], Extrapolate.CLAMP);
+        const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -110], Extrapolate.CLAMP);
 
         return {
             transform: [
@@ -276,7 +371,8 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
     const avatarStyle = useAnimatedStyle(() => {
         const scale = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [1, 0.5], Extrapolate.CLAMP);
-        const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -220], Extrapolate.CLAMP);
+        // MOVED UP: Changed from -220 to -245
+        const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -245], Extrapolate.CLAMP);
         const translateX = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -width / 2 + 50], Extrapolate.CLAMP);
         return {
             transform: [{ translateX }, { translateY }, { scale }]
@@ -361,11 +457,11 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
                 {/* Action Buttons */}
                 <View style={styles.actionRow}>
-                    <TouchableOpacity style={styles.circleBtn} onPress={() => Linking.openURL(`tel:${displayedUser?.phone}`)}>
-                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.12 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></Svg>
+                    <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.buttonBg || '#4A9EFF' }]} onPress={() => Linking.openURL(`tel:${displayedUser?.phone}`)}>
+                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2"><Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.12 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></Svg>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.circleBtn} onPress={handleChatPress}>
-                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
+                    <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.buttonBg || '#4A9EFF' }]} onPress={handleChatPress}>
+                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
                     </TouchableOpacity>
                     {isBusinessUser && (
                         <View style={styles.locationSnippet}>
@@ -375,6 +471,18 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     )}
                 </View>
 
+                {/* Book Appointment Button (Visible if viewing another user) */}
+                {!isOwnProfile && isBusinessUser && (
+                    <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                        <TouchableOpacity
+                            style={{ backgroundColor: '#4A9EFF', paddingHorizontal: 30, paddingVertical: 12, borderRadius: 25, elevation: 3 }}
+                            onPress={() => setBookApptVisible(true)}
+                        >
+                            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Book Appointment</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 {/* Calendar */}
                 <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
                     <ContributionGraph data={isBusinessUser ? salesData : appointments} onDateClick={handleDateClick} isBusiness={isBusinessUser} />
@@ -382,12 +490,26 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
                 {/* Skills or Products */}
                 <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{isBusinessUser ? 'Product Catalog' : 'Professional Skills'}</Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                        <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>{isBusinessUser ? 'Product Catalog' : 'Professional Skills'}</Text>
+                        {/* Show Add Button for Skills if Own Profile & Individual */}
+                        {isOwnProfile && !isBusinessUser && (
+                            <TouchableOpacity onPress={() => setAddSkillVisible(true)} style={{ padding: 5 }}>
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M12 5v14M5 12h14" /></Svg>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
                     {!isBusinessUser && (
                         <View style={styles.tagsContainer}>
                             {skills.map((s, i) => (
-                                <View key={i} style={[styles.tag, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]}>
+                                <View key={i} style={[styles.tag, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7', flexDirection: 'row', alignItems: 'center', gap: 5 }]}>
                                     <Text style={[styles.tagText, { color: theme.text }]}>{s.skill_name}</Text>
+                                    {isOwnProfile && (
+                                        <TouchableOpacity onPress={() => handleDeleteSkill(s.id)}>
+                                            <Svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
                             ))}
                             {skills.length === 0 && <Text style={{ color: '#aaa' }}>No skills added yet.</Text>}
@@ -415,8 +537,31 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 {/* Education (Individual Only) */}
                 {!isBusinessUser && (
                     <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Education</Text>
-                        <Text style={{ color: '#aaa' }}>Add your educational background.</Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                            <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>Education</Text>
+                            {isOwnProfile && (
+                                <TouchableOpacity onPress={() => setAddEduVisible(true)} style={{ padding: 5 }}>
+                                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M12 5v14M5 12h14" /></Svg>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                        {(!education || education.length === 0) ? (
+                            <Text style={{ color: '#aaa' }}>Add your educational background.</Text>
+                        ) : (
+                            education.map((edu, i) => {
+                                if (!edu) return null; // Safety check
+                                return (
+                                    <View key={i} style={{ marginBottom: 15 }}>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                            <Text style={{ color: theme.text, fontWeight: 'bold', fontSize: 16 }}>{edu?.institution || edu?.school || 'Unknown School'}</Text>
+                                            {isOwnProfile && <TouchableOpacity onPress={() => handleDeleteEdu(edu.id)}><Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="red" strokeWidth="2"><Path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></Svg></TouchableOpacity>}
+                                        </View>
+                                        <Text style={{ color: theme.subText }}>{edu?.degree}</Text>
+                                        <Text style={{ color: theme.subText, fontSize: 12 }}>{edu?.year}</Text>
+                                    </View>
+                                );
+                            })
+                        )}
                     </View>
                 )}
 
@@ -435,10 +580,16 @@ const ProfileScreen = ({ navigation, route }: any) => {
             <Modal
                 visible={modalVisible}
                 transparent
-                animationType="slide"
+                animationType="fade"
                 onRequestClose={closeModal}
             >
-                <View style={styles.settingsModalOverlay}>
+                <View style={{ flex: 1 }}>
+                    <BlurView
+                        style={StyleSheet.absoluteFill}
+                        blurType={isDarkMode ? "dark" : "light"}
+                        blurAmount={10}
+                        reducedTransparencyFallbackColor="white"
+                    />
                     <TouchableWithoutFeedback onPress={closeModal}>
                         <View style={styles.dismissArea} />
                     </TouchableWithoutFeedback>
@@ -455,10 +606,16 @@ const ProfileScreen = ({ navigation, route }: any) => {
             <Modal
                 visible={isEditing}
                 transparent
-                animationType="slide"
+                animationType="fade"
                 onRequestClose={() => setIsEditing(false)}
             >
-                <View style={styles.settingsModalOverlay}>
+                <View style={{ flex: 1 }}>
+                    <BlurView
+                        style={StyleSheet.absoluteFill}
+                        blurType={isDarkMode ? "dark" : "light"}
+                        blurAmount={10}
+                        reducedTransparencyFallbackColor="white"
+                    />
                     <TouchableWithoutFeedback onPress={() => setIsEditing(false)}>
                         <View style={styles.dismissArea} />
                     </TouchableWithoutFeedback>
@@ -499,10 +656,10 @@ const ProfileScreen = ({ navigation, route }: any) => {
                         </View>
 
                         <TouchableOpacity
-                            style={{ backgroundColor: '#4A9EFF', padding: 15, borderRadius: 12, alignItems: 'center' }}
+                            style={{ backgroundColor: theme.buttonBg || '#4A9EFF', padding: 15, borderRadius: 12, alignItems: 'center' }}
                             onPress={handleSaveProfile}
                         >
-                            <Text style={{ color: 'white', fontWeight: 'bold' }}>Save Changes</Text>
+                            <Text style={{ color: isDarkMode ? 'white' : '#2D3748', fontWeight: 'bold' }}>Save Changes</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={{ marginTop: 10, padding: 10, alignItems: 'center' }}
@@ -540,6 +697,127 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     </View>
                 </Modal>
             )}
+
+            {/* Add Skill Modal */}
+            <Modal visible={addSkillVisible} transparent animationType="fade" onRequestClose={() => setAddSkillVisible(false)}>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
+                    <BlurView
+                        style={StyleSheet.absoluteFill}
+                        blurType={isDarkMode ? "dark" : "light"}
+                        blurAmount={10}
+                        reducedTransparencyFallbackColor="white"
+                    />
+                    <TouchableWithoutFeedback onPress={() => setAddSkillVisible(false)}>
+                        <View style={styles.dismissArea} />
+                    </TouchableWithoutFeedback>
+                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg, marginHorizontal: 20, borderRadius: 20 }]}>
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Add Skill</Text>
+                        <TextInput
+                            placeholder="Skill Name (e.g. React Native)"
+                            placeholderTextColor={theme.subText}
+                            value={newSkill}
+                            onChangeText={setNewSkill}
+                            style={{
+                                borderWidth: 1,
+                                borderColor: theme.borderColor,
+                                borderRadius: 10,
+                                padding: 10,
+                                color: theme.text,
+                                marginBottom: 20,
+                                backgroundColor: theme.inputBg // Use themed background
+                            }}
+                        />
+                        <TouchableOpacity style={{ backgroundColor: theme.buttonBg || '#4A9EFF', padding: 15, borderRadius: 12, alignItems: 'center' }} onPress={handleAddSkill}>
+                            <Text style={{ color: isDarkMode ? 'white' : '#2D3748', fontWeight: 'bold' }}>Add Skill</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={{ marginTop: 15, alignItems: 'center' }} onPress={() => setAddSkillVisible(false)}>
+                            <Text style={{ color: theme.subText }}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <TouchableWithoutFeedback onPress={() => setAddSkillVisible(false)}>
+                        <View style={styles.dismissArea} />
+                    </TouchableWithoutFeedback>
+                </View>
+            </Modal>
+
+            {/* Add Education Modal */}
+            <Modal visible={addEduVisible} transparent animationType="fade" onRequestClose={() => setAddEduVisible(false)}>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
+                    <BlurView
+                        style={StyleSheet.absoluteFill}
+                        blurType={isDarkMode ? "dark" : "light"}
+                        blurAmount={10}
+                        reducedTransparencyFallbackColor="white"
+                    />
+                    <TouchableWithoutFeedback onPress={() => setAddEduVisible(false)}>
+                        <View style={styles.dismissArea} />
+                    </TouchableWithoutFeedback>
+                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg, marginHorizontal: 20, borderRadius: 20 }]}>
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Add Education</Text>
+                        <TextInput
+                            placeholder="School / University"
+                            placeholderTextColor={theme.subText}
+                            value={newEduSchool}
+                            onChangeText={setNewEduSchool}
+                            style={{ borderWidth: 1, borderColor: theme.borderColor, borderRadius: 10, padding: 10, color: theme.text, marginBottom: 15, backgroundColor: theme.inputBg }}
+                        />
+                        <TextInput
+                            placeholder="Degree"
+                            placeholderTextColor={theme.subText}
+                            value={newEduDegree}
+                            onChangeText={setNewEduDegree}
+                            style={{ borderWidth: 1, borderColor: theme.borderColor, borderRadius: 10, padding: 10, color: theme.text, marginBottom: 15, backgroundColor: theme.inputBg }}
+                        />
+                        <TextInput
+                            placeholder="Year (e.g. 2019 - 2023)"
+                            placeholderTextColor={theme.subText}
+                            value={newEduYear}
+                            onChangeText={setNewEduYear}
+                            style={{ borderWidth: 1, borderColor: theme.borderColor, borderRadius: 10, padding: 10, color: theme.text, marginBottom: 20, backgroundColor: theme.inputBg }}
+                        />
+                        <TouchableOpacity style={{ backgroundColor: theme.buttonBg || '#4A9EFF', padding: 15, borderRadius: 12, alignItems: 'center' }} onPress={handleAddEducation}>
+                            <Text style={{ color: isDarkMode ? 'white' : '#2D3748', fontWeight: 'bold' }}>Add Education</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={{ marginTop: 15, alignItems: 'center' }} onPress={() => setAddEduVisible(false)}>
+                            <Text style={{ color: theme.subText }}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <TouchableWithoutFeedback onPress={() => setAddEduVisible(false)}>
+                        <View style={styles.dismissArea} />
+                    </TouchableWithoutFeedback>
+                </View>
+            </Modal>
+
+            {/* Book Appointment Modal */}
+            <Modal visible={bookApptVisible} transparent animationType="fade" onRequestClose={() => setBookApptVisible(false)}>
+                <View style={styles.settingsModalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Book Appointment</Text>
+                        <Text style={{ color: theme.subText, marginBottom: 5 }}>Date (YYYY-MM-DD)</Text>
+                        <TextInput
+                            placeholder="2026-05-20"
+                            placeholderTextColor={theme.subText}
+                            value={apptDate}
+                            onChangeText={setApptDate}
+                            style={{ borderWidth: 1, borderColor: theme.borderColor, borderRadius: 10, padding: 10, color: theme.text, marginBottom: 15 }}
+                        />
+                        <Text style={{ color: theme.subText, marginBottom: 5 }}>Time (HH:MM)</Text>
+                        <TextInput
+                            placeholder="14:30"
+                            placeholderTextColor={theme.subText}
+                            value={apptTime}
+                            onChangeText={setApptTime}
+                            style={{ borderWidth: 1, borderColor: theme.borderColor, borderRadius: 10, padding: 10, color: theme.text, marginBottom: 20 }}
+                        />
+                        <TouchableOpacity style={{ backgroundColor: '#4A9EFF', padding: 15, borderRadius: 12, alignItems: 'center' }} onPress={handleBookAppointment}>
+                            <Text style={{ color: 'white', fontWeight: 'bold' }}>Confirm Booking</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={{ marginTop: 15, alignItems: 'center' }} onPress={() => setBookApptVisible(false)}>
+                            <Text style={{ color: theme.subText }}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -609,7 +887,9 @@ const styles = StyleSheet.create({
     closeCardButton: { position: 'absolute', top: 15, right: 15, padding: 5, zIndex: 10 },
     cardHeader: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginBottom: 20 },
     cardAvatar: { width: 60, height: 60, borderRadius: 30 },
-    qrWrapper: { padding: 5, backgroundColor: '#fff', borderRadius: 10, elevation: 5 }, // Smaller padding for header
+
+    // Missing style added
+    businessCardContainer: { width: '85%', backgroundColor: '#fff', borderRadius: 20, padding: 25, alignItems: 'center', elevation: 10 },
 
 });
 

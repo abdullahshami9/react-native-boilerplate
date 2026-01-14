@@ -2,9 +2,22 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, StatusBar } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 
+import { CartContext } from '../context/CartContext';
+import { CONFIG } from '../Config';
+
 const { width } = Dimensions.get('window');
 
-const ProductDetailsScreen = ({ navigation }: any) => {
+const ProductDetailsScreen = ({ navigation, route }: any) => {
+    const { product } = route.params || {};
+    const { addToCart } = React.useContext(CartContext);
+
+    const handleAddToCart = () => {
+        addToCart(product);
+        // Maybe show feedback?
+        navigation.goBack();
+    };
+
+    if (!product) return null;
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#F7FAFC" />
@@ -36,7 +49,7 @@ const ProductDetailsScreen = ({ navigation }: any) => {
             <ScrollView contentContainerStyle={styles.content}>
                 {/* Product Image */}
                 <View style={styles.imageContainer}>
-                    <Image source={{ uri: 'https://images.unsplash.com/photo-1571781348782-95c0a1e067e5?fit=crop&w=400&h=400' }} style={styles.image} />
+                    <Image source={{ uri: product.image_url ? `${CONFIG.API_URL}/${product.image_url}` : 'https://via.placeholder.com/400' }} style={styles.image} />
                     {/* Dots indicator manually for now */}
                     <View style={styles.dotsContainer}>
                         <View style={[styles.dot, styles.activeDot]} />
@@ -47,16 +60,16 @@ const ProductDetailsScreen = ({ navigation }: any) => {
 
                 {/* Info */}
                 <View style={styles.infoContainer}>
-                    <Text style={styles.productName}>Product</Text>
-                    <Text style={styles.price}>$2.00</Text>
+                    <Text style={styles.productName}>{product.name}</Text>
+                    <Text style={styles.price}>{product.price} PKR</Text>
 
                     <Text style={styles.descriptionTitle}>Description</Text>
                     <Text style={styles.descriptionText}>
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
+                        {product.description || 'No description available.'}
                     </Text>
 
-                    <TouchableOpacity style={styles.buyButton}>
-                        <Text style={styles.buyButtonText}>Buy Now</Text>
+                    <TouchableOpacity style={styles.buyButton} onPress={handleAddToCart}>
+                        <Text style={styles.buyButtonText}>Add to Cart</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

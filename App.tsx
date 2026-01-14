@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
+import { CartProvider } from './src/context/CartContext';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
@@ -65,7 +66,9 @@ const App = () => {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <AppNav />
+        <CartProvider>
+          <AppNav />
+        </CartProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

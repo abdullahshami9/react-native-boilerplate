@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -31,6 +31,7 @@ const TunnelWrapper: React.FC<TunnelWrapperProps> = ({
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F7FAFC" />
       <View style={styles.header}>
         {showBack ? (
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
@@ -44,7 +45,7 @@ const TunnelWrapper: React.FC<TunnelWrapperProps> = ({
         {/* Title is typically in the content in the designs, not center header */}
 
         <View style={styles.headerRight}>
-            {headerRight}
+          {headerRight}
         </View>
       </View>
 
@@ -80,8 +81,8 @@ const styles = StyleSheet.create({
     color: '#2D3748',
   },
   headerRight: {
-      width: 40,
-      alignItems: 'flex-end'
+    width: 40,
+    alignItems: 'flex-end'
   },
   content: {
     flexGrow: 1,

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView 
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
-import { launchImageLibrary } from 'react-native-image-picker';
+import DocumentPicker, { DocumentPickerResponse } from 'react-native-document-picker';
 import Svg, { Path } from 'react-native-svg';
 
 const PersonalEducationScreen = ({ navigation }: any) => {
@@ -15,13 +15,17 @@ const PersonalEducationScreen = ({ navigation }: any) => {
     const [loading, setLoading] = useState(false);
 
     const handleUploadResume = async () => {
-        const result = await launchImageLibrary({
-            mediaType: 'photo',
-            selectionLimit: 1,
-        });
-
-        if (result.assets && result.assets.length > 0) {
-            setResumeFile(result.assets[0]);
+        try {
+            const result = await DocumentPicker.pickSingle({
+                type: [DocumentPicker.types.pdf, DocumentPicker.types.doc, DocumentPicker.types.docx, DocumentPicker.types.images],
+            });
+            setResumeFile(result);
+        } catch (err) {
+            if (DocumentPicker.isCancel(err)) {
+                // User cancelled the picker, exit any dialogs or menus and move on
+            } else {
+                throw err;
+            }
         }
     };
 
@@ -88,7 +92,7 @@ const PersonalEducationScreen = ({ navigation }: any) => {
                         <Path d="M12 3v12" />
                     </Svg>
                     <Text style={styles.uploadButtonText}>
-                        {resumeFile ? 'Resume Selected' : 'Upload Resume'}
+                        {resumeFile ? resumeFile.name : 'Upload Resume'}
                     </Text>
                 </TouchableOpacity>
 

@@ -3,26 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Image } fro
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
-import { launchImageLibrary } from 'react-native-image-picker';
+import MapView, { Marker } from 'react-native-maps';
 import Svg, { Path } from 'react-native-svg';
 
 const PersonalLocationJobScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);
     const [location, setLocation] = useState('');
     const [jobTitle, setJobTitle] = useState('');
-    const [resumeFile, setResumeFile] = useState<any>(null);
-    const [loading, setLoading] = useState(false);
-
-    const handleUploadResume = async () => {
-        const result = await launchImageLibrary({
-            mediaType: 'photo',
-            selectionLimit: 1,
-        });
-
-        if (result.assets && result.assets.length > 0) {
-            setResumeFile(result.assets[0]);
-        }
-    };
+    // Resume logic removed as it's now in Education screen
 
     const handleNext = async () => {
         setLoading(true);
@@ -30,10 +18,7 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
             // Save details
             await TunnelService.updatePersonalDetails(userInfo.id, { address: location, jobTitle });
 
-            // Upload resume if selected (and wasn't uploaded in previous step, or user wants to overwrite)
-            if (resumeFile) {
-                await TunnelService.uploadResume(resumeFile, userInfo.id);
-            }
+            // Resume upload removed from here
 
             navigation.navigate('PaymentIntegration');
         } catch (error) {
@@ -49,12 +34,24 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
             <View style={styles.container}>
 
                 {/* Map Placeholder */}
+                {/* Map View */}
                 <View style={styles.mapContainer}>
-                    <Image
-                        source={require('../../../assets/tunnel-payment.png')}
-                        style={styles.mapImage}
-                        resizeMode="cover"
-                    />
+                    <MapView
+                        style={styles.map}
+                        initialRegion={{
+                            latitude: 37.78825,
+                            longitude: -122.4324,
+                            latitudeDelta: 0.0922,
+                            longitudeDelta: 0.0421,
+                        }}
+                    >
+                        <Marker
+                            coordinate={{ latitude: 37.78825, longitude: -122.4324 }}
+                            title={"Selected Location"}
+                            draggable
+                        />
+                    </MapView>
+
                     <View style={styles.locationInputOverlay}>
                         <View style={styles.locationIcon}>
                             <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5568" strokeWidth="2">
@@ -82,16 +79,7 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
                     />
                 </View>
 
-                <TouchableOpacity style={styles.uploadButton} onPress={handleUploadResume}>
-                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                        <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <Path d="M17 8l-5-5-5 5" />
-                        <Path d="M12 3v12" />
-                    </Svg>
-                    <Text style={styles.uploadButtonText}>
-                        {resumeFile ? 'Resume Selected' : 'Upload Resume'}
-                    </Text>
-                </TouchableOpacity>
+
 
                 <View style={styles.spacer} />
 
@@ -131,7 +119,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         position: 'relative',
     },
-    mapImage: {
+    map: {
         width: '100%',
         height: '100%',
     },
@@ -168,21 +156,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#2D3748',
     },
-    uploadButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#4A5568',
-        borderRadius: 30,
-        height: 56,
-        gap: 10,
-        marginTop: 10,
-    },
-    uploadButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
-    },
+
     spacer: {
         flex: 1,
     },

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Image } fro
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
+import MapView, { Marker } from 'react-native-maps';
 import Svg, { Path } from 'react-native-svg';
 
 const BusinessLocationScreen = ({ navigation }: any) => {
@@ -31,16 +32,26 @@ const BusinessLocationScreen = ({ navigation }: any) => {
         <TunnelWrapper title="Business Profile - Location" onBack={() => navigation.goBack()}>
             <View style={styles.container}>
 
-                {/* Map Placeholder */}
+                {/* Map View */}
                 <View style={styles.mapContainer}>
-                    <Image
-                        source={require('../../../assets/tunnel-payment.png')}
-                        style={styles.mapImage}
-                        resizeMode="cover"
-                    />
+                    <MapView
+                        style={styles.map}
+                        initialRegion={{
+                            latitude: 37.78825,
+                            longitude: -122.4324,
+                            latitudeDelta: 0.0922,
+                            longitudeDelta: 0.0421,
+                        }}
+                    >
+                        <Marker
+                            coordinate={{ latitude: 37.78825, longitude: -122.4324 }}
+                            title={"Selected Location"}
+                            draggable
+                        />
+                    </MapView>
                     <View style={styles.locationInputOverlay}>
                         <View style={styles.locationIcon}>
-                             <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5568" strokeWidth="2">
+                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5568" strokeWidth="2">
                                 <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                                 <Path d="M12 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
                             </Svg>
@@ -57,7 +68,7 @@ const BusinessLocationScreen = ({ navigation }: any) => {
 
                 <View style={styles.inputGroup}>
                     <View style={styles.inputIcon}>
-                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
+                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
                             <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                             <Path d="M12 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
                         </Svg>
@@ -102,7 +113,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         position: 'relative',
     },
-    mapImage: {
+    map: {
         width: '100%',
         height: '100%',
     },

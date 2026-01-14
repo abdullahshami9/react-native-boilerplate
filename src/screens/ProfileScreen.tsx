@@ -544,6 +544,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                     <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M12 5v14M5 12h14" /></Svg>
                                 </TouchableOpacity>
                             )}
+
                         </View>
                         {(!education || education.length === 0) ? (
                             <Text style={{ color: '#aaa' }}>Add your educational background.</Text>
@@ -576,18 +577,18 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 onDismiss={() => setAlertVisible(false)}
             />
 
-            {/* Replaced Animated Modal with Standard Modal for stability */}
+            {/* Settings Modal - Bottom Sheet with BLUR */}
             <Modal
                 visible={modalVisible}
                 transparent
-                animationType="fade"
+                animationType="slide"
                 onRequestClose={closeModal}
             >
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, justifyContent: 'flex-end' }}>
                     <BlurView
                         style={StyleSheet.absoluteFill}
                         blurType={isDarkMode ? "dark" : "light"}
-                        blurAmount={10}
+                        blurAmount={5} // Thora sa blur (Slight blur)
                         reducedTransparencyFallbackColor="white"
                     />
                     <TouchableWithoutFeedback onPress={closeModal}>
@@ -602,18 +603,18 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 </View>
             </Modal>
 
-            {/* Edit Profile Modal */}
+            {/* Edit Profile Modal - Bottom Sheet with BLUR */}
             <Modal
                 visible={isEditing}
                 transparent
-                animationType="fade"
+                animationType="slide"
                 onRequestClose={() => setIsEditing(false)}
             >
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, justifyContent: 'flex-end' }}>
                     <BlurView
                         style={StyleSheet.absoluteFill}
                         blurType={isDarkMode ? "dark" : "light"}
-                        blurAmount={10}
+                        blurAmount={3}
                         reducedTransparencyFallbackColor="white"
                     />
                     <TouchableWithoutFeedback onPress={() => setIsEditing(false)}>
@@ -698,19 +699,13 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 </Modal>
             )}
 
-            {/* Add Skill Modal */}
-            <Modal visible={addSkillVisible} transparent animationType="fade" onRequestClose={() => setAddSkillVisible(false)}>
-                <View style={{ flex: 1, justifyContent: 'center' }}>
-                    <BlurView
-                        style={StyleSheet.absoluteFill}
-                        blurType={isDarkMode ? "dark" : "light"}
-                        blurAmount={10}
-                        reducedTransparencyFallbackColor="white"
-                    />
+            {/* Add Skill Modal - Bottom Sheet */}
+            <Modal visible={addSkillVisible} transparent animationType="slide" onRequestClose={() => setAddSkillVisible(false)}>
+                <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'transparent' }}>
                     <TouchableWithoutFeedback onPress={() => setAddSkillVisible(false)}>
                         <View style={styles.dismissArea} />
                     </TouchableWithoutFeedback>
-                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg, marginHorizontal: 20, borderRadius: 20 }]}>
+                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Add Skill</Text>
                         <TextInput
                             placeholder="Skill Name (e.g. React Native)"
@@ -734,25 +729,16 @@ const ProfileScreen = ({ navigation, route }: any) => {
                             <Text style={{ color: theme.subText }}>Cancel</Text>
                         </TouchableOpacity>
                     </View>
-                    <TouchableWithoutFeedback onPress={() => setAddSkillVisible(false)}>
-                        <View style={styles.dismissArea} />
-                    </TouchableWithoutFeedback>
                 </View>
             </Modal>
 
-            {/* Add Education Modal */}
-            <Modal visible={addEduVisible} transparent animationType="fade" onRequestClose={() => setAddEduVisible(false)}>
-                <View style={{ flex: 1, justifyContent: 'center' }}>
-                    <BlurView
-                        style={StyleSheet.absoluteFill}
-                        blurType={isDarkMode ? "dark" : "light"}
-                        blurAmount={10}
-                        reducedTransparencyFallbackColor="white"
-                    />
+            {/* Add Education Modal - Bottom Sheet */}
+            <Modal visible={addEduVisible} transparent animationType="slide" onRequestClose={() => setAddEduVisible(false)}>
+                <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'transparent' }}>
                     <TouchableWithoutFeedback onPress={() => setAddEduVisible(false)}>
                         <View style={styles.dismissArea} />
                     </TouchableWithoutFeedback>
-                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg, marginHorizontal: 20, borderRadius: 20 }]}>
+                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Add Education</Text>
                         <TextInput
                             placeholder="School / University"
@@ -782,9 +768,6 @@ const ProfileScreen = ({ navigation, route }: any) => {
                             <Text style={{ color: theme.subText }}>Cancel</Text>
                         </TouchableOpacity>
                     </View>
-                    <TouchableWithoutFeedback onPress={() => setAddEduVisible(false)}>
-                        <View style={styles.dismissArea} />
-                    </TouchableWithoutFeedback>
                 </View>
             </Modal>
 
@@ -853,7 +836,7 @@ const styles = StyleSheet.create({
     locationText: { color: '#718096', fontSize: 12, maxWidth: 100 },
 
     sectionContainer: { width: '90%', alignSelf: 'center', borderRadius: 20, padding: 20, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
+    sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
     tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     tag: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
     tagText: { fontSize: 14, fontWeight: '500' },

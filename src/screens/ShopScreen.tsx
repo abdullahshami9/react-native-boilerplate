@@ -34,10 +34,18 @@ const ShopScreen = ({ navigation }: any) => {
         try {
             if (activeTab === 'Products') {
                 const res = await DataService.discoverProducts(search);
-                if (res.success) setProducts(res.products);
+                if (res.success && Array.isArray(res.products)) {
+                    setProducts(res.products);
+                } else {
+                    setProducts([]);
+                }
             } else {
                 const res = await DataService.discoverServices(search);
-                if (res.success) setServices(res.services);
+                if (res.success && Array.isArray(res.services)) {
+                    setServices(res.services);
+                } else {
+                    setServices([]);
+                }
             }
         } catch (error) {
             console.log(error);
@@ -112,7 +120,7 @@ const ShopScreen = ({ navigation }: any) => {
                                     </View>
                                     <View style={styles.productInfo}>
                                         <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
-                                        <Text style={[styles.productPrice, { color: theme.subText }]}>${item.price} • {item.duration_mins}m</Text>
+                                        <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price} PKR • {item.duration_mins}m</Text>
                                     </View>
                                 </TouchableOpacity>
                             ))

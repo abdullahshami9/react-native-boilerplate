@@ -6,6 +6,7 @@ import axios from 'axios';
 import { CONFIG } from '../Config';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import { launchImageLibrary } from 'react-native-image-picker';
 
 export default function ChatScreen({ route, navigation }: any) {
     const { chatId, otherUser } = route.params;
@@ -55,6 +56,34 @@ export default function ChatScreen({ route, navigation }: any) {
         setInput('');
     };
 
+    const handlePickImage = async () => {
+        const result = await launchImageLibrary({ mediaType: 'photo' });
+        if (result.assets && result.assets.length > 0) {
+            const asset = result.assets[0];
+            uploadImage(asset);
+        }
+    };
+
+    const uploadImage = async (file: any) => {
+        const formData = new FormData();
+        formData.append('image', {
+            uri: file.uri,
+            type: file.type || 'image/jpeg',
+            name: file.fileName || 'chat.jpg'
+        });
+
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/upload/chat`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            if (response.data.success) {
+                SocketService.sendMessage(chatId, userInfo.id, response.data.filePath, 'image');
+            }
+        } catch (error) {
+            console.error('Upload Error:', error);
+        }
+    };
+
     const scrollToBottom = () => {
         setTimeout(() => {
             flatListRef.current?.scrollToEnd({ animated: true });
@@ -66,7 +95,15 @@ export default function ChatScreen({ route, navigation }: any) {
         return (
             <View style={[styles.msgContainer, isMe ? styles.myMsgContainer : styles.otherMsgContainer]}>
                 <View style={[styles.bubble, isMe ? styles.myBubble : styles.otherBubble]}>
-                    <Text style={[styles.msgText, isMe ? styles.myMsgText : styles.otherMsgText]}>{item.content}</Text>
+                    {item.type === 'image' ? (
+                        <Image
+                            source={{ uri: `${CONFIG.API_URL}/${item.content}` }}
+                            style={{ width: 200, height: 200, borderRadius: 10 }}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <Text style={[styles.msgText, isMe ? styles.myMsgText : styles.otherMsgText]}>{item.content}</Text>
+                    )}
                     <Text style={styles.timeText}>{new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
                 </View>
             </View>
@@ -92,6 +129,9 @@ export default function ChatScreen({ route, navigation }: any) {
 
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={10}>
                 <View style={styles.inputContainer}>
+                    <TouchableOpacity onPress={handlePickImage} style={styles.attachBtn}>
+                        <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><Path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></Svg>
+                    </TouchableOpacity>
                     <TextInput
                         style={styles.input}
                         value={input}
@@ -125,6 +165,7 @@ const styles = StyleSheet.create({
     otherMsgText: { color: '#333' },
     timeText: { fontSize: 10, marginTop: 4, opacity: 0.7, alignSelf: 'flex-end', color: 'inherit' },
     inputContainer: { flexDirection: 'row', padding: 10, borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'center' },
+    attachBtn: { marginRight: 10, padding: 5 },
     input: { flex: 1, backgroundColor: '#f8f9fa', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 10, fontSize: 16, color: '#333', marginRight: 10 },
     sendBtn: { backgroundColor: '#007BFF', width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' }
 });

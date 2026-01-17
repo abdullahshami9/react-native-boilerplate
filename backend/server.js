@@ -34,6 +34,7 @@ ensureDir(path.join(__dirname, 'uploads/products'));
 ensureDir(path.join(__dirname, 'uploads/services'));
 ensureDir(path.join(__dirname, 'uploads/certificates'));
 ensureDir(path.join(__dirname, 'uploads/resumes'));
+ensureDir(path.join(__dirname, 'uploads/chats'));
 
 // Database Connection Config
 const dbConfig = {
@@ -331,6 +332,7 @@ const storage = multer.diskStorage({
         else if (req.path.includes('product')) dir += 'products/';
         else if (req.path.includes('service')) dir += 'services/'; // Added services
         else if (req.path.includes('certificate')) dir += 'certificates/';
+        else if (req.path.includes('chat')) dir += 'chats/';
 
         // Ensure directory exists (mkdir -p logic handled by shell usually but good to be safe)
         cb(null, dir);
@@ -356,6 +358,8 @@ const storage = multer.diskStorage({
              // services usually have one image, but let's stick to convention if needed
              // or just serviceId.ext
             cb(null, `${serviceId}${ext}`);
+        } else if (req.path.includes('chat')) {
+             cb(null, `${Date.now()}-${sanitize(file.originalname)}`);
         } else {
             // Generic fallback
             cb(null, `${Date.now()}${ext}`);
@@ -695,6 +699,12 @@ app.post('/api/upload/service', upload.single('image'), (req, res) => {
     dbQuery(query, [fileUrl, serviceId], req, (err) => {
         res.json({ success: true, message: 'Service image uploaded', filePath: fileUrl });
     });
+});
+
+app.post('/api/upload/chat', upload.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+    const fileUrl = `uploads/chats/${req.file.filename}`;
+    res.json({ success: true, message: 'Chat image uploaded', filePath: fileUrl });
 });
 
 // --- CONNECTIONS ---

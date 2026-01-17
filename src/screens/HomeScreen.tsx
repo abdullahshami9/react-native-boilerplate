@@ -17,6 +17,7 @@ const HomeScreen = ({ navigation, route }: any) => {
 
     // Dynamic Data State
     const [dashboardData, setDashboardData] = useState<any[]>([]);
+    const [discoverProducts, setDiscoverProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [reports, setReports] = useState<any>({ daily: [], monthlyTotal: 0 });
 
@@ -48,6 +49,12 @@ const HomeScreen = ({ navigation, route }: any) => {
                 const res = await DataService.getAvailability(user.id);
                 if (res.success) {
                     setDashboardData(res.availability);
+                }
+
+                 // Fetch Discover Products for Customers
+                const prodRes = await DataService.discoverProducts('');
+                if (prodRes.success) {
+                    setDiscoverProducts(prodRes.products);
                 }
             }
         } catch (error) {
@@ -159,6 +166,31 @@ const HomeScreen = ({ navigation, route }: any) => {
 
     const renderIndividualDashboard = () => (
         <View>
+            <View style={[styles.sectionHeader, { marginTop: 20 }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Discover Products</Text>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+                 {discoverProducts.map((item, index) => (
+                    <TouchableOpacity
+                        key={index}
+                        style={[styles.card, { backgroundColor: theme.cardBg, width: 150, height: 200, marginRight: 15, alignItems: 'flex-start', padding: 10, justifyContent: 'flex-start' }]}
+                        onPress={() => navigation.navigate('ProductDetails', { product: item })}
+                    >
+                         <View style={{ width: '100%', height: 120, backgroundColor: '#EDF2F7', borderRadius: 8, overflow: 'hidden', marginBottom: 10 }}>
+                            {item.image_url ? (
+                                <Image source={{ uri: `${CONFIG.API_URL}/${item.image_url}` }} style={{ width: '100%', height: '100%' }} />
+                            ) : null}
+                         </View>
+                         <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: 'bold', color: theme.text, marginBottom: 5 }}>{item.name}</Text>
+                         <Text style={{ fontSize: 12, color: theme.subText }}>{item.price} PKR</Text>
+                    </TouchableOpacity>
+                 ))}
+                 {discoverProducts.length === 0 && (
+                     <Text style={{ color: theme.subText }}>No products found.</Text>
+                 )}
+            </ScrollView>
+
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>Unlock Availability</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Profile')}>

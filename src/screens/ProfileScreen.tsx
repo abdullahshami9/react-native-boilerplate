@@ -580,6 +580,12 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                 theme={theme}
                             />
                             <DashboardButton
+                                icon={<Path d="M9 20a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" /> }
+                                label="My Cart"
+                                onPress={() => navigation.navigate('Checkout')}
+                                theme={theme}
+                            />
+                            <DashboardButton
                                 icon={<Path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />}
                                 label="Appointments"
                                 onPress={() => navigation.navigate('ServiceAppointments')}

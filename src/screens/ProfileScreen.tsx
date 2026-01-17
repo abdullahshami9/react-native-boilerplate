@@ -366,8 +366,8 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
     const qrStyle = useAnimatedStyle(() => {
         const scale = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [1, 0.25], Extrapolate.CLAMP);
-        const translateX = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, width / 2 - 80], Extrapolate.CLAMP);
-        const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -110], Extrapolate.CLAMP);
+        const translateX = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, width / 2 - 40], Extrapolate.CLAMP);
+        const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -60], Extrapolate.CLAMP);
         return {
             transform: [{ translateX }, { translateY }, { scale }],
             opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.8], [1, 1], Extrapolate.CLAMP)
@@ -398,7 +398,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Animated Header */}
-            <Animated.View style={[styles.headerBackground, headerHeightStyle, { backgroundColor: '#2D3748' }]}>
+            <Animated.View style={[styles.headerBackground, headerHeightStyle, { backgroundColor: '#bfc8d3ff' }]}>
                 <View style={styles.headerTop}>
                     {isOwnProfile && (
                         <TouchableOpacity onPress={openModal} style={styles.iconButton}>
@@ -519,10 +519,10 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
                 {/* Customer Dashboard */}
                 {isOwnProfile && !isBusinessUser && (
-                     <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
+                    <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>My Activity</Text>
                         <View style={styles.dashboardGrid}>
-                             <DashboardButton
+                            <DashboardButton
                                 icon={<Path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />}
                                 label="My Orders"
                                 onPress={() => navigation.navigate('CustomerOrders')}
@@ -554,7 +554,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                         )}
                     </View>
                     {/* Content omitted for brevity, same as before */}
-                     {!isBusinessUser && (
+                    {!isBusinessUser && (
                         <View style={styles.tagsContainer}>
                             {skills.map((s, i) => (
                                 <View key={i} style={[styles.tag, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7', flexDirection: 'row', alignItems: 'center', gap: 5 }]}>
@@ -583,7 +583,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
             </Animated.ScrollView>
 
-             {/* Modals ... (Keeping same modals) */}
+            {/* Modals ... (Keeping same modals) */}
             <CustomAlert
                 visible={alertVisible}
                 title={alertTitle}
@@ -616,7 +616,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     </View>
                 </View>
             </Modal>
-             <Modal
+            <Modal
                 visible={isEditing}
                 transparent
                 animationType="slide"
@@ -684,7 +684,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 </View>
             </Modal>
 
-             {/* Add Skill Modal - Bottom Sheet */}
+            {/* Add Skill Modal - Bottom Sheet */}
             <Modal visible={addSkillVisible} transparent animationType="slide" onRequestClose={() => setAddSkillVisible(false)}>
                 <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'transparent' }}>
                     <TouchableWithoutFeedback onPress={() => setAddSkillVisible(false)}>
@@ -716,7 +716,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     </View>
                 </View>
             </Modal>
-             {/* Add Education Modal - Bottom Sheet */}
+            {/* Add Education Modal - Bottom Sheet */}
             <Modal visible={addEduVisible} transparent animationType="slide" onRequestClose={() => setAddEduVisible(false)}>
                 <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'transparent' }}>
                     <TouchableWithoutFeedback onPress={() => setAddEduVisible(false)}>
@@ -754,7 +754,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     </View>
                 </View>
             </Modal>
-             <Modal visible={bookApptVisible} transparent animationType="fade" onRequestClose={() => setBookApptVisible(false)}>
+            <Modal visible={bookApptVisible} transparent animationType="fade" onRequestClose={() => setBookApptVisible(false)}>
                 <View style={styles.settingsModalOverlay}>
                     <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Book Appointment</Text>
@@ -797,7 +797,7 @@ const styles = StyleSheet.create({
     headerNameText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
     headerEmailText: { color: '#CBD5E0', fontSize: 10 },
 
-    qrContainer: { marginTop: 20, alignItems: 'center', justifyContent: 'center', zIndex: 15 },
+    qrContainer: { marginTop: 20, alignItems: 'center', justifyContent: 'center', zIndex: 25 },
     qrWrapper: { padding: 10, backgroundColor: '#fff', borderRadius: 20, elevation: 5 },
 
     avatarContainerAbsolute: { position: 'absolute', top: 240, left: 0, right: 0, alignItems: 'center', zIndex: 30 },

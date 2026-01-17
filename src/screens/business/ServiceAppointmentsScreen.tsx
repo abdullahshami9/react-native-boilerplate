@@ -5,9 +5,19 @@ import { DataService } from '../../services/DataService';
 import Svg, { Path, Circle } from 'react-native-svg';
 
 const ServiceAppointmentsScreen = ({ navigation }: any) => {
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, isDarkMode } = useContext(AuthContext);
     const [appointments, setAppointments] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+
+    const theme = {
+        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
+        text: isDarkMode ? '#F7FAFC' : '#2D3748',
+        subText: isDarkMode ? '#A0AEC0' : '#718096',
+        cardBg: isDarkMode ? '#2D3748' : '#fff',
+        inputBg: isDarkMode ? '#2D3748' : '#F7FAFC',
+        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+        headerBg: isDarkMode ? '#2D3748' : '#fff',
+    };
 
     useEffect(() => {
         fetchAppointments();
@@ -36,9 +46,9 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
         const dateObj = new Date(item.appointment_date);
 
         return (
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
                 <View style={styles.headerRow}>
-                    <Text style={styles.serviceName}>{item.service_name || 'Appointment'}</Text>
+                    <Text style={[styles.serviceName, { color: theme.text }]}>{item.service_name || 'Appointment'}</Text>
                     <View style={[styles.statusBadge, { backgroundColor: item.status === 'confirmed' ? '#C6F6D5' : '#FEFCBF' }]}>
                         <Text style={[styles.statusText, { color: item.status === 'confirmed' ? '#22543D' : '#744210' }]}>
                             {item.status.toUpperCase()}
@@ -47,27 +57,27 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
                 </View>
 
                 <View style={styles.detailRow}>
-                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#718096" strokeWidth="2">
+                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
                         <Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                         <Circle cx="12" cy="7" r="4" />
                     </Svg>
-                    <Text style={styles.detailText}>{roleText}: {otherName}</Text>
+                    <Text style={[styles.detailText, { color: theme.text }]}>{roleText}: {otherName}</Text>
                 </View>
 
-                <View style={styles.timeContainer}>
+                <View style={[styles.timeContainer, { backgroundColor: theme.bg }]}>
                     <View style={styles.timeBlock}>
-                        <Text style={styles.timeLabel}>Date</Text>
-                        <Text style={styles.timeValue}>{dateObj.toLocaleDateString()}</Text>
+                        <Text style={[styles.timeLabel, { color: theme.subText }]}>Date</Text>
+                        <Text style={[styles.timeValue, { color: theme.text }]}>{dateObj.toLocaleDateString()}</Text>
                     </View>
-                    <View style={styles.divider} />
+                    <View style={[styles.divider, { backgroundColor: theme.borderColor }]} />
                     <View style={styles.timeBlock}>
-                        <Text style={styles.timeLabel}>Time</Text>
-                        <Text style={styles.timeValue}>{dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+                        <Text style={[styles.timeLabel, { color: theme.subText }]}>Time</Text>
+                        <Text style={[styles.timeValue, { color: theme.text }]}>{dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
                     </View>
-                    <View style={styles.divider} />
+                    <View style={[styles.divider, { backgroundColor: theme.borderColor }]} />
                     <View style={styles.timeBlock}>
-                        <Text style={styles.timeLabel}>Duration</Text>
-                        <Text style={styles.timeValue}>{item.duration_mins || 30} min</Text>
+                        <Text style={[styles.timeLabel, { color: theme.subText }]}>Duration</Text>
+                        <Text style={[styles.timeValue, { color: theme.text }]}>{item.duration_mins || 30} min</Text>
                     </View>
                 </View>
             </View>
@@ -75,9 +85,9 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Appointments</Text>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
+            <View style={[styles.header, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Appointments</Text>
             </View>
 
             <FlatList
@@ -85,8 +95,8 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
                 renderItem={renderItem}
                 keyExtractor={item => item.id.toString()}
                 contentContainerStyle={styles.listContent}
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchAppointments} />}
-                ListEmptyComponent={<Text style={styles.emptyText}>No appointments found.</Text>}
+                refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchAppointments} tintColor={theme.text} />}
+                ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>No appointments found.</Text>}
             />
         </View>
     );

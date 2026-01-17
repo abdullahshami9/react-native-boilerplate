@@ -4,11 +4,11 @@ import { AuthContext } from '../../context/AuthContext';
 import { DataService } from '../../services/DataService';
 import CustomAlert from '../../components/CustomAlert';
 import { launchImageLibrary } from 'react-native-image-picker';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { CONFIG } from '../../Config';
 
 const ManageServicesScreen = ({ navigation }: any) => {
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, isDarkMode } = useContext(AuthContext);
     const [services, setServices] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
@@ -23,6 +23,16 @@ const ManageServicesScreen = ({ navigation }: any) => {
 
     // Alert State
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' });
+
+    const theme = {
+        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
+        text: isDarkMode ? '#F7FAFC' : '#2D3748',
+        subText: isDarkMode ? '#A0AEC0' : '#718096',
+        cardBg: isDarkMode ? '#2D3748' : '#fff',
+        inputBg: isDarkMode ? '#2D3748' : '#fff',
+        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+        headerBg: isDarkMode ? '#2D3748' : '#fff',
+    };
 
     useEffect(() => {
         fetchServices();
@@ -99,25 +109,25 @@ const ManageServicesScreen = ({ navigation }: any) => {
     };
 
     const renderItem = ({ item }: any) => (
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
             <Image
                 source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/100' }}
                 style={styles.cardImage}
             />
             <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>{item.name}</Text>
+                <Text style={[styles.cardTitle, { color: theme.text }]}>{item.name}</Text>
                 <Text style={styles.cardPrice}>${item.price}</Text>
                 <View style={styles.metaRow}>
-                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#718096" strokeWidth="2">
+                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
                          <Path d="M12 2v20M2 12h20" stroke="none" />
                          <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="none"/>
                          {/* Clock Icon */}
                          <Path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
                          <Path d="M12 6v6l4 2" />
                     </Svg>
-                    <Text style={styles.metaText}>{item.duration_mins} mins</Text>
+                    <Text style={[styles.metaText, { color: theme.subText }]}>{item.duration_mins} mins</Text>
                 </View>
-                <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
+                <Text style={[styles.cardDesc, { color: theme.subText }]} numberOfLines={2}>{item.description}</Text>
             </View>
             <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteService(item.id)}>
                 <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2">
@@ -129,7 +139,7 @@ const ManageServicesScreen = ({ navigation }: any) => {
     );
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
             <CustomAlert
                 visible={alertConfig.visible}
                 title={alertConfig.title}
@@ -138,29 +148,29 @@ const ManageServicesScreen = ({ navigation }: any) => {
                 onDismiss={() => setAlertConfig({ ...alertConfig, visible: false })}
             />
 
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>My Services</Text>
+            <View style={[styles.header, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>My Services</Text>
                 <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
                     <Text style={styles.addButtonText}>+ Add Service</Text>
                 </TouchableOpacity>
             </View>
 
             {loading ? (
-                <ActivityIndicator size="large" color="#4A5568" style={{ marginTop: 50 }} />
+                <ActivityIndicator size="large" color={theme.text} style={{ marginTop: 50 }} />
             ) : (
                 <FlatList
                     data={services}
                     renderItem={renderItem}
                     keyExtractor={item => item.id.toString()}
                     contentContainerStyle={styles.listContent}
-                    ListEmptyComponent={<Text style={styles.emptyText}>No services added yet.</Text>}
+                    ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>No services added yet.</Text>}
                 />
             )}
 
             <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet">
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Add New Service</Text>
+                <View style={[styles.modalContainer, { backgroundColor: theme.bg }]}>
+                    <View style={[styles.modalHeader, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
+                        <Text style={[styles.modalTitle, { color: theme.text }]}>Add New Service</Text>
                         <TouchableOpacity onPress={() => setModalVisible(false)}>
                             <Text style={styles.closeText}>Cancel</Text>
                         </TouchableOpacity>
@@ -171,23 +181,23 @@ const ManageServicesScreen = ({ navigation }: any) => {
                             {image ? (
                                 <Image source={{ uri: image.uri }} style={styles.previewImage} />
                             ) : (
-                                <View style={styles.imagePlaceholder}>
-                                    <Text style={styles.imagePlaceholderText}>Tap to add image</Text>
+                                <View style={[styles.imagePlaceholder, { backgroundColor: isDarkMode ? '#2D3748' : '#E2E8F0' }]}>
+                                    <Text style={[styles.imagePlaceholderText, { color: theme.subText }]}>Tap to add image</Text>
                                 </View>
                             )}
                         </TouchableOpacity>
 
-                        <Text style={styles.label}>Service Name</Text>
-                        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="e.g. Home Cleaning" />
+                        <Text style={[styles.label, { color: theme.text }]}>Service Name</Text>
+                        <TextInput style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]} value={name} onChangeText={setName} placeholder="e.g. Home Cleaning" placeholderTextColor={theme.subText} />
 
-                        <Text style={styles.label}>Price ($)</Text>
-                        <TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="50" />
+                        <Text style={[styles.label, { color: theme.text }]}>Price ($)</Text>
+                        <TextInput style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]} value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="50" placeholderTextColor={theme.subText} />
 
-                        <Text style={styles.label}>Duration (Minutes)</Text>
-                        <TextInput style={styles.input} value={duration} onChangeText={setDuration} keyboardType="numeric" placeholder="60" />
+                        <Text style={[styles.label, { color: theme.text }]}>Duration (Minutes)</Text>
+                        <TextInput style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]} value={duration} onChangeText={setDuration} keyboardType="numeric" placeholder="60" placeholderTextColor={theme.subText} />
 
-                        <Text style={styles.label}>Description</Text>
-                        <TextInput style={[styles.input, styles.textArea]} value={description} onChangeText={setDescription} multiline placeholder="Describe your service..." />
+                        <Text style={[styles.label, { color: theme.text }]}>Description</Text>
+                        <TextInput style={[styles.input, styles.textArea, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]} value={description} onChangeText={setDescription} multiline placeholder="Describe your service..." placeholderTextColor={theme.subText} />
 
                         <TouchableOpacity
                             style={[styles.submitButton, submitting && styles.disabledButton]}

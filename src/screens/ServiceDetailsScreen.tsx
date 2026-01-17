@@ -6,7 +6,15 @@ import Svg, { Path, Circle } from 'react-native-svg';
 
 const ServiceDetailsScreen = ({ route, navigation }: any) => {
     const { service } = route.params;
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, isDarkMode } = useContext(AuthContext);
+
+    const theme = {
+        bg: isDarkMode ? '#1A202C' : '#FFFFFF',
+        text: isDarkMode ? '#F7FAFC' : '#2D3748',
+        subText: isDarkMode ? '#A0AEC0' : '#718096',
+        cardBg: isDarkMode ? '#2D3748' : '#F7FAFC',
+        price: '#38A169',
+    };
 
     const handleBook = () => {
         if (!userInfo) {
@@ -17,7 +25,7 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
     };
 
     return (
-        <ScrollView style={styles.container}>
+        <ScrollView style={[styles.container, { backgroundColor: theme.bg }]}>
             <Image
                 source={{ uri: service.image_url ? `${CONFIG.API_URL}/${service.image_url}` : 'https://via.placeholder.com/400x300' }}
                 style={styles.image}
@@ -25,28 +33,27 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
 
             <View style={styles.content}>
                 <View style={styles.headerRow}>
-                    <Text style={styles.title}>{service.name}</Text>
-                    <Text style={styles.price}>${service.price}</Text>
+                    <Text style={[styles.title, { color: theme.text }]}>{service.name}</Text>
+                    <Text style={[styles.price, { color: theme.price }]}>${service.price}</Text>
                 </View>
 
                 <View style={styles.metaRow}>
-                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#718096" strokeWidth="2">
+                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
                          <Circle cx="12" cy="12" r="10" />
                          <Path d="M12 6v6l4 2" />
                     </Svg>
-                    <Text style={styles.metaText}>{service.duration_mins} mins</Text>
+                    <Text style={[styles.metaText, { color: theme.subText }]}>{service.duration_mins} mins</Text>
                 </View>
 
-                <Text style={styles.sectionTitle}>Description</Text>
-                <Text style={styles.description}>{service.description || 'No description provided.'}</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Description</Text>
+                <Text style={[styles.description, { color: theme.subText }]}>{service.description || 'No description provided.'}</Text>
 
-                <View style={styles.providerInfo}>
-                    <Text style={styles.providerLabel}>Provided by</Text>
-                    {/* If we had provider name in service object, show it. Otherwise maybe fetch. Assuming service object has it or we just show Generic for now */}
-                    <Text style={styles.providerName}>Business ID: {service.user_id}</Text>
+                <View style={[styles.providerInfo, { backgroundColor: theme.cardBg }]}>
+                    <Text style={[styles.providerLabel, { color: theme.subText }]}>Provided by</Text>
+                    <Text style={[styles.providerName, { color: theme.text }]}>Business ID: {service.user_id}</Text>
                 </View>
 
-                <TouchableOpacity style={styles.bookButton} onPress={handleBook}>
+                <TouchableOpacity style={[styles.bookButton, { backgroundColor: isDarkMode ? '#4A9EFF' : '#2D3748' }]} onPress={handleBook}>
                     <Text style={styles.bookButtonText}>Book Appointment</Text>
                 </TouchableOpacity>
             </View>
@@ -55,20 +62,20 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: 'white' },
+    container: { flex: 1 },
     image: { width: '100%', height: 250, resizeMode: 'cover' },
     content: { padding: 20 },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
-    title: { fontSize: 24, fontWeight: 'bold', color: '#2D3748', flex: 1 },
-    price: { fontSize: 22, fontWeight: 'bold', color: '#38A169' },
+    title: { fontSize: 24, fontWeight: 'bold', flex: 1 },
+    price: { fontSize: 22, fontWeight: 'bold' },
     metaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-    metaText: { marginLeft: 6, color: '#718096', fontSize: 16 },
-    sectionTitle: { fontSize: 18, fontWeight: '600', color: '#2D3748', marginBottom: 8 },
-    description: { fontSize: 16, color: '#4A5568', lineHeight: 24, marginBottom: 30 },
-    providerInfo: { padding: 15, backgroundColor: '#F7FAFC', borderRadius: 12, marginBottom: 30 },
-    providerLabel: { fontSize: 14, color: '#A0AEC0' },
-    providerName: { fontSize: 16, fontWeight: '600', color: '#2D3748', marginTop: 4 },
-    bookButton: { backgroundColor: '#2D3748', paddingVertical: 18, borderRadius: 30, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 },
+    metaText: { marginLeft: 6, fontSize: 16 },
+    sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
+    description: { fontSize: 16, lineHeight: 24, marginBottom: 30 },
+    providerInfo: { padding: 15, borderRadius: 12, marginBottom: 30 },
+    providerLabel: { fontSize: 14 },
+    providerName: { fontSize: 16, fontWeight: '600', marginTop: 4 },
+    bookButton: { paddingVertical: 18, borderRadius: 30, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 },
     bookButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
 });
 

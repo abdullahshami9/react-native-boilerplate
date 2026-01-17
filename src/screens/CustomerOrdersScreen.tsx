@@ -9,10 +9,20 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const CustomerOrdersScreen = ({ navigation }: any) => {
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, isDarkMode } = useContext(AuthContext);
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [expandedId, setExpandedId] = useState<number | null>(null);
+
+    const theme = {
+        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
+        text: isDarkMode ? '#F7FAFC' : '#2D3748',
+        subText: isDarkMode ? '#A0AEC0' : '#718096',
+        cardBg: isDarkMode ? '#2D3748' : '#fff',
+        inputBg: isDarkMode ? '#2D3748' : '#F7FAFC',
+        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+        headerBg: isDarkMode ? '#2D3748' : '#fff',
+    };
 
     useEffect(() => {
         fetchOrders();
@@ -40,12 +50,12 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
         const dateObj = new Date(item.created_at);
 
         return (
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
                 <TouchableOpacity onPress={() => toggleExpand(item.id)} style={styles.cardHeader}>
                     <View style={styles.headerInfo}>
-                        <Text style={styles.orderId}>Order #{item.id}</Text>
-                        <Text style={styles.customerName}>{item.seller_name || 'Business'}</Text>
-                        <Text style={styles.dateText}>{dateObj.toLocaleDateString()} • {dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+                        <Text style={[styles.orderId, { color: theme.subText }]}>Order #{item.id}</Text>
+                        <Text style={[styles.customerName, { color: theme.text }]}>{item.seller_name || 'Business'}</Text>
+                        <Text style={[styles.dateText, { color: theme.subText }]}>{dateObj.toLocaleDateString()} • {dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
                     </View>
                     <View style={styles.statusCol}>
                          <View style={[styles.statusBadge,
@@ -55,18 +65,18 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
                                 { color: item.status === 'completed' ? '#22543D' : item.status === 'cancelled' ? '#822727' : '#744210' }
                             ]}>{item.status.toUpperCase()}</Text>
                         </View>
-                        <Text style={styles.totalAmount}>${item.total_amount}</Text>
+                        <Text style={[styles.totalAmount, { color: theme.text }]}>${item.total_amount}</Text>
                     </View>
                 </TouchableOpacity>
 
                 {isExpanded && (
-                    <View style={styles.expandedContent}>
-                        <View style={styles.divider} />
-                        <Text style={styles.sectionTitle}>Items:</Text>
+                    <View style={[styles.expandedContent, { backgroundColor: isDarkMode ? '#232936' : '#FAFAFA' }]}>
+                        <View style={[styles.divider, { backgroundColor: theme.borderColor }]} />
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Items:</Text>
                         {(item.items || []).map((prod: any, idx: number) => (
                             <View key={idx} style={styles.itemRow}>
-                                <Text style={styles.itemName}>{prod.quantity}x {prod.product_name}</Text>
-                                <Text style={styles.itemPrice}>${(prod.price * prod.quantity).toFixed(2)}</Text>
+                                <Text style={[styles.itemName, { color: theme.text }]}>{prod.quantity}x {prod.product_name}</Text>
+                                <Text style={[styles.itemPrice, { color: theme.text }]}>${(prod.price * prod.quantity).toFixed(2)}</Text>
                             </View>
                         ))}
                     </View>
@@ -76,9 +86,9 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
     };
 
     return (
-        <View style={styles.container}>
-             <View style={styles.header}>
-                <Text style={styles.headerTitle}>My Orders</Text>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
+             <View style={[styles.header, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>My Orders</Text>
             </View>
 
             <FlatList
@@ -86,8 +96,8 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
                 renderItem={renderItem}
                 keyExtractor={item => item.id.toString()}
                 contentContainerStyle={styles.listContent}
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchOrders} />}
-                ListEmptyComponent={<Text style={styles.emptyText}>You haven't placed any orders.</Text>}
+                refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchOrders} tintColor={theme.text} />}
+                ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>You haven't placed any orders.</Text>}
             />
         </View>
     );

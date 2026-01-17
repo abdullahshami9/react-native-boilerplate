@@ -5,9 +5,18 @@ import { DataService } from '../../services/DataService';
 import { CONFIG } from '../../Config';
 
 const ProcurementScreen = ({ navigation }: any) => {
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, isDarkMode } = useContext(AuthContext);
     const [procurement, setProcurement] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+
+    const theme = {
+        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
+        text: isDarkMode ? '#F7FAFC' : '#2D3748',
+        subText: isDarkMode ? '#A0AEC0' : '#718096',
+        cardBg: isDarkMode ? '#2D3748' : '#fff',
+        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+        headerBg: isDarkMode ? '#2D3748' : '#fff',
+    };
 
     useEffect(() => {
         fetchProcurement();
@@ -26,28 +35,28 @@ const ProcurementScreen = ({ navigation }: any) => {
     };
 
     const renderItem = ({ item }: any) => (
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
             <Image
                 source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/100' }}
                 style={styles.cardImage}
             />
             <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>{item.name}</Text>
+                <Text style={[styles.cardTitle, { color: theme.text }]}>{item.name}</Text>
                 <View style={styles.badgeContainer}>
                      <View style={styles.badge}>
                         <Text style={styles.badgeText}>Total Needed: {item.total_needed}</Text>
                      </View>
                 </View>
-                <Text style={styles.helperText}>Across all pending orders</Text>
+                <Text style={[styles.helperText, { color: theme.subText }]}>Across all pending orders</Text>
             </View>
         </View>
     );
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Procurement Summary</Text>
-                <Text style={styles.headerSubtitle}>Aggregated items from pending orders</Text>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
+            <View style={[styles.header, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Procurement Summary</Text>
+                <Text style={[styles.headerSubtitle, { color: theme.subText }]}>Aggregated items from pending orders</Text>
             </View>
 
             <FlatList
@@ -55,8 +64,8 @@ const ProcurementScreen = ({ navigation }: any) => {
                 renderItem={renderItem}
                 keyExtractor={item => item.id.toString()}
                 contentContainerStyle={styles.listContent}
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchProcurement} />}
-                ListEmptyComponent={<Text style={styles.emptyText}>No pending items to procure.</Text>}
+                refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchProcurement} tintColor={theme.text} />}
+                ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>No pending items to procure.</Text>}
             />
         </View>
     );

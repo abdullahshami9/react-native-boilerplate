@@ -6,13 +6,23 @@ import CustomAlert from '../components/CustomAlert';
 
 const BookingScreen = ({ route, navigation }: any) => {
     const { service } = route.params;
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, isDarkMode } = useContext(AuthContext);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'success' as 'success' | 'error' });
+
+    const theme = {
+        bg: isDarkMode ? '#1A202C' : '#FFFFFF',
+        text: isDarkMode ? '#F7FAFC' : '#2D3748',
+        subText: isDarkMode ? '#A0AEC0' : '#718096',
+        cardBg: isDarkMode ? '#2D3748' : '#fff',
+        inputBg: isDarkMode ? '#2D3748' : '#fff',
+        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+        headerBg: isDarkMode ? '#2D3748' : '#fff',
+    };
 
     // Generate next 14 days
     const days = Array.from({ length: 14 }, (_, i) => {
@@ -106,7 +116,7 @@ const BookingScreen = ({ route, navigation }: any) => {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
              <CustomAlert
                 visible={alertConfig.visible}
                 title={alertConfig.title}
@@ -115,13 +125,13 @@ const BookingScreen = ({ route, navigation }: any) => {
                 onDismiss={() => setAlertConfig({ ...alertConfig, visible: false })}
             />
 
-            <View style={styles.header}>
-                <Text style={styles.serviceName}>{service.name}</Text>
-                <Text style={styles.duration}>{service.duration_mins} min • ${service.price}</Text>
+            <View style={[styles.header, { borderBottomColor: theme.borderColor }]}>
+                <Text style={[styles.serviceName, { color: theme.text }]}>{service.name}</Text>
+                <Text style={[styles.duration, { color: theme.subText }]}>{service.duration_mins} min • ${service.price}</Text>
             </View>
 
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Select Date</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Select Date</Text>
                 <FlatList
                     horizontal
                     data={days}
@@ -131,13 +141,13 @@ const BookingScreen = ({ route, navigation }: any) => {
                         const isSelected = item.toDateString() === selectedDate.toDateString();
                         return (
                             <TouchableOpacity
-                                style={[styles.dateCard, isSelected && styles.selectedDate]}
+                                style={[styles.dateCard, { borderColor: theme.borderColor }, isSelected && styles.selectedDate]}
                                 onPress={() => setSelectedDate(item)}
                             >
-                                <Text style={[styles.dayText, isSelected && styles.selectedText]}>
+                                <Text style={[styles.dayText, { color: theme.subText }, isSelected && styles.selectedText]}>
                                     {item.toLocaleDateString('en-US', { weekday: 'short' })}
                                 </Text>
-                                <Text style={[styles.dateNum, isSelected && styles.selectedText]}>
+                                <Text style={[styles.dateNum, { color: theme.text }, isSelected && styles.selectedText]}>
                                     {item.getDate()}
                                 </Text>
                             </TouchableOpacity>
@@ -148,21 +158,21 @@ const BookingScreen = ({ route, navigation }: any) => {
             </View>
 
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Select Time</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Select Time</Text>
                 {loadingSlots ? (
-                    <ActivityIndicator color="#2D3748" />
+                    <ActivityIndicator color={theme.text} />
                 ) : (
                     <View style={styles.slotsGrid}>
                         {availableSlots.length === 0 ? (
-                             <Text style={styles.noSlots}>No slots available on this date.</Text>
+                             <Text style={[styles.noSlots, { color: theme.subText }]}>No slots available on this date.</Text>
                         ) : (
                             availableSlots.map(slot => (
                                 <TouchableOpacity
                                     key={slot}
-                                    style={[styles.slot, selectedSlot === slot && styles.selectedSlot]}
+                                    style={[styles.slot, { borderColor: theme.borderColor }, selectedSlot === slot && styles.selectedSlot]}
                                     onPress={() => setSelectedSlot(slot)}
                                 >
-                                    <Text style={[styles.slotText, selectedSlot === slot && styles.selectedSlotText]}>{slot}</Text>
+                                    <Text style={[styles.slotText, { color: theme.text }, selectedSlot === slot && styles.selectedSlotText]}>{slot}</Text>
                                 </TouchableOpacity>
                             ))
                         )}
@@ -170,7 +180,7 @@ const BookingScreen = ({ route, navigation }: any) => {
                 )}
             </View>
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, { borderTopColor: theme.borderColor }]}>
                 <TouchableOpacity
                     style={[styles.confirmButton, (!selectedSlot || submitting) && styles.disabledButton]}
                     onPress={handleConfirm}

@@ -14,10 +14,10 @@ const ChipInput: React.FC<ChipInputProps> = ({ chips, onAddChip, onRemoveChip, p
 
   const handleAdd = () => {
     if (text.trim().length > 0) {
-        if (!chips.includes(text.trim())) {
-            onAddChip(text.trim());
-        }
-        setText('');
+      if (!chips.includes(text.trim())) {
+        onAddChip(text.trim());
+      }
+      setText('');
     }
   };
 
@@ -32,9 +32,10 @@ const ChipInput: React.FC<ChipInputProps> = ({ chips, onAddChip, onRemoveChip, p
           placeholderTextColor="#A0AEC0"
           onSubmitEditing={handleAdd}
           returnKeyType="done"
+          blurOnSubmit={false}
         />
         <TouchableOpacity onPress={handleAdd} style={styles.addButton}>
-            <Text style={styles.addButtonText}>Add</Text>
+          <Text style={styles.addButtonText}>Add</Text>
         </TouchableOpacity>
       </View>
 
@@ -72,11 +73,11 @@ const styles = StyleSheet.create({
     color: '#2D3748',
   },
   addButton: {
-      padding: 8,
+    padding: 8,
   },
   addButtonText: {
-      color: '#4A5568',
-      fontWeight: '600',
+    color: '#4A5568',
+    fontWeight: '600',
   },
   chipContainer: {
     flexDirection: 'row',

@@ -10,6 +10,7 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);
     const [location, setLocation] = useState('');
     const [jobTitle, setJobTitle] = useState('');
+    const [loading, setLoading] = useState(false);
     // Resume logic removed as it's now in Education screen
 
     const handleNext = async () => {

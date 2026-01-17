@@ -128,6 +128,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
     const [alertTitle, setAlertTitle] = useState('');
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState<'success' | 'error' | 'info'>('info');
+    const [qrTab, setQrTab] = useState<'my' | 'scan'>('my');
 
     const isBusinessUser = displayedUser?.user_type === 'Business' || displayedUser?.user_type === 'business'; // Handle case sensitivity
 
@@ -426,7 +427,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
             <Animated.View style={[styles.headerBackground, headerHeightStyle, { backgroundColor: 'rgba(217, 225, 235, 0.9)' }]}>
                 <View style={styles.headerTop}>
                     {/* Small Animated QR Icon for Collapsed Header */}
-                    <Animated.View style={[{ marginRight: 15 }, smallQrStyle]}>
+                    <Animated.View style={[{ marginRight: 15, marginTop: 5 }, smallQrStyle]}>
                         <TouchableOpacity onPress={() => setBusinessCardVisible(true)}>
                             <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
                                 <Path d="M3 7V5a2 2 0 0 1 2-2h2" />
@@ -634,6 +635,69 @@ const ProfileScreen = ({ navigation, route }: any) => {
             </Animated.ScrollView>
 
             {/* Modals ... (Keeping same modals) */}
+            {/* Business Card Modal */}
+            <Modal visible={businessCardVisible} transparent animationType="fade" onRequestClose={() => setBusinessCardVisible(false)}>
+                <View style={styles.modalOverlay}>
+                    <BlurView
+                        style={StyleSheet.absoluteFill}
+                        blurType={isDarkMode ? "dark" : "light"}
+                        blurAmount={5}
+                        reducedTransparencyFallbackColor="white"
+                    />
+                    <View style={styles.businessCardContainer}>
+                        <TouchableOpacity style={styles.closeCardButton} onPress={() => setBusinessCardVisible(false)}>
+                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
+                        </TouchableOpacity>
+
+                        {/* Modern Pill Tabs */}
+                        <View style={{ flexDirection: 'row', marginBottom: 25, backgroundColor: isDarkMode ? '#2D3748' : '#F7FAFC', borderRadius: 30, padding: 5, borderWidth: 1, borderColor: isDarkMode ? '#4A5568' : '#EDF2F7' }}>
+                            <TouchableOpacity
+                                style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 25, backgroundColor: qrTab === 'my' ? (isDarkMode ? '#4A5568' : '#FFFFFF') : 'transparent', elevation: qrTab === 'my' ? 3 : 0, shadowColor: '#000', shadowOpacity: qrTab === 'my' ? 0.1 : 0, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4 }}
+                                onPress={() => setQrTab('my')}
+                            >
+                                <Text style={{ fontWeight: '700', fontSize: 14, color: qrTab === 'my' ? (isDarkMode ? '#fff' : '#2D3748') : (isDarkMode ? '#A0AEC0' : '#718096') }}>My QR</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 25, backgroundColor: qrTab === 'scan' ? (isDarkMode ? '#4A5568' : '#FFFFFF') : 'transparent', elevation: qrTab === 'scan' ? 3 : 0, shadowColor: '#000', shadowOpacity: qrTab === 'scan' ? 0.1 : 0, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4 }}
+                                onPress={() => setQrTab('scan')}
+                            >
+                                <Text style={{ fontWeight: '700', fontSize: 14, color: qrTab === 'scan' ? (isDarkMode ? '#fff' : '#2D3748') : (isDarkMode ? '#A0AEC0' : '#718096') }}>Scan QR</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {qrTab === 'my' ? (
+                            <>
+                                <View style={styles.cardHeader}>
+                                    <Image source={{ uri: getProfilePicUrl() }} style={styles.cardAvatar} />
+                                    <View style={{ marginLeft: 15, flex: 1 }}>
+                                        <Text style={styles.cardName}>{displayedUser?.name}</Text>
+                                        <Text style={styles.cardRole} numberOfLines={1} ellipsizeMode="tail">{displayedUser?.email}</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.cardQrBody}>
+                                    <View style={styles.cardQrWrapper}>
+                                        <QRCode value={`raabtaa://user/${displayedUser?.id}`} size={180} />
+                                    </View>
+                                    <Text style={styles.scanText}>Scan to connect</Text>
+                                </View>
+                            </>
+                        ) : (
+                            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 40, width: '100%' }}>
+                                <View style={{ width: 220, height: 220, borderWidth: 2, borderColor: '#CBD5E0', borderRadius: 20, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#CBD5E0" strokeWidth="2">
+                                        <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                        <Circle cx="12" cy="13" r="4" />
+                                    </Svg>
+                                    <Text style={{ marginTop: 10, color: '#A0AEC0' }}>Camera View Placeholder</Text>
+                                </View>
+                                <Text style={{ marginTop: 20, textAlign: 'center', color: '#718096' }}>Scan a QR code to quickly{'\n'}view a profile.</Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </Modal>
+
             <CustomAlert
                 visible={alertVisible}
                 title={alertTitle}

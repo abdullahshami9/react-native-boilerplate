@@ -282,6 +282,11 @@ db.connect((err) => {
                     db.query("ALTER TABLE users ADD COLUMN current_job_title VARCHAR(255)", () => console.log("Added current_job_title column"));
                 }
             });
+            db.query("SHOW COLUMNS FROM users LIKE 'resume_url'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE users ADD COLUMN resume_url VARCHAR(255)", () => console.log("Added resume_url column"));
+                }
+            });
             db.query("SHOW COLUMNS FROM business_details LIKE 'business_type'", (e, r) => {
                 if (r && r.length === 0) {
                     db.query("ALTER TABLE business_details ADD COLUMN business_type VARCHAR(100)", () => console.log("Added business_type column"));
@@ -665,10 +670,19 @@ app.post('/api/upload/profile', upload.single('image'), (req, res) => {
 app.post('/api/upload/resume', upload.single('image'), (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
 
-    // In a real app we might store this path in a 'resumes' table or 'users' column.
-    // For now, we return the path so frontend can confirm upload.
+    const userId = req.body.userId;
     const fileUrl = `uploads/resumes/${req.file.filename}`;
-    res.json({ success: true, message: 'Resume uploaded', filePath: fileUrl });
+
+    // Update DB if userId is provided
+    if (userId) {
+        const query = 'UPDATE users SET resume_url = ? WHERE id = ?';
+        dbQuery(query, [fileUrl, userId], req, (err) => {
+            if (err) console.error("Failed to update resume url in db");
+            res.json({ success: true, message: 'Resume uploaded', filePath: fileUrl });
+        });
+    } else {
+        res.json({ success: true, message: 'Resume uploaded', filePath: fileUrl });
+    }
 });
 
 app.post('/api/upload/product', upload.single('image'), (req, res) => {

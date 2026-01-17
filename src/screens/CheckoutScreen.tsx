@@ -50,7 +50,7 @@ const CheckoutScreen = ({ navigation }: any) => {
 
             // Execute all orders
             const orderPromises = Object.keys(ordersBySeller).map(sellerId =>
-                DataService.createOrder(parseInt(sellerId), ordersBySeller[parseInt(sellerId)], buyerId)
+                DataService.createOrder(parseInt(sellerId), ordersBySeller[parseInt(sellerId)], buyerId, paymentMethod)
             );
 
             await Promise.all(orderPromises);

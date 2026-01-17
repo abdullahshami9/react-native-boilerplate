@@ -846,6 +846,9 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
                         <View style={styles.menuContainer}>
                             <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}><Text style={[styles.menuItemText, { color: theme.text }]}>Edit Profile</Text></TouchableOpacity>
+                            <TouchableOpacity style={styles.menuItem} onPress={() => { closeModal(); navigation.navigate('BusinessCardEditor'); }}>
+                                <Text style={[styles.menuItemText, { color: theme.text }]}>Export Business Card</Text>
+                            </TouchableOpacity>
                             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}><Text style={[styles.menuItemText, { color: 'red' }]}>Logout</Text></TouchableOpacity>
                         </View>
                     </View>

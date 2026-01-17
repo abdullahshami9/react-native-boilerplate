@@ -153,6 +153,7 @@ db.connect((err) => {
             buyer_id INT,
             total_amount DECIMAL(10, 2) NOT NULL,
             status ENUM('pending', 'completed', 'cancelled') DEFAULT 'pending',
+            payment_method VARCHAR(50) DEFAULT 'cod',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (seller_id) REFERENCES users(id)
         );
@@ -287,6 +288,16 @@ db.connect((err) => {
                     db.query("ALTER TABLE users ADD COLUMN resume_url VARCHAR(255)", () => console.log("Added resume_url column"));
                 }
             });
+            db.query("SHOW COLUMNS FROM business_details LIKE 'card_template'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE business_details ADD COLUMN card_template VARCHAR(50) DEFAULT 'standard'", () => console.log("Added card_template column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM business_details LIKE 'card_custom_details'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE business_details ADD COLUMN card_custom_details TEXT", () => console.log("Added card_custom_details column"));
+                }
+            });
             db.query("SHOW COLUMNS FROM business_details LIKE 'business_type'", (e, r) => {
                 if (r && r.length === 0) {
                     db.query("ALTER TABLE business_details ADD COLUMN business_type VARCHAR(100)", () => console.log("Added business_type column"));
@@ -313,6 +324,11 @@ db.connect((err) => {
             db.query("SHOW COLUMNS FROM orders LIKE 'status'", (e, r) => {
                 if (r && r.length === 0) {
                     db.query("ALTER TABLE orders ADD COLUMN status ENUM('pending', 'completed', 'cancelled') DEFAULT 'pending'", () => console.log("Added status to orders"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM orders LIKE 'payment_method'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE orders ADD COLUMN payment_method VARCHAR(50) DEFAULT 'cod'", () => console.log("Added payment_method to orders"));
                 }
             });
             db.query("SHOW COLUMNS FROM appointments LIKE 'service_id'", (e, r) => {
@@ -364,7 +380,9 @@ const storage = multer.diskStorage({
              // or just serviceId.ext
             cb(null, `${serviceId}${ext}`);
         } else if (req.path.includes('chat')) {
-             cb(null, `${Date.now()}-${sanitize(file.originalname)}`);
+             // sanitize is not available, using simple replace
+             const safeName = file.originalname.replace(/[^a-zA-Z0-9_-]/g, '');
+             cb(null, `${Date.now()}-${safeName}`);
         } else {
             // Generic fallback
             cb(null, `${Date.now()}${ext}`);
@@ -466,6 +484,17 @@ app.post('/update-profile', (req, res) => {
     const { id, name, phone, email } = req.body;
     const query = 'UPDATE users SET name = ?, phone = ?, email = ? WHERE id = ?';
     dbQuery(query, [name, phone, email, id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
+    });
+});
+
+app.post('/api/business/card-settings', (req, res) => {
+    const { user_id, card_template, card_custom_details } = req.body;
+    const query = `INSERT INTO business_details (user_id, card_template, card_custom_details)
+                   VALUES (?, ?, ?)
+                   ON DUPLICATE KEY UPDATE card_template=VALUES(card_template), card_custom_details=VALUES(card_custom_details)`;
+    dbQuery(query, [user_id, card_template, JSON.stringify(card_custom_details)], req, (err) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true });
     });
@@ -885,14 +914,14 @@ app.get('/api/availability/:userId', (req, res) => {
 // --- ORDERS & REPORTS ---
 
 app.post('/api/orders', (req, res) => {
-    const { seller_id, buyer_id, items } = req.body;
+    const { seller_id, buyer_id, items, payment_method } = req.body;
     // items: [{ product_id, quantity, price }]
 
     // Calculate total
     const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    const orderQuery = 'INSERT INTO orders (seller_id, buyer_id, total_amount, status) VALUES (?, ?, ?, "pending")';
-    dbQuery(orderQuery, [seller_id, buyer_id || null, total], req, (err, result) => {
+    const orderQuery = 'INSERT INTO orders (seller_id, buyer_id, total_amount, status, payment_method) VALUES (?, ?, ?, "pending", ?)';
+    dbQuery(orderQuery, [seller_id, buyer_id || null, total, payment_method || 'cod'], req, (err, result) => {
         if (err) return res.status(500).json({ success: false, message: 'Failed to create order' });
 
         const orderId = result.insertId;

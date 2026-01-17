@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
@@ -32,7 +32,7 @@ const PersonalSkillsScreen = ({ navigation }: any) => {
 
     return (
         <TunnelWrapper title="Personal Profile - Skills" onBack={() => navigation.goBack()}>
-            <View style={styles.container}>
+            <ScrollView style={styles.container} keyboardShouldPersistTaps="always">
                 <Text style={styles.subtitle}>Multi-select</Text>
 
                 <ChipInput
@@ -56,7 +56,7 @@ const PersonalSkillsScreen = ({ navigation }: any) => {
                         <Text style={styles.nextButtonText}>{loading ? 'Saving...' : 'Next'}</Text>
                     </TouchableOpacity>
                 </View>
-            </View>
+            </ScrollView>
         </TunnelWrapper>
     );
 };

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Ale
 import { AuthContext } from '../../context/AuthContext';
 import { DataService } from '../../services/DataService';
 import Svg, { Path } from 'react-native-svg';
+import CustomAlert from '../../components/CustomAlert';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -13,6 +14,7 @@ const BusinessOrdersScreen = ({ navigation }: any) => {
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [expandedId, setExpandedId] = useState<number | null>(null);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'success' as 'success' | 'error' });
 
     const theme = {
         bg: isDarkMode ? '#1A202C' : '#F7FAFC',
@@ -45,9 +47,9 @@ const BusinessOrdersScreen = ({ navigation }: any) => {
             await DataService.updateOrderStatus(orderId, newStatus);
             // Optimistic update
             setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-            Alert.alert('Success', `Order marked as ${newStatus}`);
+            setAlertConfig({ visible: true, title: 'Success', message: `Order marked as ${newStatus}`, type: 'success' });
         } catch (error) {
-            Alert.alert('Error', 'Failed to update status');
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to update status', type: 'error' });
         }
     };
 
@@ -109,6 +111,14 @@ const BusinessOrdersScreen = ({ navigation }: any) => {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
+             <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig({ ...alertConfig, visible: false })}
+            />
+
              <View style={[styles.header, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>Incoming Orders</Text>
             </View>

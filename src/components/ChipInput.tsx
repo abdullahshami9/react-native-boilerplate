@@ -32,7 +32,7 @@ const ChipInput: React.FC<ChipInputProps> = ({ chips, onAddChip, onRemoveChip, p
           placeholderTextColor="#A0AEC0"
           onSubmitEditing={handleAdd}
           returnKeyType="done"
-          blurOnSubmit={false}
+          blurOnSubmit={false} // Prevents keyboard from closing
         />
         <TouchableOpacity onPress={handleAdd} style={styles.addButton}>
           <Text style={styles.addButtonText}>Add</Text>

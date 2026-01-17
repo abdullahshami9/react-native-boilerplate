@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } fr
 import { AuthContext } from '../context/AuthContext';
 import { CONFIG } from '../Config';
 import Svg, { Path, Circle } from 'react-native-svg';
+import CustomAlert from '../components/CustomAlert';
 
 const ServiceDetailsScreen = ({ route, navigation }: any) => {
     const { service } = route.params;
     const { userInfo, isDarkMode } = useContext(AuthContext);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info' });
 
     const theme = {
         bg: isDarkMode ? '#1A202C' : '#FFFFFF',
@@ -18,7 +20,7 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
 
     const handleBook = () => {
         if (!userInfo) {
-            Alert.alert('Login Required', 'Please login to book a service');
+            setAlertConfig({ visible: true, title: 'Login Required', message: 'Please login to book a service', type: 'info' });
             return;
         }
         navigation.navigate('Booking', { service });
@@ -26,6 +28,14 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
 
     return (
         <ScrollView style={[styles.container, { backgroundColor: theme.bg }]}>
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig({ ...alertConfig, visible: false })}
+            />
+
             <Image
                 source={{ uri: service.image_url ? `${CONFIG.API_URL}/${service.image_url}` : 'https://via.placeholder.com/400x300' }}
                 style={styles.image}

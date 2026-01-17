@@ -7,7 +7,7 @@ import { AuthContext } from '../context/AuthContext';
 import { DataService } from '../services/DataService';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { CONFIG } from '../Config';
-import Animated, { useSharedValue, useAnimatedStyle, interpolate, Extrapolate, useAnimatedScrollHandler, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, interpolate, interpolateColor, Extrapolate, useAnimatedScrollHandler, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import CustomAlert from '../components/CustomAlert';
 
 const { width, height } = Dimensions.get('window');
@@ -359,18 +359,43 @@ const ProfileScreen = ({ navigation, route }: any) => {
     const headerHeightStyle = useAnimatedStyle(() => {
         return {
             height: interpolate(scrollY.value, [0, SCROLL_DISTANCE], [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT], Extrapolate.CLAMP),
-            borderBottomLeftRadius: interpolate(scrollY.value, [0, SCROLL_DISTANCE], [40, 0], Extrapolate.CLAMP),
-            borderBottomRightRadius: interpolate(scrollY.value, [0, SCROLL_DISTANCE], [40, 0], Extrapolate.CLAMP),
+            borderBottomLeftRadius: interpolate(scrollY.value, [0, SCROLL_DISTANCE], [40, 20], Extrapolate.CLAMP),
+            borderBottomRightRadius: interpolate(scrollY.value, [0, SCROLL_DISTANCE], [40, 20], Extrapolate.CLAMP),
         };
     });
 
+    const headerContentStyle = useAnimatedStyle(() => {
+        const textColor = interpolateColor(
+            scrollY.value,
+            [0, SCROLL_DISTANCE],
+            ['#FFFFFF', '#2D3748'] // White to Dark Grey
+        );
+        return { color: textColor };
+    });
+
+    // Opacity for White Icons (Fade Out)
+    const whiteIconStyle = useAnimatedStyle(() => {
+        return { opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.5], [1, 0], Extrapolate.CLAMP) };
+    });
+
+    // Opacity for Dark Icons (Fade In)
+    const darkIconStyle = useAnimatedStyle(() => {
+        return { opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.5], [0, 1], Extrapolate.CLAMP) };
+    });
+
     const qrStyle = useAnimatedStyle(() => {
-        const scale = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [1, 0.25], Extrapolate.CLAMP);
-        const translateX = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, width / 2 - 40], Extrapolate.CLAMP);
-        const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -60], Extrapolate.CLAMP);
+        // Just fade out the main QR code
         return {
-            transform: [{ translateX }, { translateY }, { scale }],
-            opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.8], [1, 1], Extrapolate.CLAMP)
+            opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.5], [1, 0], Extrapolate.CLAMP),
+            transform: [{ scale: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.5], [1, 0.8], Extrapolate.CLAMP) }]
+        };
+    });
+
+    const smallQrStyle = useAnimatedStyle(() => {
+        // Fade in the small icon
+        return {
+            opacity: interpolate(scrollY.value, [SCROLL_DISTANCE * 0.6, SCROLL_DISTANCE], [0, 1], Extrapolate.CLAMP),
+            transform: [{ scale: interpolate(scrollY.value, [SCROLL_DISTANCE * 0.6, SCROLL_DISTANCE], [0.5, 1], Extrapolate.CLAMP) }]
         };
     });
 
@@ -398,14 +423,39 @@ const ProfileScreen = ({ navigation, route }: any) => {
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Animated Header */}
-            <Animated.View style={[styles.headerBackground, headerHeightStyle, { backgroundColor: '#bfc8d3ff' }]}>
+            <Animated.View style={[styles.headerBackground, headerHeightStyle, { backgroundColor: 'rgba(217, 225, 235, 0.9)' }]}>
                 <View style={styles.headerTop}>
+                    {/* Small Animated QR Icon for Collapsed Header */}
+                    <Animated.View style={[{ marginRight: 15 }, smallQrStyle]}>
+                        <TouchableOpacity onPress={() => setBusinessCardVisible(true)}>
+                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+                                <Path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                                <Path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                                <Path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                                <Path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                                <Path d="M10 10h4v4h-4z" />
+                                <Path d="M7 17l4-4" />
+                            </Svg>
+                        </TouchableOpacity>
+                    </Animated.View>
                     {isOwnProfile && (
                         <TouchableOpacity onPress={openModal} style={styles.iconButton}>
-                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                                <Circle cx="12" cy="12" r="3" />
-                                <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                            </Svg>
+                            <View>
+                                {/* White Icon */}
+                                <Animated.View style={[whiteIconStyle, { position: 'absolute' }]}>
+                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                                        <Circle cx="12" cy="12" r="3" />
+                                        <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                                    </Svg>
+                                </Animated.View>
+                                {/* Dark Icon */}
+                                <Animated.View style={darkIconStyle}>
+                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+                                        <Circle cx="12" cy="12" r="3" />
+                                        <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                                    </Svg>
+                                </Animated.View>
+                            </View>
                         </TouchableOpacity>
                     )}
                     {!isOwnProfile && (
@@ -418,8 +468,8 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 </View>
 
                 <Animated.View style={[styles.headerInfoContainer, headerInfoOpacity]}>
-                    <Text style={styles.headerNameText}>{displayedUser?.name}</Text>
-                    <Text style={styles.headerEmailText}>{displayedUser?.email}</Text>
+                    <Animated.Text style={[styles.headerNameText, headerContentStyle]}>{displayedUser?.name}</Animated.Text>
+                    <Animated.Text style={[styles.headerEmailText, headerContentStyle]}>{displayedUser?.email}</Animated.Text>
                 </Animated.View>
 
                 <Animated.View style={[styles.qrContainer, qrStyle]}>

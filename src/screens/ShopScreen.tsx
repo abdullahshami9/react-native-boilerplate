@@ -12,7 +12,7 @@ const ShopScreen = ({ navigation }: any) => {
     const [activeTab, setActiveTab] = useState('Products');
     const [search, setSearch] = useState('');
     const [products, setProducts] = useState<any[]>([]);
-    const [businesses, setBusinesses] = useState<any[]>([]);
+    const [services, setServices] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     const theme = {
@@ -36,11 +36,8 @@ const ShopScreen = ({ navigation }: any) => {
                 const res = await DataService.discoverProducts(search);
                 if (res.success) setProducts(res.products);
             } else {
-                const res = await DataService.discoverUsers(search, user?.id || 0);
-                if (res.success) {
-                    // Filter only business users if needed, or just show all
-                    setBusinesses(res.users.filter((u: any) => u.user_type === 'Business'));
-                }
+                const res = await DataService.discoverServices(search);
+                if (res.success) setServices(res.services);
             }
         } catch (error) {
             console.log(error);
@@ -83,8 +80,8 @@ const ShopScreen = ({ navigation }: any) => {
                 <TouchableOpacity onPress={() => setActiveTab('Products')} style={[styles.tab, activeTab === 'Products' && [styles.activeTab, { borderBottomColor: theme.text }]]}>
                     <Text style={[styles.tabText, { color: activeTab === 'Products' ? theme.text : theme.subText }]}>Products</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setActiveTab('Business')} style={[styles.tab, activeTab === 'Business' && [styles.activeTab, { borderBottomColor: theme.text }]]}>
-                    <Text style={[styles.tabText, { color: activeTab === 'Business' ? theme.text : theme.subText }]}>Business</Text>
+                <TouchableOpacity onPress={() => setActiveTab('Services')} style={[styles.tab, activeTab === 'Services' && [styles.activeTab, { borderBottomColor: theme.text }]]}>
+                    <Text style={[styles.tabText, { color: activeTab === 'Services' ? theme.text : theme.subText }]}>Services</Text>
                 </TouchableOpacity>
             </View>
 
@@ -108,19 +105,19 @@ const ShopScreen = ({ navigation }: any) => {
                                 </TouchableOpacity>
                             ))
                         ) : (
-                            businesses.map((item) => (
-                                <View key={item.id} style={[styles.productCard, { backgroundColor: theme.cardBg }]}>
+                            services.map((item) => (
+                                <TouchableOpacity key={item.id} style={[styles.productCard, { backgroundColor: theme.cardBg }]} onPress={() => (navigation as any).navigate('ServiceDetails', { service: item })}>
                                     <View style={[styles.imageContainer, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
-                                        <Image source={{ uri: item.profile_pic_url ? `${CONFIG.API_URL}/${item.profile_pic_url}` : 'https://randomuser.me/api/portraits/men/32.jpg' }} style={styles.productImage} />
+                                        <Image source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/150' }} style={styles.productImage} />
                                     </View>
                                     <View style={styles.productInfo}>
                                         <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
-                                        <Text style={[styles.productPrice, { color: theme.subText }]}>{item.email}</Text>
+                                        <Text style={[styles.productPrice, { color: theme.subText }]}>${item.price} • {item.duration_mins}m</Text>
                                     </View>
-                                </View>
+                                </TouchableOpacity>
                             ))
                         )}
-                        {((activeTab === 'Products' && products.length === 0) || (activeTab === 'Business' && businesses.length === 0)) && (
+                        {((activeTab === 'Products' && products.length === 0) || (activeTab === 'Services' && services.length === 0)) && (
                             <Text style={{ width: '100%', textAlign: 'center', marginTop: 50, color: '#A0AEC0' }}>No results found.</Text>
                         )}
                     </View>

@@ -17,6 +17,15 @@ import BusinessOnboardingScreen from './src/screens/BusinessOnboardingScreen';
 import ChatListScreen from './src/screens/ChatListScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import ServiceDetailsScreen from './src/screens/ServiceDetailsScreen';
+import BookingScreen from './src/screens/BookingScreen';
+
+// Business Screens
+import ManageServicesScreen from './src/screens/business/ManageServicesScreen';
+import ServiceAppointmentsScreen from './src/screens/business/ServiceAppointmentsScreen';
+import ProcurementScreen from './src/screens/business/ProcurementScreen';
+import BusinessOrdersScreen from './src/screens/business/BusinessOrdersScreen';
+import CustomerOrdersScreen from './src/screens/CustomerOrdersScreen';
 
 // Tunnel Screens
 import ChooseProfileTypeScreen from './src/screens/tunnel/ChooseProfileTypeScreen';
@@ -62,6 +71,17 @@ const AppNav = () => {
               <Stack.Screen name="ChatList" component={ChatListScreen} />
               <Stack.Screen name="Chat" component={ChatScreen} />
               <Stack.Screen name="UserProfile" component={ProfileScreen} />
+
+              {/* Customer Screens */}
+              <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
+              <Stack.Screen name="Booking" component={BookingScreen} />
+              <Stack.Screen name="CustomerOrders" component={CustomerOrdersScreen} />
+
+              {/* Business Screens */}
+              <Stack.Screen name="ManageServices" component={ManageServicesScreen} />
+              <Stack.Screen name="ServiceAppointments" component={ServiceAppointmentsScreen} />
+              <Stack.Screen name="Procurement" component={ProcurementScreen} />
+              <Stack.Screen name="BusinessOrders" component={BusinessOrdersScreen} />
             </>
           ) : (
             // Tunnel Stack (Mandatory Onboarding)

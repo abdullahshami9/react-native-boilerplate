@@ -31,6 +31,7 @@ const ensureDir = (dir) => {
 };
 ensureDir(path.join(__dirname, 'uploads/profiles'));
 ensureDir(path.join(__dirname, 'uploads/products'));
+ensureDir(path.join(__dirname, 'uploads/services'));
 ensureDir(path.join(__dirname, 'uploads/certificates'));
 ensureDir(path.join(__dirname, 'uploads/resumes'));
 
@@ -108,15 +109,30 @@ db.connect((err) => {
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS services (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            price DECIMAL(10, 2) NOT NULL,
+            duration_mins INT NOT NULL,
+            image_url TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
         CREATE TABLE IF NOT EXISTS appointments (
             id INT AUTO_INCREMENT PRIMARY KEY,
             provider_id INT NOT NULL,
             customer_id INT NOT NULL,
+            service_id INT,
             appointment_date DATETIME NOT NULL,
+            duration_mins INT DEFAULT 30,
             status ENUM('pending', 'confirmed', 'cancelled') DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (provider_id) REFERENCES users(id),
-            FOREIGN KEY (customer_id) REFERENCES users(id)
+            FOREIGN KEY (customer_id) REFERENCES users(id),
+            FOREIGN KEY (service_id) REFERENCES services(id)
         );
 
         CREATE TABLE IF NOT EXISTS connections (
@@ -135,6 +151,7 @@ db.connect((err) => {
             seller_id INT NOT NULL,
             buyer_id INT,
             total_amount DECIMAL(10, 2) NOT NULL,
+            status ENUM('pending', 'completed', 'cancelled') DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (seller_id) REFERENCES users(id)
         );
@@ -285,6 +302,23 @@ db.connect((err) => {
                     db.query(create, () => console.log("Created appointments table"));
                 }
             });
+
+            // --- NEW MIGRATIONS FOR SERVICE/PRODUCT UPDATE ---
+            db.query("SHOW COLUMNS FROM orders LIKE 'status'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE orders ADD COLUMN status ENUM('pending', 'completed', 'cancelled') DEFAULT 'pending'", () => console.log("Added status to orders"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM appointments LIKE 'service_id'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE appointments ADD COLUMN service_id INT, ADD FOREIGN KEY (service_id) REFERENCES services(id)", () => console.log("Added service_id to appointments"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM appointments LIKE 'duration_mins'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE appointments ADD COLUMN duration_mins INT DEFAULT 30", () => console.log("Added duration_mins to appointments"));
+                }
+            });
         }
     });
 });
@@ -295,6 +329,7 @@ const storage = multer.diskStorage({
         let dir = 'uploads/';
         if (req.path.includes('profile')) dir += 'profiles/';
         else if (req.path.includes('product')) dir += 'products/';
+        else if (req.path.includes('service')) dir += 'services/'; // Added services
         else if (req.path.includes('certificate')) dir += 'certificates/';
 
         // Ensure directory exists (mkdir -p logic handled by shell usually but good to be safe)
@@ -316,6 +351,11 @@ const storage = multer.diskStorage({
             const productId = sanitize(req.body.productId || 'unknown');
             const index = sanitize(req.body.index || '0');
             cb(null, `${productId}-${index}${ext}`);
+        } else if (req.path.includes('service')) {
+            const serviceId = sanitize(req.body.serviceId || 'unknown');
+             // services usually have one image, but let's stick to convention if needed
+             // or just serviceId.ext
+            cb(null, `${serviceId}${ext}`);
         } else {
             // Generic fallback
             cb(null, `${Date.now()}${ext}`);
@@ -445,6 +485,38 @@ app.get('/api/profile/:userId', (req, res) => {
             certificates: results[2],
             business: results[3][0] || null,
             payments: results[4]
+        });
+    });
+});
+
+app.get('/api/orders/customer/:userId', (req, res) => {
+    const query = `
+        SELECT o.*, u.name as seller_name
+        FROM orders o
+        JOIN users u ON o.seller_id = u.id
+        WHERE o.buyer_id = ?
+        ORDER BY o.created_at DESC
+    `;
+    dbQuery(query, [req.params.userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+
+        if (results.length === 0) return res.json({ success: true, orders: [] });
+
+        const orderIds = results.map(o => o.id);
+        const itemQuery = `
+            SELECT oi.*, p.name as product_name, p.image_url
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id IN (?)
+        `;
+        db.query(itemQuery, [orderIds], (err2, items) => {
+             if (err2) return res.status(500).json({ success: false });
+
+             const orders = results.map(o => ({
+                 ...o,
+                 items: items.filter(i => i.order_id === o.id)
+             }));
+             res.json({ success: true, orders });
         });
     });
 });
@@ -613,6 +685,18 @@ app.post('/api/upload/product', upload.single('image'), (req, res) => {
     }
 });
 
+app.post('/api/upload/service', upload.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+
+    const serviceId = req.body.serviceId;
+    const fileUrl = `uploads/services/${req.file.filename}`;
+
+    const query = 'UPDATE services SET image_url = ? WHERE id = ?';
+    dbQuery(query, [fileUrl, serviceId], req, (err) => {
+        res.json({ success: true, message: 'Service image uploaded', filePath: fileUrl });
+    });
+});
+
 // --- CONNECTIONS ---
 
 app.post('/api/connections', (req, res) => {
@@ -696,6 +780,42 @@ app.post('/api/products/:id/stock', (req, res) => {
     });
 });
 
+// --- SERVICES ---
+
+app.post('/api/services', (req, res) => {
+    const { user_id, name, description, price, duration_mins, image_url } = req.body;
+    const query = 'INSERT INTO services (user_id, name, description, price, duration_mins, image_url) VALUES (?, ?, ?, ?, ?, ?)';
+    dbQuery(query, [user_id, name, description, price, duration_mins, image_url || ''], req, (err, result) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, message: 'Service added', id: result.insertId });
+    });
+});
+
+app.get('/api/services/:userId', (req, res) => {
+    const query = 'SELECT * FROM services WHERE user_id = ?';
+    dbQuery(query, [req.params.userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, services: results });
+    });
+});
+
+app.get('/api/services/discover', (req, res) => {
+    const search = req.query.search ? `%${req.query.search}%` : '%';
+    const query = 'SELECT * FROM services WHERE name LIKE ? LIMIT 50';
+    dbQuery(query, [search], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, services: results });
+    });
+});
+
+app.delete('/api/services/:id', (req, res) => {
+    const query = 'DELETE FROM services WHERE id = ?';
+    dbQuery(query, [req.params.id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
+    });
+});
+
 // --- SKILLS & AVAILABILITY ---
 
 app.post('/api/skills', (req, res) => {
@@ -747,7 +867,7 @@ app.post('/api/orders', (req, res) => {
     // Calculate total
     const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    const orderQuery = 'INSERT INTO orders (seller_id, buyer_id, total_amount) VALUES (?, ?, ?)';
+    const orderQuery = 'INSERT INTO orders (seller_id, buyer_id, total_amount, status) VALUES (?, ?, ?, "pending")';
     dbQuery(orderQuery, [seller_id, buyer_id || null, total], req, (err, result) => {
         if (err) return res.status(500).json({ success: false, message: 'Failed to create order' });
 
@@ -769,6 +889,65 @@ app.post('/api/orders', (req, res) => {
 
             res.json({ success: true, message: 'Order created', orderId });
         });
+    });
+});
+
+app.put('/api/orders/:orderId/status', (req, res) => {
+    const { status } = req.body; // pending, completed, cancelled
+    const query = 'UPDATE orders SET status = ? WHERE id = ?';
+    dbQuery(query, [status, req.params.orderId], req, (err) => {
+         if (err) return res.status(500).json({ success: false });
+         res.json({ success: true, message: 'Order status updated' });
+    });
+});
+
+app.get('/api/orders/business/:userId', (req, res) => {
+    const query = `
+        SELECT o.*, u.name as buyer_name, u.phone as buyer_phone
+        FROM orders o
+        LEFT JOIN users u ON o.buyer_id = u.id
+        WHERE o.seller_id = ?
+        ORDER BY o.created_at DESC
+    `;
+    dbQuery(query, [req.params.userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+
+        // For each order, fetch items (simplistic N+1 solution for now, or use GROUP_CONCAT)
+        // Let's do a second query to get all items for these orders
+        if (results.length === 0) return res.json({ success: true, orders: [] });
+
+        const orderIds = results.map(o => o.id);
+        const itemQuery = `
+            SELECT oi.*, p.name as product_name, p.image_url
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id IN (?)
+        `;
+        db.query(itemQuery, [orderIds], (err2, items) => {
+             if (err2) return res.status(500).json({ success: false });
+
+             const orders = results.map(o => ({
+                 ...o,
+                 items: items.filter(i => i.order_id === o.id)
+             }));
+             res.json({ success: true, orders });
+        });
+    });
+});
+
+app.get('/api/business/procurement/:userId', (req, res) => {
+    // Smart Aggregation: Sum quantities of pending orders by product
+    const query = `
+        SELECT p.id, p.name, p.image_url, SUM(oi.quantity) as total_needed
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.id
+        JOIN orders o ON oi.order_id = o.id
+        WHERE o.seller_id = ? AND o.status = 'pending'
+        GROUP BY p.id, p.name, p.image_url
+    `;
+    dbQuery(query, [req.params.userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, procurement: results });
     });
 });
 
@@ -807,9 +986,10 @@ app.get('/api/reports/sales/:userId', (req, res) => {
 // --- APPOINTMENTS (For Calendar) ---
 
 app.post('/api/appointments', (req, res) => {
-    const { provider_id, customer_id, appointment_date } = req.body;
-    const query = 'INSERT INTO appointments (provider_id, customer_id, appointment_date, status) VALUES (?, ?, ?, "pending")';
-    dbQuery(query, [provider_id, customer_id, appointment_date], req, (err, result) => {
+    const { provider_id, customer_id, service_id, appointment_date, duration_mins } = req.body;
+    // status default pending
+    const query = 'INSERT INTO appointments (provider_id, customer_id, service_id, appointment_date, duration_mins, status) VALUES (?, ?, ?, ?, ?, "pending")';
+    dbQuery(query, [provider_id, customer_id, service_id || null, appointment_date, duration_mins || 30], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, message: 'Appointment booked', id: result.insertId });
     });
@@ -820,15 +1000,37 @@ app.get('/api/appointments/:userId', (req, res) => {
     const query = `
         SELECT a.*,
             u1.name as provider_name,
-            u2.name as customer_name
+            u2.name as customer_name,
+            s.name as service_name
         FROM appointments a
         JOIN users u1 ON a.provider_id = u1.id
         JOIN users u2 ON a.customer_id = u2.id
+        LEFT JOIN services s ON a.service_id = s.id
         WHERE a.provider_id = ? OR a.customer_id = ?
     `;
     dbQuery(query, [req.params.userId, req.params.userId], req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, appointments: results });
+    });
+});
+
+app.get('/api/appointments/slots/:providerId', (req, res) => {
+    // Get booked slots for a specific date
+    // Query param: date (YYYY-MM-DD)
+    const date = req.query.date;
+    if (!date) return res.status(400).json({ success: false, message: 'Date required' });
+
+    const query = `
+        SELECT appointment_date, duration_mins
+        FROM appointments
+        WHERE provider_id = ?
+        AND DATE(appointment_date) = ?
+        AND status != 'cancelled'
+    `;
+    dbQuery(query, [req.params.providerId, date], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        // Return busy slots. Frontend will calculate free slots.
+        res.json({ success: true, busySlots: results });
     });
 });
 

@@ -3,6 +3,17 @@ import { CONFIG } from '../Config';
 import LoggerService from './LoggerService';
 
 export const DataService = {
+    // --- PROFILE ---
+    getProfile: async (userId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/profile/${userId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Profile Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+
     // --- SKILLS ---
     addSkill: async (userId: number, skillName: string) => {
         try {
@@ -13,6 +24,15 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
+    getCustomerOrders: async (userId: number) => {
+        try {
+           const response = await axios.get(`${CONFIG.API_URL}/api/orders/customer/${userId}`);
+           return response.data;
+       } catch (error: any) {
+           LoggerService.error('Get Customer Orders Error:', error, 'DataService');
+           throw error.response?.data || { message: 'Network Error' };
+       }
+   },
     getSkills: async (userId: number) => {
         try {
             const response = await axios.get(`${CONFIG.API_URL}/api/skills/${userId}`);
@@ -91,6 +111,44 @@ export const DataService = {
         }
     },
 
+    // --- SERVICES ---
+    addService: async (serviceData: any) => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/services`, serviceData);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Add Service Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getServices: async (userId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/services/${userId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Services Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    deleteService: async (serviceId: number) => {
+        try {
+            const response = await axios.delete(`${CONFIG.API_URL}/api/services/${serviceId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Delete Service Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    discoverServices: async (search: string) => {
+         try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/services/discover`, { params: { search } });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Discover Services Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+
     // --- AVAILABILITY ---
     setAvailability: async (userId: number, date: string, status: string) => {
         try {
@@ -151,6 +209,25 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
+    uploadServiceImage: async (serviceId: number, file: any) => {
+        const formData = new FormData();
+        formData.append('serviceId', String(serviceId));
+        formData.append('image', {
+            uri: file.uri,
+            type: file.type || 'image/jpeg',
+            name: file.fileName || `service-${serviceId}.jpg`
+        });
+
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/upload/service`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Upload Service Image Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
 
     // --- CONNECTIONS ---
     toggleConnection: async (followerId: number, followingId: number, action: 'follow' | 'unfollow') => {
@@ -190,13 +267,40 @@ export const DataService = {
         }
     },
 
-    // --- ORDERS ---
+    // --- ORDERS & PROCUREMENT ---
     createOrder: async (sellerId: number, items: any[]) => {
         try {
             const response = await axios.post(`${CONFIG.API_URL}/api/orders`, { seller_id: sellerId, items });
             return response.data;
         } catch (error: any) {
             LoggerService.error('Create Order Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getBusinessOrders: async (userId: number) => {
+         try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/orders/business/${userId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Business Orders Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    updateOrderStatus: async (orderId: number, status: string) => {
+        try {
+            const response = await axios.put(`${CONFIG.API_URL}/api/orders/${orderId}/status`, { status });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Update Order Status Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getProcurementSummary: async (userId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/business/procurement/${userId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Procurement Error:', error, 'DataService');
             throw error.response?.data || { message: 'Network Error' };
         }
     },
@@ -211,9 +315,15 @@ export const DataService = {
     },
 
     // --- APPOINTMENTS ---
-    bookAppointment: async (providerId: number, customerId: number, date: string) => {
+    bookAppointment: async (providerId: number, customerId: number, serviceId: number, date: string, durationMins: number) => {
         try {
-            const response = await axios.post(`${CONFIG.API_URL}/api/appointments`, { provider_id: providerId, customer_id: customerId, appointment_date: date });
+            const response = await axios.post(`${CONFIG.API_URL}/api/appointments`, {
+                provider_id: providerId,
+                customer_id: customerId,
+                service_id: serviceId,
+                appointment_date: date,
+                duration_mins: durationMins
+            });
             return response.data;
         } catch (error: any) {
             LoggerService.error('Book Appointment Error:', error, 'DataService');
@@ -226,6 +336,15 @@ export const DataService = {
             return response.data;
         } catch (error: any) {
             LoggerService.error('Get Appointments Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getAppointmentSlots: async (providerId: number, date: string) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/appointments/slots/${providerId}`, { params: { date } });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Slots Error:', error, 'DataService');
             throw error.response?.data || { message: 'Network Error' };
         }
     },

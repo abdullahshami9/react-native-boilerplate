@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '../services/AuthService';
 import DeviceInfo from 'react-native-device-info';
 import LoggerService from '../services/LoggerService';
+import axios from 'axios';
 
 const { NavBarColor } = NativeModules;
 
@@ -34,6 +35,8 @@ export const AuthProvider = ({ children }: any) => {
                 setUserToken(response.token);
                 if (response.token) {
                     await AsyncStorage.setItem('userToken', response.token);
+                    // Set global axios header
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
                 }
                 if (response.user) {
                     await AsyncStorage.setItem('userInfo', JSON.stringify(response.user));
@@ -86,8 +89,13 @@ export const AuthProvider = ({ children }: any) => {
             if (response.success) {
                 LoggerService.info('BiometricLogin: Success! Setting user info and token...', undefined, 'AuthContext');
                 setUserInfo(response.user);
-                setUserToken('biometric-token');
-                await AsyncStorage.setItem('userToken', 'biometric-token');
+
+                // Use actual token from backend if available, else fallback (though backend should send it now)
+                const token = response.token || 'biometric-token';
+                setUserToken(token);
+                await AsyncStorage.setItem('userToken', token);
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
                 await AsyncStorage.setItem('userInfo', JSON.stringify(response.user));
                 LoggerService.info('BiometricLogin: User logged in successfully!', undefined, 'AuthContext');
             } else {
@@ -107,6 +115,7 @@ export const AuthProvider = ({ children }: any) => {
         setUserInfo(null);
         AsyncStorage.removeItem('userToken');
         AsyncStorage.removeItem('userInfo');
+        delete axios.defaults.headers.common['Authorization'];
         setIsLoading(false);
     };
 
@@ -153,6 +162,11 @@ export const AuthProvider = ({ children }: any) => {
             setIsLoading(true);
             let userToken = await AsyncStorage.getItem('userToken');
             let userInfo = await AsyncStorage.getItem('userInfo');
+
+            if (userToken) {
+                axios.defaults.headers.common['Authorization'] = `Bearer ${userToken}`;
+            }
+
             setUserInfo(userInfo ? JSON.parse(userInfo) : null);
             setUserToken(userToken);
             setIsLoading(false);

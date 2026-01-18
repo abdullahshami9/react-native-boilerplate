@@ -107,7 +107,10 @@ const DiscoverScreen = ({ navigation }: any) => {
                 </View>
             )}
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <PageWrapper
+                contentContainerStyle={styles.scrollContent}
+                onRefresh={fetchData}
+            >
                 {loading ? (
                     <ActivityIndicator size="large" color={theme.text} style={{ marginTop: 20 }} />
                 ) : (
@@ -165,7 +168,7 @@ const DiscoverScreen = ({ navigation }: any) => {
                         </View>
                     ))}
                 </View>
-            </ScrollView>
+            </PageWrapper>
         </View>
     );
 };

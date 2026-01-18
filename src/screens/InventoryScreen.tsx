@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl, Modal } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { DataService } from '../services/DataService';
 import { AuthContext } from '../context/AuthContext';
 import { CONFIG } from '../Config';
 import CustomAlert from '../components/CustomAlert';
+import SecureLoader from '../components/SecureLoader';
 
 const InventoryScreen = ({ navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+    const [showLoader, setShowLoader] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [tempStock, setTempStock] = useState('');
 
@@ -39,7 +42,8 @@ const InventoryScreen = ({ navigation }: any) => {
     }, [navigation, userInfo?.id]);
 
     const fetchInventory = async () => {
-        setLoading(true);
+        // Only set loading if not refreshing (to avoid double spinner or jarring effect if we want custom loader)
+        if (!refreshing) setLoading(true);
         try {
             const res = await DataService.getProducts(userInfo.id);
             if (res.success) {
@@ -50,6 +54,14 @@ const InventoryScreen = ({ navigation }: any) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        setShowLoader(true);
+        await fetchInventory();
+        setRefreshing(false);
+        setShowLoader(false);
     };
 
     const handleEditStock = (product: any) => {
@@ -108,6 +120,15 @@ const InventoryScreen = ({ navigation }: any) => {
                     data={products}
                     keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={styles.listContent}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={handleRefresh}
+                            colors={['transparent']}
+                            tintColor="transparent"
+                            progressBackgroundColor="transparent"
+                        />
+                    }
                     renderItem={({ item }) => {
                         const imageUrl = item.image_url
                             ? `${CONFIG.API_URL}/${item.image_url}?t=${new Date().getTime()}`
@@ -173,6 +194,17 @@ const InventoryScreen = ({ navigation }: any) => {
                 type={alertType}
                 onDismiss={() => setAlertVisible(false)}
             />
+
+            <Modal
+                transparent={true}
+                animationType="fade"
+                visible={showLoader}
+                onRequestClose={() => {}}
+            >
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)' }}>
+                    <SecureLoader size={100} color={isDarkMode ? '#63B3ED' : '#3182CE'} />
+                </View>
+            </Modal>
         </View>
     );
 };

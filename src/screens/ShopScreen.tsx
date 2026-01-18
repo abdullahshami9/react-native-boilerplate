@@ -99,7 +99,7 @@ const ShopScreen = ({ navigation }: any) => {
                     <ActivityIndicator size="large" color={theme.text} />
                 </View>
             ) : (
-                <ScrollView contentContainerStyle={styles.scrollContent}>
+                <PageWrapper contentContainerStyle={styles.scrollContent} onRefresh={fetchData}>
                     <View style={styles.gridContainer}>
                         {activeTab === 'Products' ? (
                             products.map((item) => (
@@ -130,7 +130,7 @@ const ShopScreen = ({ navigation }: any) => {
                             <Text style={{ width: '100%', textAlign: 'center', marginTop: 50, color: '#A0AEC0' }}>No results found.</Text>
                         )}
                     </View>
-                </ScrollView>
+                </PageWrapper>
             )}
 
             {/* Floating Action Buttons - Only for Business Users */}

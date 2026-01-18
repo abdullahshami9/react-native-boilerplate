@@ -7,9 +7,21 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const { Server } = require("socket.io");
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const jwt = require('jsonwebtoken');
+const { verifyToken, JWT_SECRET } = require('./middleware/auth');
 
 const app = express();
 const PORT = 3000;
+
+// Security Middleware
+app.use(helmet());
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -475,13 +487,22 @@ app.post('/login', (req, res) => {
     const query = 'SELECT * FROM users WHERE email = ? AND password = ?';
     dbQuery(query, [email, password], req, (err, results) => {
         if (err || results.length === 0) return res.status(401).json({ success: false, message: 'Invalid credentials' });
-        res.json({ success: true, message: 'Login successful', user: results[0] });
+
+        const user = results[0];
+        // Generate Token
+        jwt.sign({ id: user.id, email: user.email, user_type: user.user_type }, JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
+             if(err) return res.status(500).json({ success: false, message: 'Token generation failed' });
+             res.json({ success: true, message: 'Login successful', user: user, token: token });
+        });
     });
 });
 
 // Update Profile
-app.post('/update-profile', (req, res) => {
+app.post('/update-profile', verifyToken, (req, res) => {
     const { id, name, phone, email } = req.body;
+    // Security: Ensure user can only update their own profile
+    if (req.user.id != id) return res.status(403).json({ success: false, message: 'Unauthorized' });
+
     const query = 'UPDATE users SET name = ?, phone = ?, email = ? WHERE id = ?';
     dbQuery(query, [name, phone, email, id], req, (err) => {
         if (err) return res.status(500).json({ success: false });
@@ -489,7 +510,7 @@ app.post('/update-profile', (req, res) => {
     });
 });
 
-app.post('/api/business/card-settings', (req, res) => {
+app.post('/api/business/card-settings', verifyToken, (req, res) => {
     const { user_id, card_template, card_custom_details } = req.body;
     const query = `INSERT INTO business_details (user_id, card_template, card_custom_details)
                    VALUES (?, ?, ?)
@@ -807,8 +828,10 @@ app.get('/api/products/discover', (req, res) => {
 
 // --- PRODUCTS & INVENTORY ---
 
-app.post('/api/products', (req, res) => {
+app.post('/api/products', verifyToken, (req, res) => {
     const { user_id, name, price, description, image_url, stock_quantity } = req.body;
+    if (req.user.id != user_id) return res.status(403).json({ success: false, message: 'Unauthorized' });
+
     const query = 'INSERT INTO products (user_id, name, price, description, image_url, stock_quantity) VALUES (?, ?, ?, ?, ?, ?)';
     dbQuery(query, [user_id, name, price, description || '', image_url || '', stock_quantity || 0], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
@@ -835,8 +858,10 @@ app.post('/api/products/:id/stock', (req, res) => {
 
 // --- SERVICES ---
 
-app.post('/api/services', (req, res) => {
+app.post('/api/services', verifyToken, (req, res) => {
     const { user_id, name, description, price, duration_mins, image_url } = req.body;
+    if (req.user.id != user_id) return res.status(403).json({ success: false, message: 'Unauthorized' });
+
     const query = 'INSERT INTO services (user_id, name, description, price, duration_mins, image_url) VALUES (?, ?, ?, ?, ?, ?)';
     dbQuery(query, [user_id, name, description, price, duration_mins, image_url || ''], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
@@ -913,7 +938,7 @@ app.get('/api/availability/:userId', (req, res) => {
 
 // --- ORDERS & REPORTS ---
 
-app.post('/api/orders', (req, res) => {
+app.post('/api/orders', verifyToken, (req, res) => {
     const { seller_id, buyer_id, items, payment_method } = req.body;
     // items: [{ product_id, quantity, price }]
 
@@ -1095,7 +1120,12 @@ app.post('/biometric/login', (req, res) => {
     const query = 'SELECT * FROM users WHERE mac_address = ?';
     dbQuery(query, [mac_address], req, (err, results) => {
         if (err || results.length === 0) return res.status(404).json({ success: false });
-        res.json({ success: true, user: results[0] });
+
+        const user = results[0];
+        jwt.sign({ id: user.id, email: user.email, user_type: user.user_type }, JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
+             if(err) return res.status(500).json({ success: false, message: 'Token generation failed' });
+             res.json({ success: true, user: user, token: token });
+        });
     });
 });
 

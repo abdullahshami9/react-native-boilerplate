@@ -1,5 +1,5 @@
 import React, { useState, useContext, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput, Modal, TouchableWithoutFeedback, Platform, PanResponder, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput, Modal, TouchableWithoutFeedback, Platform, PanResponder, Alert, Linking, RefreshControl } from 'react-native';
 import Svg, { Path, Circle, Line } from 'react-native-svg';
 import QRCode from 'react-native-qrcode-svg';
 import { BlurView } from "@react-native-community/blur";
@@ -11,6 +11,7 @@ import axios from 'axios';
 import { CONFIG } from '../Config';
 import Animated, { useSharedValue, useAnimatedStyle, interpolate, interpolateColor, Extrapolate, useAnimatedScrollHandler, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import CustomAlert from '../components/CustomAlert';
+import SecureLoader from '../components/SecureLoader';
 
 const { width, height } = Dimensions.get('window');
 
@@ -133,6 +134,10 @@ const ProfileScreen = ({ navigation, route }: any) => {
     const [alertType, setAlertType] = useState<'success' | 'error' | 'info'>('info');
     const [qrTab, setQrTab] = useState<'my' | 'scan'>('my');
 
+    // Refresh State
+    const [refreshing, setRefreshing] = useState(false);
+    const [showLoader, setShowLoader] = useState(false);
+
     const isBusinessUser = displayedUser?.user_type === 'Business' || displayedUser?.user_type === 'business'; // Handle case sensitivity
 
     // Reanimated Shared Values
@@ -164,9 +169,6 @@ const ProfileScreen = ({ navigation, route }: any) => {
             const profileRes = await DataService.getProfile(displayedUser.id);
             if (profileRes.success) {
                 setBusinessDetails(profileRes.business);
-                // Also could set education/socials/certificates if API returns structure
-                // But we use specialized calls below usually, or update specialized calls to use this if needed
-                // Currently keeping existing flow but adding businessDetails
             }
 
             if (isBusinessUser) {
@@ -191,6 +193,14 @@ const ProfileScreen = ({ navigation, route }: any) => {
         } catch (error) {
             console.log("Error fetching profile data", error);
         }
+    };
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        setShowLoader(true);
+        await fetchData();
+        setRefreshing(false);
+        setShowLoader(false);
     };
 
     const handleDateClick = (dateStr: string) => {
@@ -535,6 +545,15 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 onScroll={scrollHandler}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        colors={['transparent']}
+                        tintColor="transparent"
+                        progressBackgroundColor="transparent"
+                    />
+                }
             >
                 <View style={styles.spacer} />
 
@@ -1045,6 +1064,18 @@ const ProfileScreen = ({ navigation, route }: any) => {
                             <Text style={{ color: theme.subText }}>Cancel</Text>
                         </TouchableOpacity>
                     </View>
+                </View>
+            </Modal>
+
+            {/* Secure Loader Modal */}
+            <Modal
+                transparent={true}
+                animationType="fade"
+                visible={showLoader}
+                onRequestClose={() => {}}
+            >
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)' }}>
+                    <SecureLoader size={100} color={isDarkMode ? '#63B3ED' : '#3182CE'} />
                 </View>
             </Modal>
 

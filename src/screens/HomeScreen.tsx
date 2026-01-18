@@ -5,6 +5,7 @@ import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { AuthContext } from '../context/AuthContext';
 import { DataService } from '../services/DataService';
 import { CONFIG } from '../Config';
+import PageWrapper from '../components/PageWrapper';
 
 const { width, height } = Dimensions.get('window');
 
@@ -247,7 +248,10 @@ const HomeScreen = ({ navigation, route }: any) => {
             </View>
 
             {/* Main Content */}
-            <ScrollView contentContainerStyle={styles.content}>
+            <PageWrapper
+                onRefresh={fetchDashboardData}
+                contentContainerStyle={styles.content}
+            >
                 <View style={[styles.welcomeCard, { backgroundColor: user.user_type === 'business' ? '#2B6CB0' : '#4A5568' }]}>
                     <Text style={styles.welcomeTitle}>Hello, {user.name}!</Text>
                     <Text style={styles.welcomeSubtitle}>
@@ -260,7 +264,7 @@ const HomeScreen = ({ navigation, route }: any) => {
                 {/* Dashboard Content */}
                 {user.user_type === 'business' ? renderBusinessDashboard() : renderIndividualDashboard()}
 
-            </ScrollView>
+            </PageWrapper>
 
             {/* Bottom Navigation */}
             <View style={[styles.bottomNav, { backgroundColor: theme.navBg, borderTopColor: theme.navBorder }]}>

@@ -1,15 +1,18 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, TextInput } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, TextInput, RefreshControl, Modal } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { CONFIG } from '../Config';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import SecureLoader from '../components/SecureLoader';
 
 export default function ChatListScreen({ navigation }: any) {
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, isDarkMode } = useContext(AuthContext);
     const [chats, setChats] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [showLoader, setShowLoader] = useState(false);
 
     useEffect(() => {
         fetchChats();
@@ -18,6 +21,7 @@ export default function ChatListScreen({ navigation }: any) {
     }, []);
 
     const fetchChats = async () => {
+        if (!refreshing) setLoading(true);
         try {
             const res = await axios.get(`${CONFIG.API_URL}/api/chats/${userInfo.id}`);
             if (res.data.success) {
@@ -28,6 +32,14 @@ export default function ChatListScreen({ navigation }: any) {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        setShowLoader(true);
+        await fetchChats();
+        setRefreshing(false);
+        setShowLoader(false);
     };
 
     const getOtherUser = (chat: any) => {
@@ -71,8 +83,28 @@ export default function ChatListScreen({ navigation }: any) {
                 renderItem={renderItem}
                 keyExtractor={(item: any) => item.id.toString()}
                 contentContainerStyle={styles.list}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        colors={['transparent']}
+                        tintColor="transparent"
+                        progressBackgroundColor="transparent"
+                    />
+                }
                 ListEmptyComponent={<Text style={styles.emptyText}>No conversations yet.</Text>}
             />
+
+            <Modal
+                transparent={true}
+                animationType="fade"
+                visible={showLoader}
+                onRequestClose={() => {}}
+            >
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)' }}>
+                    <SecureLoader size={100} color={isDarkMode ? '#63B3ED' : '#3182CE'} />
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }

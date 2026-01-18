@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, LayoutAnimation, Platform, UIManager, Modal } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { DataService } from '../services/DataService';
 import Svg, { Path } from 'react-native-svg';
+import SecureLoader from '../components/SecureLoader';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -12,6 +13,8 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+    const [showLoader, setShowLoader] = useState(false);
     const [expandedId, setExpandedId] = useState<number | null>(null);
 
     const theme = {
@@ -29,7 +32,7 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
     }, []);
 
     const fetchOrders = async () => {
-        setLoading(true);
+        if (!refreshing) setLoading(true);
         try {
             const data = await DataService.getCustomerOrders(userInfo.id);
             setOrders(data.orders || []);
@@ -38,6 +41,14 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        setShowLoader(true);
+        await fetchOrders();
+        setRefreshing(false);
+        setShowLoader(false);
     };
 
     const toggleExpand = (id: number) => {
@@ -96,9 +107,28 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
                 renderItem={renderItem}
                 keyExtractor={item => item.id.toString()}
                 contentContainerStyle={styles.listContent}
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchOrders} tintColor={theme.text} />}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        colors={['transparent']}
+                        tintColor="transparent"
+                        progressBackgroundColor="transparent"
+                    />
+                }
                 ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>You haven't placed any orders.</Text>}
             />
+
+            <Modal
+                transparent={true}
+                animationType="fade"
+                visible={showLoader}
+                onRequestClose={() => {}}
+            >
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)' }}>
+                    <SecureLoader size={100} color={isDarkMode ? '#63B3ED' : '#3182CE'} />
+                </View>
+            </Modal>
         </View>
     );
 };

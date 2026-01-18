@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Dimensions, Alert } from 'react-native';
+import { WebView } from 'react-native-webview';
 import RNPrint from 'react-native-print';
 import QRCode from 'react-native-qrcode-svg';
 import { AuthContext } from '../context/AuthContext';
@@ -125,8 +126,30 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
                 <View style={styles.previewContainer}>
                     <Text style={styles.label}>Preview ({previewSide === 'front' ? 'Front' : 'Back'})</Text>
                     <View style={styles.cardPreviewPlaceholder}>
-                        <Text style={{ color: '#aaa' }}>PDF Preview not available in editor.</Text>
-                        <Text style={{ color: '#aaa', fontSize: 10 }}>Click Export to see final result.</Text>
+                        <WebView
+                            originWhitelist={['*']}
+                            source={{
+                                html: (() => {
+                                    const data = {
+                                        name,
+                                        role,
+                                        phone,
+                                        email,
+                                        address,
+                                        logo: userInfo.profile_pic_url ? `${CONFIG.API_URL}/${userInfo.profile_pic_url}` : 'https://via.placeholder.com/50',
+                                        qrCode: qrBase64
+                                    };
+                                    let html = (CardTemplates as any)[selectedTemplate](data);
+                                    // Inject styles to show only the selected side and fit the container
+                                    const hideStyle = previewSide === 'front'
+                                        ? '<style>.page:nth-of-type(2) { display: none !important; } .page { height: 100vh; width: 100vw; transform: scale(0.8); transform-origin: center top; }</style>'
+                                        : '<style>.page:nth-of-type(1) { display: none !important; } .page { height: 100vh; width: 100vw; transform: scale(0.8); transform-origin: center top; }</style>';
+                                    return html + hideStyle;
+                                })()
+                            }}
+                            style={{ width: 300, height: 170, backgroundColor: 'transparent' }}
+                            scrollEnabled={false}
+                        />
                     </View>
                     <View style={styles.toggleRow}>
                         <TouchableOpacity onPress={() => setPreviewSide('front')} style={[styles.toggleBtn, previewSide === 'front' && styles.activeToggle]}><Text style={previewSide === 'front' ? styles.activeText : styles.inactiveText}>Front</Text></TouchableOpacity>

@@ -58,6 +58,11 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
 
     const templates = [
         { id: 'standard', name: 'Standard' },
+        { id: 'tech_terminal', name: 'Tech Terminal' },
+        { id: 'mechanic_tool', name: 'Mechanic Tool' },
+        { id: 'split_card', name: 'Split Card' },
+        { id: 'finger_play', name: 'Finger Play' },
+        { id: 'chart_graph', name: 'Growth Graph' },
         { id: 'broker', name: 'Broker' },
         { id: 'bakery', name: 'Bakery' },
         { id: 'dentist', name: 'Dentist' },

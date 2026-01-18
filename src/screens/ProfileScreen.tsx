@@ -6,6 +6,8 @@ import { BlurView } from "@react-native-community/blur";
 import { AuthContext } from '../context/AuthContext';
 import { DataService } from '../services/DataService';
 import { launchImageLibrary } from 'react-native-image-picker';
+import DocumentPicker from 'react-native-document-picker';
+import axios from 'axios';
 import { CONFIG } from '../Config';
 import Animated, { useSharedValue, useAnimatedStyle, interpolate, interpolateColor, Extrapolate, useAnimatedScrollHandler, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import CustomAlert from '../components/CustomAlert';
@@ -115,6 +117,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
     // Add Item Modals
     const [addSkillVisible, setAddSkillVisible] = useState(false);
     const [addEduVisible, setAddEduVisible] = useState(false);
+    const [uploadingResume, setUploadingResume] = useState(false);
     const [bookApptVisible, setBookApptVisible] = useState(false);
     const [apptDate, setApptDate] = useState('');
     const [apptTime, setApptTime] = useState('');
@@ -334,6 +337,45 @@ const ProfileScreen = ({ navigation, route }: any) => {
             setAlertMessage(JSON.stringify(e));
             setAlertType('error');
             setAlertVisible(true);
+        }
+    };
+
+    const handleUploadResume = async () => {
+        try {
+            const res = await DocumentPicker.pick({
+                type: [DocumentPicker.types.pdf, DocumentPicker.types.doc, DocumentPicker.types.docx, DocumentPicker.types.images],
+            });
+            const file = res[0];
+            setUploadingResume(true);
+
+            const formData = new FormData();
+            formData.append('userId', String(userInfo.id));
+            formData.append('image', {
+                uri: file.uri,
+                type: file.type,
+                name: file.name,
+            });
+
+            const uploadRes = await axios.post(`${CONFIG.API_URL}/api/upload/resume`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+
+            if (uploadRes.data.success) {
+                setAlertTitle('Success');
+                setAlertMessage('Resume uploaded successfully.');
+                setAlertType('success');
+                setAlertVisible(true);
+                fetchData(); // Refresh to get resume_url
+            }
+        } catch (err) {
+            if (DocumentPicker.isCancel(err)) return;
+            console.error(err);
+            setAlertTitle('Error');
+            setAlertMessage('Failed to upload resume.');
+            setAlertType('error');
+            setAlertVisible(true);
+        } finally {
+            setUploadingResume(false);
         }
     };
 
@@ -580,6 +622,12 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                 theme={theme}
                             />
                             <DashboardButton
+                                icon={<Path d="M9 20a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" /> }
+                                label="My Cart"
+                                onPress={() => navigation.navigate('Checkout')}
+                                theme={theme}
+                            />
+                            <DashboardButton
                                 icon={<Path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />}
                                 label="Appointments"
                                 onPress={() => navigation.navigate('ServiceAppointments')}
@@ -631,6 +679,79 @@ const ProfileScreen = ({ navigation, route }: any) => {
                         </View>
                     )}
                 </View>
+
+                {/* Education Section (Individual) */}
+                {!isBusinessUser && (
+                    <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 15, position: 'relative' }}>
+                            <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>Education</Text>
+                            {isOwnProfile && (
+                                <TouchableOpacity onPress={() => setAddEduVisible(true)} style={{ position: 'absolute', right: 0, padding: 5 }}>
+                                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M12 5v14M5 12h14" /></Svg>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                        {education.length === 0 ? (
+                            <Text style={{ textAlign: 'center', color: theme.subText }}>No education added.</Text>
+                        ) : (
+                            education.map((edu, index) => (
+                                <View key={index} style={[styles.eduCard, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', borderBottomColor: theme.borderColor }]}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={[styles.eduSchool, { color: theme.text }]}>{edu.institution}</Text>
+                                        <Text style={[styles.eduDegree, { color: theme.subText }]}>{edu.degree}</Text>
+                                        <Text style={[styles.eduYear, { color: theme.subText }]}>{edu.year}</Text>
+                                    </View>
+                                    {isOwnProfile && (
+                                        <TouchableOpacity onPress={() => handleDeleteEdu(edu.id)} style={{ padding: 5 }}>
+                                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            ))
+                        )}
+                    </View>
+                )}
+
+                {/* Resume Section (Individual) */}
+                {!isBusinessUser && (
+                    <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Resume</Text>
+                        {displayedUser?.resume_url ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7', padding: 15, borderRadius: 10 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 10 }}>
+                                        <Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                        <Path d="M14 2v6h6" />
+                                        <Path d="M16 13H8" />
+                                        <Path d="M16 17H8" />
+                                        <Path d="M10 9H8" />
+                                    </Svg>
+                                    <Text style={{ color: theme.text, fontWeight: '600' }}>Uploaded Resume</Text>
+                                </View>
+                                <TouchableOpacity onPress={() => Linking.openURL(`${CONFIG.API_URL}/${displayedUser.resume_url}`)}>
+                                    <Text style={{ color: '#4A9EFF', fontWeight: 'bold' }}>View</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <Text style={{ textAlign: 'center', color: theme.subText, marginBottom: 10 }}>No resume uploaded.</Text>
+                        )}
+
+                        {isOwnProfile && (
+                            <TouchableOpacity
+                                style={{ marginTop: 15, backgroundColor: theme.buttonBg || '#4A9EFF', padding: 12, borderRadius: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+                                onPress={handleUploadResume}
+                                disabled={uploadingResume}
+                            >
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? 'white' : '#2D3748'} strokeWidth="2" style={{ marginRight: 8 }}>
+                                    <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <Path d="M17 8l-5-5-5 5" />
+                                    <Path d="M12 3v12" />
+                                </Svg>
+                                <Text style={{ color: isDarkMode ? 'white' : '#2D3748', fontWeight: 'bold' }}>{uploadingResume ? 'Uploading...' : 'Upload Resume'}</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                )}
 
             </Animated.ScrollView>
 
@@ -725,6 +846,9 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
                         <View style={styles.menuContainer}>
                             <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}><Text style={[styles.menuItemText, { color: theme.text }]}>Edit Profile</Text></TouchableOpacity>
+                            <TouchableOpacity style={styles.menuItem} onPress={() => { closeModal(); navigation.navigate('BusinessCardEditor'); }}>
+                                <Text style={[styles.menuItemText, { color: theme.text }]}>Export Business Card</Text>
+                            </TouchableOpacity>
                             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}><Text style={[styles.menuItemText, { color: 'red' }]}>Logout</Text></TouchableOpacity>
                         </View>
                     </View>
@@ -963,6 +1087,12 @@ const styles = StyleSheet.create({
     menuContainer: { gap: 15 },
     menuItem: { paddingVertical: 10, alignItems: 'center' },
     menuItemText: { fontSize: 18, fontWeight: '600', textAlign: 'center' },
+
+    // Education
+    eduCard: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1 },
+    eduSchool: { fontSize: 16, fontWeight: '600', marginBottom: 2 },
+    eduDegree: { fontSize: 14, marginBottom: 2 },
+    eduYear: { fontSize: 12 },
 
     // Business Card Modal
     cardQrBody: { alignItems: 'center', marginVertical: 10 },

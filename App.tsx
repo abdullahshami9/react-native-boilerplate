@@ -19,6 +19,8 @@ import ChatScreen from './src/screens/ChatScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import ServiceDetailsScreen from './src/screens/ServiceDetailsScreen';
 import BookingScreen from './src/screens/BookingScreen';
+import CheckoutScreen from './src/screens/CheckoutScreen';
+import BusinessCardEditorScreen from './src/screens/BusinessCardEditorScreen';
 
 // Business Screens
 import ManageServicesScreen from './src/screens/business/ManageServicesScreen';
@@ -71,11 +73,13 @@ const AppNav = () => {
               <Stack.Screen name="ChatList" component={ChatListScreen} />
               <Stack.Screen name="Chat" component={ChatScreen} />
               <Stack.Screen name="UserProfile" component={ProfileScreen} />
+              <Stack.Screen name="BusinessCardEditor" component={BusinessCardEditorScreen} />
 
               {/* Customer Screens */}
               <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
               <Stack.Screen name="Booking" component={BookingScreen} />
               <Stack.Screen name="CustomerOrders" component={CustomerOrdersScreen} />
+              <Stack.Screen name="Checkout" component={CheckoutScreen} />
 
               {/* Business Screens */}
               <Stack.Screen name="ManageServices" component={ManageServicesScreen} />

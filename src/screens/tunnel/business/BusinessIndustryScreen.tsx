@@ -27,11 +27,28 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
     const [loading, setLoading] = useState(false);
 
     const handleNext = async () => {
+        const finalIndustry = industry === 'Other' ? customIndustry : industry;
+        let finalCategory = category;
+
+        if (industry === 'Other' || category === 'Other') {
+            finalCategory = customCategory;
+        }
+
+        if (!finalIndustry || !finalIndustry.trim()) {
+            Alert.alert('Missing Details', 'Please select or enter your Industry.');
+            return;
+        }
+
+        if (!finalCategory || !finalCategory.trim()) {
+            Alert.alert('Missing Details', 'Please select or enter your Category.');
+            return;
+        }
+
         setLoading(true);
         try {
             await TunnelService.updateBusinessIndustry(userInfo.id, {
-                industry: industry === 'Other' ? customIndustry : industry,
-                category: (industry === 'Other' || !categories.includes(category)) ? customCategory || category : category
+                industry: finalIndustry,
+                category: finalCategory
             });
             navigation.navigate('PaymentIntegration');
         } catch (error) {
@@ -75,7 +92,7 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
                     disabled={!industry}
                 >
                     <Text style={[styles.input, !category && styles.placeholderText]}>
-                        {category || "Select Child Industry"}
+                        {industry === 'Other' ? "Enter Custom Category below" : (category || "Select Child Industry")}
                     </Text>
                     <View style={styles.inputIcon}>
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
@@ -110,6 +127,8 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
                                         onPress={() => {
                                             setIndustry(item.name);
                                             setCategory('');
+                                            setCustomIndustry('');
+                                            setCustomCategory('');
                                             setShowIndustryModal(false);
                                         }}
                                     >
@@ -130,7 +149,7 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
                         <View style={styles.modalContent}>
                             <Text style={styles.modalTitle}>Select Category</Text>
                             <FlatList
-                                data={[...categories, 'Other']}
+                                data={industry === 'Other' ? ['Other'] : [...categories, 'Other']}
                                 keyExtractor={(item, index) => item + index}
                                 renderItem={({ item }) => (
                                     <TouchableOpacity

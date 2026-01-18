@@ -268,9 +268,9 @@ export const DataService = {
     },
 
     // --- ORDERS & PROCUREMENT ---
-    createOrder: async (sellerId: number, items: any[]) => {
+    createOrder: async (sellerId: number, items: any[], buyerId?: number, paymentMethod: string = 'cod') => {
         try {
-            const response = await axios.post(`${CONFIG.API_URL}/api/orders`, { seller_id: sellerId, items });
+            const response = await axios.post(`${CONFIG.API_URL}/api/orders`, { seller_id: sellerId, items, buyer_id: buyerId, payment_method: paymentMethod });
             return response.data;
         } catch (error: any) {
             LoggerService.error('Create Order Error:', error, 'DataService');

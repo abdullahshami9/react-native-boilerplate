@@ -34,6 +34,7 @@ ensureDir(path.join(__dirname, 'uploads/products'));
 ensureDir(path.join(__dirname, 'uploads/services'));
 ensureDir(path.join(__dirname, 'uploads/certificates'));
 ensureDir(path.join(__dirname, 'uploads/resumes'));
+ensureDir(path.join(__dirname, 'uploads/chats'));
 
 // Database Connection Config
 const dbConfig = {
@@ -152,6 +153,7 @@ db.connect((err) => {
             buyer_id INT,
             total_amount DECIMAL(10, 2) NOT NULL,
             status ENUM('pending', 'completed', 'cancelled') DEFAULT 'pending',
+            payment_method VARCHAR(50) DEFAULT 'cod',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (seller_id) REFERENCES users(id)
         );
@@ -281,6 +283,21 @@ db.connect((err) => {
                     db.query("ALTER TABLE users ADD COLUMN current_job_title VARCHAR(255)", () => console.log("Added current_job_title column"));
                 }
             });
+            db.query("SHOW COLUMNS FROM users LIKE 'resume_url'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE users ADD COLUMN resume_url VARCHAR(255)", () => console.log("Added resume_url column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM business_details LIKE 'card_template'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE business_details ADD COLUMN card_template VARCHAR(50) DEFAULT 'standard'", () => console.log("Added card_template column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM business_details LIKE 'card_custom_details'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE business_details ADD COLUMN card_custom_details TEXT", () => console.log("Added card_custom_details column"));
+                }
+            });
             db.query("SHOW COLUMNS FROM business_details LIKE 'business_type'", (e, r) => {
                 if (r && r.length === 0) {
                     db.query("ALTER TABLE business_details ADD COLUMN business_type VARCHAR(100)", () => console.log("Added business_type column"));
@@ -309,6 +326,11 @@ db.connect((err) => {
                     db.query("ALTER TABLE orders ADD COLUMN status ENUM('pending', 'completed', 'cancelled') DEFAULT 'pending'", () => console.log("Added status to orders"));
                 }
             });
+            db.query("SHOW COLUMNS FROM orders LIKE 'payment_method'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE orders ADD COLUMN payment_method VARCHAR(50) DEFAULT 'cod'", () => console.log("Added payment_method to orders"));
+                }
+            });
             db.query("SHOW COLUMNS FROM appointments LIKE 'service_id'", (e, r) => {
                 if (r && r.length === 0) {
                     db.query("ALTER TABLE appointments ADD COLUMN service_id INT, ADD FOREIGN KEY (service_id) REFERENCES services(id)", () => console.log("Added service_id to appointments"));
@@ -331,6 +353,7 @@ const storage = multer.diskStorage({
         else if (req.path.includes('product')) dir += 'products/';
         else if (req.path.includes('service')) dir += 'services/'; // Added services
         else if (req.path.includes('certificate')) dir += 'certificates/';
+        else if (req.path.includes('chat')) dir += 'chats/';
 
         // Ensure directory exists (mkdir -p logic handled by shell usually but good to be safe)
         cb(null, dir);
@@ -356,6 +379,10 @@ const storage = multer.diskStorage({
              // services usually have one image, but let's stick to convention if needed
              // or just serviceId.ext
             cb(null, `${serviceId}${ext}`);
+        } else if (req.path.includes('chat')) {
+             // sanitize is not available, using simple replace
+             const safeName = file.originalname.replace(/[^a-zA-Z0-9_-]/g, '');
+             cb(null, `${Date.now()}-${safeName}`);
         } else {
             // Generic fallback
             cb(null, `${Date.now()}${ext}`);
@@ -457,6 +484,17 @@ app.post('/update-profile', (req, res) => {
     const { id, name, phone, email } = req.body;
     const query = 'UPDATE users SET name = ?, phone = ?, email = ? WHERE id = ?';
     dbQuery(query, [name, phone, email, id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
+    });
+});
+
+app.post('/api/business/card-settings', (req, res) => {
+    const { user_id, card_template, card_custom_details } = req.body;
+    const query = `INSERT INTO business_details (user_id, card_template, card_custom_details)
+                   VALUES (?, ?, ?)
+                   ON DUPLICATE KEY UPDATE card_template=VALUES(card_template), card_custom_details=VALUES(card_custom_details)`;
+    dbQuery(query, [user_id, card_template, JSON.stringify(card_custom_details)], req, (err) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true });
     });
@@ -661,10 +699,19 @@ app.post('/api/upload/profile', upload.single('image'), (req, res) => {
 app.post('/api/upload/resume', upload.single('image'), (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
 
-    // In a real app we might store this path in a 'resumes' table or 'users' column.
-    // For now, we return the path so frontend can confirm upload.
+    const userId = req.body.userId;
     const fileUrl = `uploads/resumes/${req.file.filename}`;
-    res.json({ success: true, message: 'Resume uploaded', filePath: fileUrl });
+
+    // Update DB if userId is provided
+    if (userId) {
+        const query = 'UPDATE users SET resume_url = ? WHERE id = ?';
+        dbQuery(query, [fileUrl, userId], req, (err) => {
+            if (err) console.error("Failed to update resume url in db");
+            res.json({ success: true, message: 'Resume uploaded', filePath: fileUrl });
+        });
+    } else {
+        res.json({ success: true, message: 'Resume uploaded', filePath: fileUrl });
+    }
 });
 
 app.post('/api/upload/product', upload.single('image'), (req, res) => {
@@ -695,6 +742,12 @@ app.post('/api/upload/service', upload.single('image'), (req, res) => {
     dbQuery(query, [fileUrl, serviceId], req, (err) => {
         res.json({ success: true, message: 'Service image uploaded', filePath: fileUrl });
     });
+});
+
+app.post('/api/upload/chat', upload.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+    const fileUrl = `uploads/chats/${req.file.filename}`;
+    res.json({ success: true, message: 'Chat image uploaded', filePath: fileUrl });
 });
 
 // --- CONNECTIONS ---
@@ -861,14 +914,14 @@ app.get('/api/availability/:userId', (req, res) => {
 // --- ORDERS & REPORTS ---
 
 app.post('/api/orders', (req, res) => {
-    const { seller_id, buyer_id, items } = req.body;
+    const { seller_id, buyer_id, items, payment_method } = req.body;
     // items: [{ product_id, quantity, price }]
 
     // Calculate total
     const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    const orderQuery = 'INSERT INTO orders (seller_id, buyer_id, total_amount, status) VALUES (?, ?, ?, "pending")';
-    dbQuery(orderQuery, [seller_id, buyer_id || null, total], req, (err, result) => {
+    const orderQuery = 'INSERT INTO orders (seller_id, buyer_id, total_amount, status, payment_method) VALUES (?, ?, ?, "pending", ?)';
+    dbQuery(orderQuery, [seller_id, buyer_id || null, total, payment_method || 'cod'], req, (err, result) => {
         if (err) return res.status(500).json({ success: false, message: 'Failed to create order' });
 
         const orderId = result.insertId;

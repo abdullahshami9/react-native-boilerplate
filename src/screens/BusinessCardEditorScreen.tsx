@@ -141,9 +141,25 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
                                     };
                                     let html = (CardTemplates as any)[selectedTemplate](data);
                                     // Inject styles to show only the selected side and fit the container
+                                    // Card is 350x200. Container is 300x170.
+                                    // We need to scale it down slightly but fill the view.
+                                    // 300/350 = 0.85. 
+                                    // We will use zoom property or scale transform on the body/page.
                                     const hideStyle = previewSide === 'front'
-                                        ? '<style>.page:nth-of-type(2) { display: none !important; } .page { height: 100vh; width: 100vw; transform: scale(0.8); transform-origin: center top; }</style>'
-                                        : '<style>.page:nth-of-type(1) { display: none !important; } .page { height: 100vh; width: 100vw; transform: scale(0.8); transform-origin: center top; }</style>';
+                                        ? `
+                                            <meta name="viewport" content="width=420, user-scalable=no" />
+                                            <style>
+                                                .page:nth-of-type(2) { display: none !important; } 
+                                                body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: transparent; }
+                                                .page { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; } 
+                                            </style>`
+                                        : `
+                                            <meta name="viewport" content="width=420, user-scalable=no" />
+                                            <style>
+                                                .page:nth-of-type(1) { display: none !important; } 
+                                                body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: transparent; }
+                                                .page { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; } 
+                                            </style>`;
                                     return html + hideStyle;
                                 })()
                             }}

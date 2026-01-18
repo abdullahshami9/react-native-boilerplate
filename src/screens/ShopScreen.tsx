@@ -58,7 +58,7 @@ const ShopScreen = ({ navigation }: any) => {
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Header */}
             <View style={[styles.header, { backgroundColor: theme.bg }]}>
-                <Text style={{ position: 'absolute', top: 15, left: 20, zIndex: 10, fontSize: 14, fontWeight: 'bold', color: theme.text }}>RaabTaa</Text>
+                <Text style={{ position: 'absolute', top: 15, left: 20, zIndex: 10, fontSize: 14, fontWeight: 'bold', color: theme.text }}>Junr</Text>
                 <TouchableOpacity style={[styles.backButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.goBack()}>
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
                         <Path d="M19 12H5M12 19l-7-7 7-7" />

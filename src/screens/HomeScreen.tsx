@@ -230,7 +230,7 @@ const HomeScreen = ({ navigation, route }: any) => {
 
             {/* Header */}
             <View style={[styles.header, { backgroundColor: theme.headerBg, shadowColor: isDarkMode ? '#000' : '#000' }]}>
-                <Text style={{ position: 'absolute', top: 5, left: 20, zIndex: 100, elevation: 10, fontSize: 14, fontWeight: 'bold', color: theme.text }}>RaabTaa</Text>
+                <Text style={{ position: 'absolute', top: 5, left: 20, zIndex: 100, elevation: 10, fontSize: 14, fontWeight: 'bold', color: theme.text }}>Junr</Text>
                 <TouchableOpacity onPress={toggleSidebar} style={{ marginTop: 15 }}>
                     <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <Line x1="3" y1="12" x2="21" y2="12"></Line>

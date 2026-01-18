@@ -3,49 +3,87 @@ import { CardTemplates } from '../src/utils/CardTemplates';
 describe('CardTemplates', () => {
     const mockData = {
         name: 'John Doe',
-        role: 'Developer',
+        role: 'Professional',
         phone: '123-456-7890',
         email: 'john@example.com',
-        address: '123 Main St',
-        logo: 'http://example.com/logo.png',
-        qrCode: '<img src="qr" />'
+        qrCode: '<img src="qr.png" />',
+        logo: 'logo.png'
     };
 
-    it('should generate standard template', () => {
-        const html = CardTemplates.standard(mockData);
-        expect(html).toContain('John Doe');
-        expect(html).toContain('Developer');
+    test('should have 9 specific templates', () => {
+        const keys = Object.keys(CardTemplates);
+        const expectedKeys = [
+            'mechanic_wrench',
+            'weight_loss',
+            'divorce_lawyer',
+            'yoga_mat',
+            'hair_stylist',
+            'dentist_sleeve',
+            'stock_broker',
+            'tech_transparent',
+            'bakery_biscuit'
+        ];
+
+        expectedKeys.forEach(key => {
+            expect(keys).toContain(key);
+        });
+        expect(keys.length).toBe(9);
     });
 
-    it('should generate tech_terminal template', () => {
-        const html = CardTemplates.tech_terminal(mockData);
-        expect(html).toContain('const');
-        expect(html).toContain('developer');
-        expect(html).toContain('John Doe');
-        expect(html).toContain('window-bar');
+    test('mechanic_wrench should render wrench elements', () => {
+        const html = CardTemplates.mechanic_wrench(mockData);
+        expect(html).toContain('SCAN TO FIX');
+        expect(html).toContain('head-hole');
+        expect(html).toContain('linear-gradient');
     });
 
-    it('should generate mechanic_tool template', () => {
-        const html = CardTemplates.mechanic_tool(mockData);
-        expect(html).toContain('wrench-hole');
-        expect(html).toContain('John Doe');
+    test('weight_loss should render before/after sections', () => {
+        const html = CardTemplates.weight_loss(mockData);
+        expect(html).toContain('BEFORE');
+        expect(html).toContain('AFTER');
+        expect(html).toContain('TEAR OFF');
     });
 
-    it('should generate split_card template', () => {
-        const html = CardTemplates.split_card(mockData);
+    test('divorce_lawyer should render split layout', () => {
+        const html = CardTemplates.divorce_lawyer(mockData);
         expect(html).toContain('divider');
-        expect(html).toContain('TEAR HERE');
+        expect(html).toContain('John Doe'); // name appears twice
     });
 
-    it('should generate finger_play template', () => {
-        const html = CardTemplates.finger_play(mockData);
+    test('yoga_mat should render finger holes', () => {
+        const html = CardTemplates.yoga_mat(mockData);
+        expect(html).toContain('hole-left');
+        expect(html).toContain('GET STRETCHY');
+    });
+
+    test('hair_stylist should render scissors', () => {
+        const html = CardTemplates.hair_stylist(mockData);
+        expect(html).toContain('CUT SHAPE');
         expect(html).toContain('finger-hole');
-        expect(html).toContain('Insert fingers');
     });
 
-    it('should generate chart_graph template', () => {
-        const html = CardTemplates.chart_graph(mockData);
-        expect(html).toContain('clip-path');
-        expect(html).toContain('CUT THE GRAPH');
+    test('dentist_sleeve should render sleeve and insert', () => {
+        const html = CardTemplates.dentist_sleeve(mockData);
+        expect(html).toContain('Part 1: The Sleeve');
+        expect(html).toContain('Part 2: The Insert');
+        expect(html).toContain('cavity-hole');
+    });
+
+    test('stock_broker should render graph clip-path', () => {
+        const html = CardTemplates.stock_broker(mockData);
+        expect(html).toContain('clip-path: polygon');
+        expect(html).toContain('CUT ALONG GRAPH');
+    });
+
+    test('tech_transparent should render terminal window', () => {
+        const html = CardTemplates.tech_transparent(mockData);
+        expect(html).toContain('const</span> <span class="v">profile');
+        expect(html).toContain('title-bar');
+    });
+
+    test('bakery_biscuit should render biscuit texture', () => {
+        const html = CardTemplates.bakery_biscuit(mockData);
+        expect(html).toContain('radial-gradient');
+        expect(html).toContain('bite-mark');
     });
 });

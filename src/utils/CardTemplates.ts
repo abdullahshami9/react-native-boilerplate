@@ -1,444 +1,584 @@
 export const CardTemplates = {
-    standard: (data: any) => `
+    mechanic_wrench: (data: any) => `
         <html>
         <head>
             <style>
-                body { margin: 0; font-family: Helvetica, sans-serif; }
+                body { margin: 0; font-family: Impact, sans-serif; background: white; }
                 .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
-                .card { width: 350px; height: 200px; border: 1px solid #ddd; padding: 20px; display: flex; position: relative; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-                .card-back { background: #333; color: white; justify-content: center; align-items: center; flex-direction: column; }
-                .logo { width: 50px; height: 50px; border-radius: 50%; background: #eee; margin-right: 15px; }
-                .info { flex: 1; }
-                .name { font-size: 18px; font-weight: bold; color: #333; }
-                .role { font-size: 12px; color: #666; margin-bottom: 10px; text-transform: uppercase; }
-                .contact { font-size: 10px; color: #555; line-height: 1.4; }
-                .qr-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; background: white; padding: 10px; border-radius: 8px; }
-                .tagline { position: absolute; bottom: 20px; left: 20px; font-size: 9px; color: #aaa; font-style: italic; }
+                .cut-guide { border: 1px dashed #999; padding: 20px; border-radius: 60px 10px 10px 60px; position: relative; }
+                .cut-label { position: absolute; top: -10px; right: 20px; font-size: 10px; background: white; padding: 0 5px; color: #666; font-family: Arial; }
+
+                .card {
+                    width: 350px; height: 120px;
+                    background: linear-gradient(135deg, #dcdcdc 0%, #f1f1f1 50%, #b0b0b0 100%);
+                    border-radius: 60px 10px 10px 60px;
+                    display: flex; align-items: center;
+                    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+                    position: relative;
+                    border: 1px solid #aaa;
+                }
+
+                .head-hole {
+                    width: 50px; height: 50px;
+                    background: white;
+                    border-radius: 50%; /* Polygon would be better for hex, but circle is safe for wrench hole */
+                    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+                    position: absolute; left: 20px; top: 35px;
+                    border: 4px solid #999;
+                    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.4);
+                }
+
+                .content { margin-left: 90px; }
+                .name { font-size: 24px; text-transform: uppercase; color: #333; letter-spacing: 1px; }
+                .role { font-size: 12px; color: #c0392b; text-transform: uppercase; }
+                .contact { font-size: 10px; color: #555; font-family: Arial; margin-top: 5px; }
+
+                .card-back { background: linear-gradient(135deg, #444 0%, #222 100%); color: white; justify-content: center; }
             </style>
         </head>
         <body>
             <div class="page">
-                <div class="card">
-                    <img src="${data.logo}" class="logo" />
-                    <div class="info">
-                        <div class="name">${data.name}</div>
-                        <div class="role">${data.role}</div>
-                        <div class="contact">
-                            ${data.phone}<br/>
-                            ${data.email}<br/>
-                            ${data.address || ''}
+                <div class="cut-guide">
+                    <div class="cut-label">✂ CUT HERE</div>
+                    <div class="card">
+                        <div class="head-hole"></div>
+                        <div class="content">
+                            <div class="name">${data.name}</div>
+                            <div class="role">${data.role}</div>
+                            <div class="contact">${data.phone} • ${data.email}</div>
                         </div>
                     </div>
-                    <div class="tagline">Powered by Raabtaa</div>
                 </div>
             </div>
             <div class="page">
-                <div class="card card-back">
-                    <div class="qr-container">
-                        ${data.qrCode}
-                    </div>
-                    <div style="margin-top: 10px; font-size: 12px;">Scan to Connect</div>
-                </div>
-            </div>
-        </body>
-        </html>
-    `,
-    broker: (data: any) => `
-        <html>
-        <head>
-            <style>
-                body { margin: 0; font-family: 'Courier New', monospace; background: #f0f0f0; }
-                .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
-                .card { width: 350px; height: 200px; padding: 20px; position: relative; background: #1a1a1a; color: #00ff00; border: 2px solid #00ff00; overflow: hidden; }
-                .stairs { position: absolute; bottom: 0; right: 0; width: 150px; height: 100px; opacity: 0.2; }
-                .stair { background: #00ff00; height: 20px; width: 100%; margin-bottom: 5px; }
-                .name { font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #00ff00; padding-bottom: 5px; display: inline-block; }
-                .role { font-size: 12px; margin-top: 5px; color: #fff; }
-                .contact { font-size: 10px; margin-top: 20px; color: #ccc; }
-                .buy-sell { position: absolute; top: 20px; right: 20px; font-size: 14px; font-weight: bold; border: 1px solid #00ff00; padding: 5px 10px; border-radius: 4px; }
-                .card-back { background: #000; display: flex; justify-content: center; align-items: center; flex-direction: column; border: 2px solid #00ff00; }
-            </style>
-        </head>
-        <body>
-            <div class="page">
-                <div class="card">
-                    <div class="buy-sell">BUY / SELL</div>
-                    <div class="name">${data.name}</div>
-                    <div class="role">${data.role}</div>
-                    <div class="contact">
-                        📞 ${data.phone}<br/>
-                        📧 ${data.email}
-                    </div>
-                    <div class="stairs">
-                        <div style="width: 20%; height: 20%; background: #00ff00; position: absolute; bottom: 0; right: 80%;"></div>
-                        <div style="width: 20%; height: 40%; background: #00ff00; position: absolute; bottom: 0; right: 60%;"></div>
-                        <div style="width: 20%; height: 60%; background: #00ff00; position: absolute; bottom: 0; right: 40%;"></div>
-                        <div style="width: 20%; height: 80%; background: #00ff00; position: absolute; bottom: 0; right: 20%;"></div>
-                        <div style="width: 20%; height: 100%; background: #00ff00; position: absolute; bottom: 0; right: 0;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="page">
-                <div class="card card-back">
-                    <div style="background: white; padding: 10px;">${data.qrCode}</div>
-                    <div style="margin-top: 15px; color: #00ff00;">INVEST IN CONNECTIONS</div>
-                </div>
-            </div>
-        </body>
-        </html>
-    `,
-    bakery: (data: any) => `
-        <html>
-        <head>
-            <style>
-                body { margin: 0; font-family: Georgia, serif; }
-                .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
-                .card { width: 350px; height: 200px; padding: 25px; position: relative; background: #fff5e6; border-radius: 15px; border: 4px dashed #d2691e; }
-                .name { font-size: 22px; color: #8b4513; font-weight: bold; }
-                .role { font-size: 14px; color: #cd853f; font-style: italic; margin-bottom: 15px; }
-                .contact { font-size: 11px; color: #8b4513; }
-                .biscuit-icon { position: absolute; bottom: 20px; right: 20px; font-size: 40px; }
-                .card-back { background: #8b4513; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-                .qr-box { background: white; padding: 10px; border-radius: 10px; }
-            </style>
-        </head>
-        <body>
-            <div class="page">
-                <div class="card">
-                    <div class="name">${data.name}</div>
-                    <div class="role">${data.role}</div>
-                    <div class="contact">
-                        ${data.phone}<br/>
-                        ${data.email}<br/>
-                        ${data.address || 'Freshly Baked Connections'}
-                    </div>
-                    <div class="biscuit-icon">🍪</div>
-                </div>
-            </div>
-            <div class="page">
-                <div class="card card-back">
-                    <div class="qr-box">${data.qrCode}</div>
-                    <div style="margin-top: 10px;">Scan for Freshness</div>
-                </div>
-            </div>
-        </body>
-        </html>
-    `,
-    dentist: (data: any) => `
-        <html>
-        <head>
-            <style>
-                body { margin: 0; font-family: Arial, sans-serif; }
-                .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
-                .card { width: 350px; height: 200px; padding: 20px; position: relative; background: #e0f7fa; border-bottom: 5px solid #00acc1; }
-                .tooth-bg { position: absolute; top: -20px; right: -20px; font-size: 100px; opacity: 0.1; color: #00acc1; }
-                .name { font-size: 20px; color: #006064; font-weight: bold; }
-                .role { font-size: 13px; color: #0097a7; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
-                .contact { font-size: 11px; color: #006064; }
-                .card-back { background: #00acc1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-            </style>
-        </head>
-        <body>
-            <div class="page">
-                <div class="card">
-                    <div class="tooth-bg">🦷</div>
-                    <div class="name">${data.name}</div>
-                    <div class="role">${data.role}</div>
-                    <div class="contact">
-                        ${data.phone}<br/>
-                        ${data.email}<br/>
-                        ${data.address || 'Smile with Confidence'}
-                    </div>
-                </div>
-            </div>
-            <div class="page">
-                <div class="card card-back">
-                    <div style="background: white; padding: 8px; border-radius: 4px;">${data.qrCode}</div>
-                    <div style="color: white; margin-top: 10px; font-size: 12px;">Book Your Appointment</div>
-                </div>
-            </div>
-        </body>
-        </html>
-    `,
-    tech_terminal: (data: any) => `
-        <html>
-        <head>
-            <style>
-                body { margin: 0; font-family: 'Courier New', monospace; background: #333; }
-                .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
-                .card { width: 350px; height: 200px; background: #1e1e1e; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.5); border: 1px solid #444; }
-                .window-bar { background: #2d2d2d; padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #333; }
-                .dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
-                .red { background: #ff5f56; }
-                .yellow { background: #ffbd2e; }
-                .green { background: #27c93f; }
-                .content { padding: 20px; color: #d4d4d4; font-size: 12px; line-height: 1.6; }
-                .keyword { color: #569cd6; }
-                .string { color: #ce9178; }
-                .variable { color: #9cdcfe; }
-                .comment { color: #6a9955; }
-                .cursor { display: inline-block; width: 8px; height: 15px; background: #d4d4d4; animation: blink 1s infinite; vertical-align: middle; }
-                @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-                .card-back { background: #1e1e1e; display: flex; justify-content: center; align-items: center; flex-direction: column; }
-                .qr-bg { background: white; padding: 8px; border-radius: 4px; }
-            </style>
-        </head>
-        <body>
-            <div class="page">
-                <div class="card">
-                    <div class="window-bar">
-                        <div class="dot red"></div>
-                        <div class="dot yellow"></div>
-                        <div class="dot green"></div>
-                    </div>
-                    <div class="content">
-                        <span class="keyword">const</span> <span class="variable">developer</span> = {<br/>
-                        &nbsp;&nbsp;name: <span class="string">'${data.name}'</span>,<br/>
-                        &nbsp;&nbsp;role: <span class="string">'${data.role}'</span>,<br/>
-                        &nbsp;&nbsp;contact: {<br/>
-                        &nbsp;&nbsp;&nbsp;&nbsp;phone: <span class="string">'${data.phone}'</span>,<br/>
-                        &nbsp;&nbsp;&nbsp;&nbsp;email: <span class="string">'${data.email}'</span><br/>
-                        &nbsp;&nbsp;}<br/>
-                        };<br/>
-                        <span class="comment">// Connect now</span><span class="cursor"></span>
-                    </div>
-                </div>
-            </div>
-            <div class="page">
-                <div class="card card-back">
-                     <div class="window-bar">
-                        <div class="dot red"></div>
-                        <div class="dot yellow"></div>
-                        <div class="dot green"></div>
-                    </div>
-                    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                        <div class="qr-bg">${data.qrCode}</div>
-                        <div style="color: #9cdcfe; margin-top: 15px; font-family: 'Courier New';">&lt;ScanMe /&gt;</div>
+                <div class="cut-guide">
+                    <div class="card card-back">
+                        <div class="head-hole" style="background: #333; border-color: #555;"></div>
+                        <div style="margin-left: 90px; display: flex; align-items: center;">
+                            <div style="background: white; padding: 5px; border-radius: 2px;">${data.qrCode}</div>
+                            <div style="margin-left: 10px; font-family: Arial; font-size: 12px;">SCAN TO FIX</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </body>
         </html>
     `,
-    mechanic_tool: (data: any) => `
+    weight_loss: (data: any) => `
         <html>
         <head>
             <style>
-                body { margin: 0; font-family: Impact, sans-serif; background: #eee; }
+                body { margin: 0; font-family: Arial, sans-serif; background: white; }
                 .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
-                /* Simulating a wrench shape using border-radius and gradients */
-                .card-container { width: 350px; height: 200px; display: flex; align-items: center; justify-content: center; position: relative; }
-                .cut-line { position: absolute; width: 340px; height: 120px; border: 2px dashed #999; border-radius: 60px 10px 10px 60px; z-index: 0; pointer-events: none; }
-                .cut-text { position: absolute; top: 10px; right: 20px; font-size: 10px; color: #999; font-family: Arial, sans-serif; }
 
-                .card { width: 330px; height: 110px; background: linear-gradient(135deg, #cfcfcf 0%, #f1f1f1 50%, #9e9e9e 100%); border-radius: 55px 5px 5px 55px; display: flex; align-items: center; padding: 10px 20px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); z-index: 1; position: relative; border: 1px solid #999; }
+                .card-container { width: 400px; height: 200px; display: flex; position: relative; border: 1px solid #eee; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
 
-                /* The "Head" of the wrench hole */
-                .wrench-hole { width: 50px; height: 50px; background: #eee; border-radius: 50%; position: absolute; left: 15px; top: 30px; border: 4px solid #888; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; font-size: 8px; color: #aaa; text-align: center;}
+                .left-part {
+                    width: 50%; height: 100%; background: #fdfbf7;
+                    display: flex; flex-direction: column; justify-content: center; align-items: center;
+                    position: relative;
+                }
+                .belly-graphic {
+                    width: 120px; height: 80px; background: #e0c0a0;
+                    border-radius: 0 50% 50% 0; /* Bulge shape */
+                    margin-right: -20px; /* Push towards tear line */
+                    display: flex; justify-content: center; align-items: center;
+                    font-weight: bold; color: rgba(0,0,0,0.1); font-size: 40px;
+                }
 
-                .info-area { margin-left: 60px; flex: 1; }
-                .name { font-size: 24px; color: #333; letter-spacing: 1px; text-transform: uppercase; }
-                .role { font-size: 12px; color: #e74c3c; text-transform: uppercase; margin-bottom: 5px; }
-                .contact { font-size: 10px; color: #444; font-family: Arial, sans-serif; }
+                .right-part {
+                    width: 50%; height: 100%; background: #fff;
+                    display: flex; flex-direction: column; justify-content: center; align-items: center;
+                    z-index: 1;
+                }
 
-                .bolt { width: 10px; height: 10px; background: #bbb; border-radius: 50%; border: 1px solid #777; position: absolute; }
-                .b1 { top: 10px; right: 10px; }
-                .b2 { bottom: 10px; right: 10px; }
-                .b3 { top: 10px; left: 70px; }
+                .tear-line {
+                    position: absolute; left: 50%; top: 0; bottom: 0;
+                    border-left: 3px dashed #333;
+                    width: 0;
+                }
+                .tear-label { position: absolute; top: 10px; left: 45%; background: white; font-size: 10px; font-weight: bold; }
 
-                .card-back { background: linear-gradient(135deg, #444 0%, #222 100%); color: white; justify-content: center; border-radius: 55px 5px 5px 55px; }
-                .qr-container { padding: 5px; background: white; border-radius: 4px; }
+                .name { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
+                .role { font-size: 12px; color: #777; text-transform: uppercase; }
+                .contact { font-size: 10px; margin-top: 10px; text-align: center; }
+
+                .card-back { background: #333; color: white; }
             </style>
         </head>
         <body>
             <div class="page">
                 <div class="card-container">
-                    <div class="cut-text">✂ Cut along dashed line</div>
-                    <div class="cut-line"></div>
+                    <div class="left-part">
+                        <div class="belly-graphic">BEFORE</div>
+                        <div style="margin-top: 10px; font-weight: bold; font-size: 14px;">${data.name}</div>
+                        <div style="font-size: 10px;">Personal Trainer</div>
+                    </div>
+                    <div class="tear-line"></div>
+                    <div class="tear-label">TEAR OFF</div>
+                    <div class="right-part">
+                        <div style="font-size: 16px; font-weight: bold; color: #2ecc71;">AFTER</div>
+                        <div class="name" style="margin-top: 20px;">${data.name}</div>
+                        <div class="role">${data.role}</div>
+                        <div class="contact">${data.phone}<br>${data.email}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="page">
+                <div class="card-container card-back">
+                    <div style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div style="background: white; padding: 10px;">${data.qrCode}</div>
+                        <div style="margin-top: 10px;">TRANSFORM YOUR LIFE</div>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `,
+    divorce_lawyer: (data: any) => `
+        <html>
+        <head>
+            <style>
+                body { margin: 0; font-family: 'Times New Roman', serif; background: white; }
+                .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
+
+                .card { width: 350px; height: 200px; display: flex; position: relative; background: #fffcf5; border: 1px solid #ddd; }
+
+                .side { width: 50%; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+                .left { border-right: 1px dashed transparent; } /* Spacer */
+
+                .divider {
+                    position: absolute; left: 50%; top: 0; bottom: 0;
+                    border-left: 2px dashed #000;
+                }
+
+                .name { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
+                .role { font-size: 10px; color: #555; text-transform: uppercase; }
+                .contact { font-size: 9px; margin-top: 10px; }
+
+                .card-back { background: #2c3e50; color: white; }
+            </style>
+        </head>
+        <body>
+            <div class="page">
+                <div class="card">
+                    <div class="side">
+                        <div class="name">${data.name}</div>
+                        <div class="role">${data.role}</div>
+                        <div class="contact">${data.phone}</div>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="side">
+                        <div class="name">${data.name}</div>
+                        <div class="role">${data.role}</div>
+                        <div class="contact">${data.email}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="page">
+                <div class="card card-back">
+                    <div class="side" style="border-right: 1px dashed white;">
+                        <div style="background: white; padding: 5px;">${data.qrCode}</div>
+                    </div>
+                    <div class="side">
+                        <div style="background: white; padding: 5px;">${data.qrCode}</div>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `,
+    yoga_mat: (data: any) => `
+        <html>
+        <head>
+            <style>
+                body { margin: 0; font-family: Arial, sans-serif; background: white; }
+                .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
+
+                .card { width: 350px; height: 200px; position: relative; border: 1px solid #eee; overflow: hidden; background: #f9f9f9; }
+
+                .person-graphic {
+                    position: absolute; bottom: 0; width: 100%; text-align: center;
+                    font-size: 100px; line-height: 100px; color: #333;
+                }
+                /* Creating the "holes" visual guide */
+                .hole {
+                    width: 40px; height: 40px; border: 2px dashed #e91e63; border-radius: 50%;
+                    position: absolute; bottom: 20px; background: white;
+                    display: flex; justify-content: center; align-items: center;
+                    font-size: 8px; color: #e91e63;
+                }
+                .hole-left { left: 110px; }
+                .hole-right { right: 110px; }
+
+                .info { position: absolute; top: 20px; width: 100%; text-align: center; }
+                .name { font-size: 20px; font-weight: bold; color: #e91e63; }
+                .role { font-size: 12px; color: #555; }
+                .contact { font-size: 10px; margin-top: 5px; color: #777; }
+
+                .card-back { background: #e91e63; color: white; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+            </style>
+        </head>
+        <body>
+            <div class="page">
+                <div class="card">
+                    <div class="info">
+                        <div class="name">${data.name}</div>
+                        <div class="role">${data.role}</div>
+                        <div class="contact">${data.phone} • ${data.email}</div>
+                    </div>
+                    <div style="position: absolute; bottom: 80px; width: 100%; text-align: center; font-size: 12px; color: #aaa;">
+                        GET STRETCHY
+                    </div>
+                    <div class="hole hole-left">CUT</div>
+                    <div class="hole hole-right">CUT</div>
+                </div>
+            </div>
+            <div class="page">
+                <div class="card card-back">
+                    <div style="background: white; padding: 10px; border-radius: 5px;">${data.qrCode}</div>
+                    <div style="margin-top: 10px;">YOUR INSTRUCTOR</div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `,
+    hair_stylist: (data: any) => `
+        <html>
+        <head>
+            <style>
+                body { margin: 0; font-family: 'Courier New', monospace; background: white; }
+                .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
+
+                .cut-guide { border: 1px dashed #bbb; padding: 10px; border-radius: 10px; position: relative; }
+                .cut-text { position: absolute; top: -10px; left: 10px; background: white; font-size: 10px; color: #999; }
+
+                /* Scissors Shape Simulation */
+                .card {
+                    width: 350px; height: 150px;
+                    background: linear-gradient(to right, #d7d2cc 0%, #304352 100%);
+                    position: relative;
+                    border-radius: 10px;
+                    display: flex; align-items: center; padding: 20px; box-sizing: border-box;
+                    color: white;
+                }
+
+                .handle-area {
+                    width: 100px; height: 100%;
+                    display: flex; flex-direction: column; justify-content: space-around; align-items: center;
+                    border-right: 2px solid rgba(255,255,255,0.2);
+                    margin-right: 20px;
+                }
+
+                .finger-hole {
+                    width: 40px; height: 40px; border-radius: 50%;
+                    background: white; border: 4px solid #555;
+                    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5);
+                    display: flex; justify-content: center; align-items: center;
+                    font-size: 8px; color: #333; font-family: Arial;
+                }
+
+                .info-area { flex: 1; text-shadow: 1px 1px 2px black; }
+                .name { font-size: 22px; font-weight: bold; }
+                .role { font-size: 12px; opacity: 0.8; margin-bottom: 10px; }
+
+                .card-back { background: #333; color: white; justify-content: center; }
+            </style>
+        </head>
+        <body>
+            <div class="page">
+                <div class="cut-guide">
+                    <div class="cut-text">✂ CUT SHAPE</div>
                     <div class="card">
-                        <div class="wrench-hole">HEX<br/>SIZE</div>
-                        <div class="bolt b1"></div>
-                        <div class="bolt b2"></div>
-                        <div class="bolt b3"></div>
+                        <div class="handle-area">
+                            <div class="finger-hole">CUT</div>
+                            <div class="finger-hole">CUT</div>
+                        </div>
                         <div class="info-area">
                             <div class="name">${data.name}</div>
                             <div class="role">${data.role}</div>
-                            <div class="contact">
-                                ${data.phone} • ${data.email}
+                            <div style="font-size: 10px;">${data.phone}</div>
+                            <div style="font-size: 10px;">${data.email}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page">
+                <div class="cut-guide">
+                    <div class="card card-back">
+                         <div style="background: white; padding: 5px; border-radius: 5px;">${data.qrCode}</div>
+                         <div style="margin-left: 20px;">STYLE & CUT</div>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `,
+    dentist_sleeve: (data: any) => `
+        <html>
+        <head>
+            <style>
+                body { margin: 0; font-family: Arial, sans-serif; background: white; }
+                .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
+
+                /* Layout for Sleeve and Insert on one page */
+                .parts-container { width: 400px; display: flex; flex-direction: column; gap: 20px; }
+
+                .part-label { font-size: 10px; color: #999; margin-bottom: 5px; text-transform: uppercase; }
+
+                .sleeve {
+                    width: 350px; height: 180px; background: #ffebee;
+                    border: 1px solid #ffcdd2; border-radius: 10px;
+                    position: relative; display: flex; align-items: center; padding: 20px;
+                }
+                .cavity-hole {
+                    width: 60px; height: 60px; background: #333; border-radius: 50%;
+                    position: absolute; right: 40px; top: 60px;
+                    border: 2px dashed #fff;
+                    display: flex; justify-content: center; align-items: center;
+                    color: white; font-size: 8px; text-align: center;
+                }
+
+                .insert {
+                    width: 330px; height: 160px; background: #e0f7fa;
+                    border: 1px solid #b2ebf2; border-radius: 8px;
+                    display: flex; align-items: center; padding: 20px;
+                }
+
+                .tooth-graphic { font-size: 40px; margin-right: 20px; }
+
+                .name { font-size: 18px; color: #006064; font-weight: bold; }
+                .role { font-size: 12px; color: #00838f; }
+            </style>
+        </head>
+        <body>
+            <div class="page">
+                <div class="parts-container">
+                    <div>
+                        <div class="part-label">Part 1: The Sleeve (Cut out & Fold)</div>
+                        <div class="sleeve">
+                            <div style="font-size: 24px; color: #c62828;">Oh no! A Cavity?</div>
+                            <div class="cavity-hole">CUT<br>OUT</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="part-label">Part 2: The Insert (Slides inside)</div>
+                        <div class="insert">
+                            <div class="tooth-graphic">🦷</div>
+                            <div>
+                                <div class="name">${data.name}</div>
+                                <div class="role">${data.role}</div>
+                                <div style="font-size: 10px; margin-top: 5px;">${data.phone}</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="page">
-                <div class="card-container">
-                    <div class="cut-line"></div>
-                    <div class="card card-back">
-                         <div class="wrench-hole" style="background: #333; border-color: #555;"></div>
-                         <div style="display: flex; flex-direction: row; align-items: center; margin-left: 60px;">
-                            <div class="qr-container">${data.qrCode}</div>
-                            <div style="margin-left: 15px; font-size: 14px; color: #ccc;">FIX IT.<br/>SCAN IT.</div>
-                         </div>
+                <div class="parts-container">
+                    <div style="background: #00acc1; color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                        <div style="background: white; padding: 10px; display: inline-block; border-radius: 5px;">${data.qrCode}</div>
+                        <div style="margin-top: 10px;">Book an Appointment</div>
                     </div>
                 </div>
             </div>
         </body>
         </html>
     `,
-    split_card: (data: any) => `
+    stock_broker: (data: any) => `
         <html>
         <head>
             <style>
-                body { margin: 0; font-family: 'Times New Roman', serif; background: #fdfdfd; }
+                body { margin: 0; font-family: 'Arial Black', sans-serif; background: white; }
                 .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
 
-                .card { width: 350px; height: 200px; display: flex; position: relative; background: #fffcf5; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                .cut-guide { width: 350px; height: 200px; border: 1px dashed #ddd; position: relative; padding: 10px; }
 
-                .left-side { width: 50%; height: 100%; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-                .right-side { width: 50%; height: 100%; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+                .card {
+                    width: 100%; height: 100%;
+                    background: #2ecc71;
+                    /* Jagged Graph Shape */
+                    clip-path: polygon(0% 100%, 0% 50%, 15% 65%, 30% 30%, 45% 60%, 60% 20%, 75% 45%, 90% 10%, 100% 30%, 100% 100%);
+                    color: white;
+                    display: flex; flex-direction: column; justify-content: flex-end;
+                    padding: 20px; box-sizing: border-box;
+                }
 
-                .divider { position: absolute; left: 50%; top: 0; bottom: 0; width: 0; border-left: 2px dashed #999; }
-                .scissor-icon { position: absolute; left: 47%; top: -10px; font-size: 20px; background: #fffcf5; padding: 2px; color: #555; }
-                .tear-text { position: absolute; left: 42%; bottom: 5px; font-size: 10px; color: #999; background: #fffcf5; font-family: Arial; }
+                .line-guide {
+                    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                    border-top: 2px dashed #aaa; opacity: 0.3;
+                    pointer-events: none;
+                    clip-path: polygon(0% 100%, 0% 50%, 15% 65%, 30% 30%, 45% 60%, 60% 20%, 75% 45%, 90% 10%, 100% 30%, 100% 100%);
+                }
 
-                .name { font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
-                .role { font-size: 10px; color: #7f8c8d; text-transform: uppercase; margin-bottom: 10px; }
-                .contact { font-size: 9px; color: #34495e; }
+                .name { font-size: 20px; text-transform: uppercase; margin-bottom: 5px; }
+                .role { font-size: 12px; font-family: Arial; margin-bottom: 10px; }
+                .contact { font-size: 10px; font-family: Arial; }
 
-                .card-back { background: #2c3e50; }
-                .back-half { width: 50%; height: 100%; display: flex; justify-content: center; align-items: center; border-right: 1px dashed #555; }
-                .qr-box { background: white; padding: 5px; }
+                .buy-label { position: absolute; top: 10px; right: 10px; color: #27ae60; font-size: 10px; }
+
+                .card-back { background: #27ae60; justify-content: center; align-items: center; display: flex; height: 100%; clip-path: polygon(0% 100%, 0% 50%, 15% 65%, 30% 30%, 45% 60%, 60% 20%, 75% 45%, 90% 10%, 100% 30%, 100% 100%); }
             </style>
         </head>
         <body>
             <div class="page">
-                <div class="card">
-                    <div class="left-side">
-                        <div class="name">${data.name}</div>
-                        <div class="role">${data.role}</div>
-                        <div class="contact">${data.phone}</div>
-                    </div>
-                    <div class="divider"></div>
-                    <div class="scissor-icon">✂</div>
-                    <div class="tear-text">TEAR HERE</div>
-                    <div class="right-side">
-                         <div class="name">${data.name}</div>
-                         <div class="role">${data.role}</div>
-                         <div class="contact">${data.email}</div>
-                    </div>
-                </div>
-            </div>
-            <div class="page">
-                <div class="card card-back">
-                    <div class="back-half">
-                        <div class="qr-box">${data.qrCode}</div>
-                    </div>
-                    <div class="back-half" style="border: none;">
-                        <div class="qr-box">${data.qrCode}</div>
-                    </div>
-                </div>
-            </div>
-        </body>
-        </html>
-    `,
-    finger_play: (data: any) => `
-        <html>
-        <head>
-            <style>
-                body { margin: 0; font-family: Helvetica, sans-serif; background: #eef2f3; }
-                .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
-
-                .card { width: 350px; height: 200px; background: #fff; position: relative; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; }
-
-                /* Finger Holes Guides */
-                .holes-container { position: absolute; bottom: 0; left: 0; right: 0; height: 100px; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 20px; }
-                .finger-hole { width: 50px; height: 50px; border: 2px dashed #ccc; border-radius: 50%; margin: 0 10px; display: flex; justify-content: center; align-items: center; font-size: 10px; color: #ccc; background: #f9f9f9; }
-
-                .graphic { position: absolute; bottom: 80px; left: 0; right: 0; text-align: center; font-size: 80px; line-height: 80px; opacity: 0.1; }
-
-                .content-top { padding: 20px; text-align: center; z-index: 10; position: relative; }
-                .name { font-size: 20px; font-weight: bold; color: #333; }
-                .role { font-size: 14px; color: #e91e63; margin-top: 5px; }
-                .contact { font-size: 11px; color: #666; margin-top: 10px; }
-
-                .instruction { position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 9px; color: #999; }
-
-                .card-back { background: #e91e63; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-            </style>
-        </head>
-        <body>
-            <div class="page">
-                <div class="card">
-                    <div class="graphic">🤸</div>
-                    <div class="content-top">
-                        <div class="name">${data.name}</div>
-                        <div class="role">${data.role}</div>
-                        <div class="contact">${data.phone} | ${data.email}</div>
-                    </div>
-                    <div class="holes-container">
-                        <div class="finger-hole">CUT</div>
-                        <div class="finger-hole">CUT</div>
-                    </div>
-                    <div class="instruction">Insert fingers to bring to life</div>
-                </div>
-            </div>
-            <div class="page">
-                <div class="card card-back">
-                    <div style="background: white; padding: 10px; border-radius: 8px;">${data.qrCode}</div>
-                    <div style="margin-top: 15px; font-weight: bold;">LET'S GET MOVING</div>
-                </div>
-            </div>
-        </body>
-        </html>
-    `,
-    chart_graph: (data: any) => `
-        <html>
-        <head>
-            <style>
-                body { margin: 0; font-family: 'Arial Black', sans-serif; background: #f4f4f4; }
-                .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
-
-                .card-container { width: 350px; height: 200px; position: relative; display: flex; align-items: flex-end; }
-
-                /* The jagged graph shape */
-                .card { width: 100%; height: 160px; background: #2ecc71; position: relative; padding: 20px; box-sizing: border-box; color: white; clip-path: polygon(0% 100%, 0% 40%, 15% 60%, 30% 20%, 45% 50%, 60% 10%, 75% 40%, 90% 0%, 100% 20%, 100% 100%); display: flex; flex-direction: column; justify-content: flex-end; }
-
-                /* Cut Guide Overlay */
-                .cut-guide { position: absolute; bottom: 0; left: 0; width: 100%; height: 160px; border-top: 2px dashed #aaa; opacity: 0.5; pointer-events: none; clip-path: polygon(0% 100%, 0% 40%, 15% 60%, 30% 20%, 45% 50%, 60% 10%, 75% 40%, 90% 0%, 100% 20%, 100% 100%); background: none; border: none; }
-                /* We simulate the dashed line by drawing a slightly larger white bg behind and masking? No, simple dashed border won't work on complex clip-path.
-                   Instead, we add a "Cut along the top edge" text */
-
-                .name { font-size: 24px; text-transform: uppercase; margin-bottom: 5px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
-                .role { font-size: 14px; opacity: 0.9; margin-bottom: 15px; font-family: Arial, sans-serif; }
-                .contact { font-size: 10px; font-family: Arial, sans-serif; line-height: 1.4; opacity: 0.8; }
-
-                .growth-text { position: absolute; top: -30px; right: 0; color: #2ecc71; font-size: 12px; font-weight: bold; }
-
-                .card-back { background: #27ae60; height: 160px; justify-content: center; align-items: center; display: flex; }
-
-                /* For preview consistency we need the full 200px height container */
-            </style>
-        </head>
-        <body>
-            <div class="page">
-                <div class="card-container">
-                    <div class="growth-text">✂ CUT THE GRAPH</div>
+                <div class="cut-guide">
+                    <span class="buy-label">✂ CUT ALONG GRAPH</span>
                     <div class="card">
                         <div class="name">${data.name}</div>
                         <div class="role">${data.role}</div>
-                        <div class="contact">
-                            ${data.phone}<br/>
-                            ${data.email}
-                        </div>
+                        <div class="contact">${data.phone} • ${data.email}</div>
                     </div>
                 </div>
             </div>
             <div class="page">
-                <div class="card-container">
-                    <div class="card card-back">
-                        <div style="background: white; padding: 10px; border-radius: 4px;">${data.qrCode}</div>
-                        <div style="margin-top: 10px; font-size: 12px; font-family: Arial;">SCAN FOR GROWTH</div>
+                <div class="cut-guide">
+                    <div class="card-back">
+                        <div style="background: white; padding: 8px;">${data.qrCode}</div>
                     </div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `,
+    tech_transparent: (data: any) => `
+        <html>
+        <head>
+            <style>
+                body { margin: 0; font-family: 'Courier New', monospace; background: white; }
+                .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
+
+                /* Glass/Window Simulation */
+                .card {
+                    width: 350px; height: 200px;
+                    background: #1e1e1e;
+                    border-radius: 8px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                    border: 1px solid #444;
+                    display: flex; flex-direction: column;
+                    overflow: hidden;
+                }
+
+                .title-bar {
+                    height: 25px; background: #333;
+                    display: flex; align-items: center; padding: 0 10px;
+                    border-bottom: 1px solid #000;
+                }
+                .dots { display: flex; gap: 6px; }
+                .dot { width: 10px; height: 10px; border-radius: 50%; }
+                .red { background: #ff5f56; }
+                .yellow { background: #ffbd2e; }
+                .green { background: #27c93f; }
+
+                .content { padding: 20px; color: #d4d4d4; font-size: 11px; line-height: 1.5; }
+
+                .k { color: #569cd6; } /* keyword */
+                .s { color: #ce9178; } /* string */
+                .v { color: #9cdcfe; } /* variable */
+                .c { color: #6a9955; } /* comment */
+
+                .card-back { background: #252526; justify-content: center; align-items: center; }
+            </style>
+        </head>
+        <body>
+            <div class="page">
+                <div class="card">
+                    <div class="title-bar">
+                        <div class="dots">
+                            <div class="dot red"></div>
+                            <div class="dot yellow"></div>
+                            <div class="dot green"></div>
+                        </div>
+                        <div style="margin-left: 10px; color: #aaa; font-size: 10px;">${data.role}.js</div>
+                    </div>
+                    <div class="content">
+                        <span class="k">const</span> <span class="v">profile</span> = {<br>
+                        &nbsp;&nbsp;name: <span class="s">"${data.name}"</span>,<br>
+                        &nbsp;&nbsp;role: <span class="s">"${data.role}"</span>,<br>
+                        &nbsp;&nbsp;contact: {<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;phone: <span class="s">"${data.phone}"</span>,<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;email: <span class="s">"${data.email}"</span><br>
+                        &nbsp;&nbsp;},<br>
+                        &nbsp;&nbsp;skills: [<span class="s">"FullStack"</span>, <span class="s">"Mobile"</span>]<br>
+                        };
+                    </div>
+                </div>
+            </div>
+            <div class="page">
+                <div class="card card-back">
+                    <div class="title-bar" style="width: 100%;">
+                        <div class="dots"><div class="dot red"></div></div>
+                    </div>
+                    <div style="flex: 1; display: flex; justify-content: center; align-items: center; flex-direction: column;">
+                         <div style="background: white; padding: 8px;">${data.qrCode}</div>
+                         <div class="c" style="margin-top: 10px;">// Scan to connect</div>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `,
+    bakery_biscuit: (data: any) => `
+        <html>
+        <head>
+            <style>
+                body { margin: 0; font-family: Georgia, serif; background: white; }
+                .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
+
+                /* Biscuit Texture Simulation */
+                .card {
+                    width: 350px; height: 200px;
+                    background-color: #eecfa1;
+                    /* Texture dots */
+                    background-image: radial-gradient(#d2691e 15%, transparent 16%), radial-gradient(#d2691e 15%, transparent 16%);
+                    background-size: 20px 20px;
+                    background-position: 0 0, 10px 10px;
+
+                    /* Scalloped Edge Simulation using border-image or radial gradient mask.
+                       Simple way: Dashed border with thick size */
+                    border: 8px dashed #eecfa1;
+                    box-shadow: 0 0 0 4px #eecfa1; /* smoothed outer */
+
+                    display: flex; align-items: center; justify-content: center;
+                    position: relative;
+                    color: #5d4037;
+                }
+
+                /* Inner content plate */
+                .plate {
+                    background: rgba(255,255,255,0.8);
+                    padding: 20px;
+                    border-radius: 10px;
+                    text-align: center;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    width: 250px;
+                }
+
+                .name { font-size: 22px; font-weight: bold; color: #8d6e63; }
+                .role { font-size: 14px; font-style: italic; margin-bottom: 10px; }
+                .bite-mark {
+                    width: 60px; height: 60px; background: white; border-radius: 50%;
+                    position: absolute; top: -20px; right: -20px;
+                    box-shadow: inset -2px -2px 5px rgba(0,0,0,0.1);
+                }
+
+                .card-back { background: #d7ccc8; display: flex; justify-content: center; align-items: center; }
+            </style>
+        </head>
+        <body>
+            <div class="page">
+                <div class="card">
+                    <div class="plate">
+                        <div class="name">${data.name}</div>
+                        <div class="role">${data.role}</div>
+                        <div style="font-size: 11px;">${data.phone}<br>${data.email}</div>
+                    </div>
+                    <div class="bite-mark"></div>
+                </div>
+            </div>
+            <div class="page">
+                <div class="card card-back">
+                    <div style="background: white; padding: 10px; border-radius: 5px;">${data.qrCode}</div>
                 </div>
             </div>
         </body>

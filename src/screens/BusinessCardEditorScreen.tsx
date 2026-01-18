@@ -14,7 +14,7 @@ const { width } = Dimensions.get('window');
 
 const BusinessCardEditorScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);
-    const [selectedTemplate, setSelectedTemplate] = useState('standard');
+    const [selectedTemplate, setSelectedTemplate] = useState('mechanic_wrench');
     const [previewSide, setPreviewSide] = useState<'front' | 'back'>('front');
 
     // Editable Fields
@@ -57,15 +57,15 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
     };
 
     const templates = [
-        { id: 'standard', name: 'Standard' },
-        { id: 'tech_terminal', name: 'Tech Terminal' },
-        { id: 'mechanic_tool', name: 'Mechanic Tool' },
-        { id: 'split_card', name: 'Split Card' },
-        { id: 'finger_play', name: 'Finger Play' },
-        { id: 'chart_graph', name: 'Growth Graph' },
-        { id: 'broker', name: 'Broker' },
-        { id: 'bakery', name: 'Bakery' },
-        { id: 'dentist', name: 'Dentist' },
+        { id: 'mechanic_wrench', name: 'Mechanic' },
+        { id: 'weight_loss', name: 'Weight Loss' },
+        { id: 'divorce_lawyer', name: 'Divorce Lawyer' },
+        { id: 'yoga_mat', name: 'Yoga' },
+        { id: 'hair_stylist', name: 'Hair Stylist' },
+        { id: 'dentist_sleeve', name: 'Dentist' },
+        { id: 'stock_broker', name: 'Stock Broker' },
+        { id: 'tech_transparent', name: 'Software Eng' },
+        { id: 'bakery_biscuit', name: 'Bakery' },
     ];
 
     const handleExport = async () => {

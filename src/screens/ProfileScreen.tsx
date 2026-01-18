@@ -604,6 +604,12 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                         onPress={() => navigation.navigate('ServiceAppointments')}
                                         theme={theme}
                                     />
+                                    <DashboardButton
+                                        icon={<><Path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" /><Path d="M1 10h22" /></>}
+                                        label="My Cards"
+                                        onPress={() => navigation.navigate('BusinessCardEditor')}
+                                        theme={theme}
+                                    />
                                 </>
                             )}
                         </View>
@@ -622,7 +628,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                 theme={theme}
                             />
                             <DashboardButton
-                                icon={<Path d="M9 20a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" /> }
+                                icon={<Path d="M9 20a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM20 20a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />}
                                 label="My Cart"
                                 onPress={() => navigation.navigate('Checkout')}
                                 theme={theme}
@@ -631,6 +637,12 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                 icon={<Path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />}
                                 label="Appointments"
                                 onPress={() => navigation.navigate('ServiceAppointments')}
+                                theme={theme}
+                            />
+                            <DashboardButton
+                                icon={<><Path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" /><Path d="M1 10h22" /></>}
+                                label="My Cards"
+                                onPress={() => navigation.navigate('BusinessCardEditor')}
                                 theme={theme}
                             />
                         </View>
@@ -728,9 +740,23 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                     </Svg>
                                     <Text style={{ color: theme.text, fontWeight: '600' }}>Uploaded Resume</Text>
                                 </View>
-                                <TouchableOpacity onPress={() => Linking.openURL(`${CONFIG.API_URL}/${displayedUser.resume_url}`)}>
-                                    <Text style={{ color: '#4A9EFF', fontWeight: 'bold' }}>View</Text>
-                                </TouchableOpacity>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+                                    <TouchableOpacity onPress={() => Linking.openURL(`${CONFIG.API_URL}/${displayedUser.resume_url}`)} style={{ alignItems: 'center' }}>
+                                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A9EFF" strokeWidth="2">
+                                            <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                            <Circle cx="12" cy="12" r="3" />
+                                        </Svg>
+                                        <Text style={{ color: '#4A9EFF', fontSize: 10, marginTop: 2 }}>View</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => Linking.openURL(`${CONFIG.API_URL}/${displayedUser.resume_url}`)} style={{ alignItems: 'center' }}>
+                                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38A169" strokeWidth="2">
+                                            <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                            <Path d="M7 10l5 5 5-5" />
+                                            <Path d="M12 15V3" />
+                                        </Svg>
+                                        <Text style={{ color: '#38A169', fontSize: 10, marginTop: 2 }}>Download</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         ) : (
                             <Text style={{ textAlign: 'center', color: theme.subText, marginBottom: 10 }}>No resume uploaded.</Text>

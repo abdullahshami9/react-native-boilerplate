@@ -51,7 +51,7 @@ const HomeScreen = ({ navigation, route }: any) => {
                     setDashboardData(res.availability);
                 }
 
-                 // Fetch Discover Products for Customers
+                // Fetch Discover Products for Customers
                 const prodRes = await DataService.discoverProducts('');
                 if (prodRes.success) {
                     setDiscoverProducts(prodRes.products);
@@ -171,24 +171,24 @@ const HomeScreen = ({ navigation, route }: any) => {
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
-                 {discoverProducts.map((item, index) => (
+                {discoverProducts.map((item, index) => (
                     <TouchableOpacity
                         key={index}
                         style={[styles.card, { backgroundColor: theme.cardBg, width: 150, height: 200, marginRight: 15, alignItems: 'flex-start', padding: 10, justifyContent: 'flex-start' }]}
                         onPress={() => navigation.navigate('ProductDetails', { product: item })}
                     >
-                         <View style={{ width: '100%', height: 120, backgroundColor: '#EDF2F7', borderRadius: 8, overflow: 'hidden', marginBottom: 10 }}>
+                        <View style={{ width: '100%', height: 120, backgroundColor: '#EDF2F7', borderRadius: 8, overflow: 'hidden', marginBottom: 10 }}>
                             {item.image_url ? (
                                 <Image source={{ uri: `${CONFIG.API_URL}/${item.image_url}` }} style={{ width: '100%', height: '100%' }} />
                             ) : null}
-                         </View>
-                         <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: 'bold', color: theme.text, marginBottom: 5 }}>{item.name}</Text>
-                         <Text style={{ fontSize: 12, color: theme.subText }}>{item.price} PKR</Text>
+                        </View>
+                        <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: 'bold', color: theme.text, marginBottom: 5 }}>{item.name}</Text>
+                        <Text style={{ fontSize: 12, color: theme.subText }}>{item.price} PKR</Text>
                     </TouchableOpacity>
-                 ))}
-                 {discoverProducts.length === 0 && (
-                     <Text style={{ color: theme.subText }}>No products found.</Text>
-                 )}
+                ))}
+                {discoverProducts.length === 0 && (
+                    <Text style={{ color: theme.subText }}>No products found.</Text>
+                )}
             </ScrollView>
 
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
@@ -220,8 +220,8 @@ const HomeScreen = ({ navigation, route }: any) => {
         }
         // Fallback or Random
         return user.user_type === 'business'
-             ? 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?fit=crop&w=100&h=100'
-             : 'https://randomuser.me/api/portraits/men/32.jpg';
+            ? 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?fit=crop&w=100&h=100'
+            : 'https://randomuser.me/api/portraits/men/32.jpg';
     };
 
     return (
@@ -230,7 +230,8 @@ const HomeScreen = ({ navigation, route }: any) => {
 
             {/* Header */}
             <View style={[styles.header, { backgroundColor: theme.headerBg, shadowColor: isDarkMode ? '#000' : '#000' }]}>
-                <TouchableOpacity onPress={toggleSidebar}>
+                <Text style={{ position: 'absolute', top: 5, left: 20, zIndex: 100, elevation: 10, fontSize: 14, fontWeight: 'bold', color: theme.text }}>RaabTaa</Text>
+                <TouchableOpacity onPress={toggleSidebar} style={{ marginTop: 15 }}>
                     <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <Line x1="3" y1="12" x2="21" y2="12"></Line>
                         <Line x1="3" y1="6" x2="21" y2="6"></Line>
@@ -240,7 +241,7 @@ const HomeScreen = ({ navigation, route }: any) => {
                 <Text style={[styles.headerTitle, { color: theme.text }]}>{user.user_type === 'business' ? 'Business Hub' : 'My Dashboard'}</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Profile', { user })}>
                     <View style={styles.profileIconContainer}>
-                         <Image source={{ uri: getProfilePicUrl() }} style={{ width: 35, height: 35, borderRadius: 17.5 }} />
+                        <Image source={{ uri: getProfilePicUrl() }} style={{ width: 35, height: 35, borderRadius: 17.5 }} />
                     </View>
                 </TouchableOpacity>
             </View>
@@ -271,7 +272,7 @@ const HomeScreen = ({ navigation, route }: any) => {
                 </TouchableOpacity>
 
                 {user.user_type === 'business' && (
-                     <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Inventory')}>
+                    <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Inventory')}>
                         <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
                             <Path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></Path>
                             <Line x1="3" y1="6" x2="21" y2="6"></Line>
@@ -282,13 +283,13 @@ const HomeScreen = ({ navigation, route }: any) => {
                 )}
 
                 <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Connections')}>
-                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
-                         <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></Path>
-                         <Circle cx="9" cy="7" r="4"></Circle>
-                         <Path d="M23 21v-2a4 4 0 0 0-3-3.87"></Path>
-                         <Path d="M16 3.13a4 4 0 0 1 0 7.75"></Path>
-                     </Svg>
-                     <Text style={[styles.navText, { color: theme.subText }]}>Network</Text>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
+                        <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></Path>
+                        <Circle cx="9" cy="7" r="4"></Circle>
+                        <Path d="M23 21v-2a4 4 0 0 0-3-3.87"></Path>
+                        <Path d="M16 3.13a4 4 0 0 1 0 7.75"></Path>
+                    </Svg>
+                    <Text style={[styles.navText, { color: theme.subText }]}>Network</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile', { user })}>
@@ -325,11 +326,11 @@ const HomeScreen = ({ navigation, route }: any) => {
                     <TouchableOpacity style={styles.sidebarItem} onPress={() => { toggleSidebar(); navigation.navigate('Connections'); }}>
                         <Text style={[styles.sidebarItemText, { color: theme.text }]}>My Network</Text>
                     </TouchableOpacity>
-                     {user.user_type === 'business' && (
+                    {user.user_type === 'business' && (
                         <TouchableOpacity style={styles.sidebarItem} onPress={() => { toggleSidebar(); navigation.navigate('Inventory'); }}>
                             <Text style={[styles.sidebarItemText, { color: theme.text }]}>Inventory</Text>
                         </TouchableOpacity>
-                     )}
+                    )}
 
                     {/* Dark Mode Toggle */}
                     <View style={styles.sidebarItemRow}>

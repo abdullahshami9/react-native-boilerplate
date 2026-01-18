@@ -22,7 +22,7 @@ const ConnectionsScreen = ({ navigation }: any) => {
         cardBg: isDarkMode ? '#2D3748' : '#fff',
         inputBg: isDarkMode ? '#2D3748' : '#fff',
         borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
-        headerBg: isDarkMode ? '#2D3748' : '#fff',
+        headerBg: isDarkMode ? '#2D3748' : '#F7FAFC',
         activeTabBg: isDarkMode ? '#4A5568' : '#E2E8F0',
         inactiveTabBg: 'transparent',
         activeTabText: isDarkMode ? '#F7FAFC' : '#2D3748',
@@ -141,8 +141,14 @@ const ConnectionsScreen = ({ navigation }: any) => {
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Header */}
-            <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.borderColor }]}>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>My Network</Text>
+            <View style={[styles.header, { backgroundColor: theme.headerBg }]}>
+                <TouchableOpacity style={[styles.backButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.goBack()}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
+                        <Path d="M19 12H5M12 19l-7-7 7-7" />
+                    </Svg>
+                </TouchableOpacity>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Network</Text>
+                <View style={{ width: 44 }} />
             </View>
 
             {/* Custom Tab Bar */}
@@ -217,14 +223,20 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        paddingTop: 60, // Status bar space
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingTop: 50,
         paddingHorizontal: 20,
         paddingBottom: 20,
-        borderBottomWidth: 1,
     },
     headerTitle: {
-        fontSize: 28,
-        fontWeight: 'bold',
+        fontSize: 20,
+        fontWeight: '600',
+    },
+    backButton: {
+        padding: 5,
+        borderRadius: 20,
     },
     tabContainer: {
         paddingHorizontal: 20,

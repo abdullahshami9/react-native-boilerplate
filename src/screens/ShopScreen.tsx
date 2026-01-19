@@ -4,6 +4,7 @@ import Svg, { Path, Circle } from 'react-native-svg';
 import { AuthContext } from '../context/AuthContext';
 import { DataService } from '../services/DataService';
 import { CONFIG } from '../Config';
+import PageWrapper from '../components/PageWrapper';
 
 const { width } = Dimensions.get('window');
 

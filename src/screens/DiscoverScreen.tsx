@@ -4,6 +4,7 @@ import Svg, { Path, Circle } from 'react-native-svg';
 import { DataService } from '../services/DataService';
 import { AuthContext } from '../context/AuthContext';
 import { CONFIG } from '../Config';
+import PageWrapper from '../components/PageWrapper';
 
 const { width } = Dimensions.get('window');
 
@@ -83,7 +84,7 @@ const DiscoverScreen = ({ navigation }: any) => {
                     value={search}
                     onChangeText={setSearch}
                     onFocus={() => setIsSearchFocused(true)}
-                    // We don't blur immediately to allow clicking chips
+                // We don't blur immediately to allow clicking chips
                 />
             </View>
 
@@ -102,7 +103,7 @@ const DiscoverScreen = ({ navigation }: any) => {
                         </TouchableOpacity>
                     ))}
                     <TouchableOpacity onPress={() => setIsSearchFocused(false)} style={{ marginLeft: 'auto' }}>
-                         <Text style={{color: '#A0AEC0'}}>Close</Text>
+                        <Text style={{ color: '#A0AEC0' }}>Close</Text>
                     </TouchableOpacity>
                 </View>
             )}

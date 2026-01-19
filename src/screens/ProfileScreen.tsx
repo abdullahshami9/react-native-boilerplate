@@ -894,6 +894,17 @@ const ProfileScreen = ({ navigation, route }: any) => {
                             <TouchableOpacity style={styles.menuItem} onPress={() => { closeModal(); navigation.navigate('BusinessCardEditor'); }}>
                                 <Text style={[styles.menuItemText, { color: theme.text }]}>Export Business Card</Text>
                             </TouchableOpacity>
+
+                            <View style={[styles.menuItem, { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 }]}>
+                                <Text style={[styles.menuItemText, { color: theme.text }]}>Dark Mode</Text>
+                                <Switch
+                                    value={isDarkMode}
+                                    onValueChange={toggleTheme}
+                                    trackColor={{ false: "#E2E8F0", true: "#4A9EFF" }}
+                                    thumbColor={"#fff"}
+                                />
+                            </View>
+
                             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}><Text style={[styles.menuItemText, { color: 'red' }]}>Logout</Text></TouchableOpacity>
                         </View>
                     </View>

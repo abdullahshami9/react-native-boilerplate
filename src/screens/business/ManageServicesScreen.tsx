@@ -19,6 +19,7 @@ const ManageServicesScreen = ({ navigation }: any) => {
     const [price, setPrice] = useState('');
     const [duration, setDuration] = useState('');
     const [image, setImage] = useState<any>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
     // Alert State
@@ -65,30 +66,55 @@ const ManageServicesScreen = ({ navigation }: any) => {
 
         setSubmitting(true);
         try {
-            // 1. Add Service
-            const serviceData = {
-                user_id: userInfo.id,
-                name,
-                description,
-                price: parseFloat(price),
-                duration_mins: parseInt(duration),
-            };
-            const response = await DataService.addService(serviceData);
+            if (editingId) {
+                // Update Service
+                const serviceData = {
+                    name,
+                    description,
+                    price: parseFloat(price),
+                    duration_mins: parseInt(duration),
+                };
+                await DataService.updateService(editingId, serviceData);
 
-            // 2. Upload Image if selected
-            if (response.success && image) {
-                await DataService.uploadServiceImage(response.id, image);
+                if (image && image.uri) {
+                    await DataService.uploadServiceImage(editingId, image);
+                }
+                setAlertConfig({ visible: true, title: 'Success', message: 'Service updated successfully', type: 'success' });
+            } else {
+                // Add Service
+                const serviceData = {
+                    user_id: userInfo.id,
+                    name,
+                    description,
+                    price: parseFloat(price),
+                    duration_mins: parseInt(duration),
+                };
+                const response = await DataService.addService(serviceData);
+
+                if (response.success && image) {
+                    await DataService.uploadServiceImage(response.id, image);
+                }
+                setAlertConfig({ visible: true, title: 'Success', message: 'Service added successfully', type: 'success' });
             }
 
-            setAlertConfig({ visible: true, title: 'Success', message: 'Service added successfully', type: 'success' });
             setModalVisible(false);
             resetForm();
             fetchServices();
         } catch (error: any) {
-             setAlertConfig({ visible: true, title: 'Error', message: error.message || 'Failed to add service', type: 'error' });
+             setAlertConfig({ visible: true, title: 'Error', message: error.message || 'Failed to save service', type: 'error' });
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const handleEditService = (item: any) => {
+        setEditingId(item.id);
+        setName(item.name);
+        setDescription(item.description || '');
+        setPrice(String(item.price));
+        setDuration(String(item.duration_mins));
+        setImage(null);
+        setModalVisible(true);
     };
 
     const handleDeleteService = async (id: number) => {
@@ -106,6 +132,7 @@ const ManageServicesScreen = ({ navigation }: any) => {
         setPrice('');
         setDuration('');
         setImage(null);
+        setEditingId(null);
     };
 
     const renderItem = ({ item }: any) => (
@@ -119,9 +146,6 @@ const ManageServicesScreen = ({ navigation }: any) => {
                 <Text style={styles.cardPrice}>${item.price}</Text>
                 <View style={styles.metaRow}>
                     <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
-                         <Path d="M12 2v20M2 12h20" stroke="none" />
-                         <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="none"/>
-                         {/* Clock Icon */}
                          <Path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
                          <Path d="M12 6v6l4 2" />
                     </Svg>
@@ -129,12 +153,20 @@ const ManageServicesScreen = ({ navigation }: any) => {
                 </View>
                 <Text style={[styles.cardDesc, { color: theme.subText }]} numberOfLines={2}>{item.description}</Text>
             </View>
-            <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteService(item.id)}>
-                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2">
-                    <Path d="M3 6h18" />
-                    <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </Svg>
-            </TouchableOpacity>
+            <View style={{ gap: 10 }}>
+                <TouchableOpacity style={styles.editButton} onPress={() => handleEditService(item)}>
+                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A9EFF" strokeWidth="2">
+                        <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </Svg>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteService(item.id)}>
+                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2">
+                        <Path d="M3 6h18" />
+                        <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </Svg>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 
@@ -246,7 +278,8 @@ const styles = StyleSheet.create({
     imagePlaceholderText: { color: '#718096', fontWeight: '500' },
     submitButton: { backgroundColor: '#2D3748', padding: 16, borderRadius: 30, marginTop: 30, alignItems: 'center' },
     disabledButton: { opacity: 0.7 },
-    submitButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' }
+    submitButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+    editButton: { padding: 8 }
 });
 
 export default ManageServicesScreen;

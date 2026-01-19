@@ -13,6 +13,15 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
+    updateAppointmentStatus: async (apptId: number, status: string) => {
+        try {
+            const response = await axios.put(`${CONFIG.API_URL}/api/appointments/${apptId}/status`, { status });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Update Appt Status Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
 
     // --- SKILLS ---
     addSkill: async (userId: number, skillName: string) => {
@@ -127,6 +136,15 @@ export const DataService = {
             return response.data;
         } catch (error: any) {
             LoggerService.error('Get Services Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    updateService: async (serviceId: number, data: any) => {
+        try {
+            const response = await axios.put(`${CONFIG.API_URL}/api/services/${serviceId}`, data);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Update Service Error:', error, 'DataService');
             throw error.response?.data || { message: 'Network Error' };
         }
     },

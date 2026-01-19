@@ -72,10 +72,10 @@ const BusinessOrdersScreen = ({ navigation }: any) => {
                     </View>
                     <View style={styles.statusCol}>
                         <View style={[styles.statusBadge,
-                            { backgroundColor: item.status === 'completed' ? '#C6F6D5' : item.status === 'cancelled' ? '#FED7D7' : '#FEFCBF' }
+                            { backgroundColor: item.status === 'completed' ? '#C6F6D5' : item.status === 'cancelled' ? '#FED7D7' : item.status === 'accepted' ? '#EBF8FF' : '#FEFCBF' }
                         ]}>
                             <Text style={[styles.statusText,
-                                { color: item.status === 'completed' ? '#22543D' : item.status === 'cancelled' ? '#822727' : '#744210' }
+                                { color: item.status === 'completed' ? '#22543D' : item.status === 'cancelled' ? '#822727' : item.status === 'accepted' ? '#2B6CB0' : '#744210' }
                             ]}>{item.status.toUpperCase()}</Text>
                         </View>
                         <Text style={[styles.totalAmount, { color: theme.text }]}>${item.total_amount}</Text>
@@ -96,10 +96,17 @@ const BusinessOrdersScreen = ({ navigation }: any) => {
                         {item.status === 'pending' && (
                             <View style={styles.actionButtons}>
                                 <TouchableOpacity style={[styles.actionBtn, styles.cancelBtn]} onPress={() => handleUpdateStatus(item.id, 'cancelled')}>
-                                    <Text style={styles.cancelText}>Cancel</Text>
+                                    <Text style={styles.cancelText}>Reject</Text>
                                 </TouchableOpacity>
+                                <TouchableOpacity style={[styles.actionBtn, styles.acceptBtn]} onPress={() => handleUpdateStatus(item.id, 'accepted')}>
+                                    <Text style={styles.acceptText}>Accept Order</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                        {item.status === 'accepted' && (
+                             <View style={styles.actionButtons}>
                                 <TouchableOpacity style={[styles.actionBtn, styles.completeBtn]} onPress={() => handleUpdateStatus(item.id, 'completed')}>
-                                    <Text style={styles.completeText}>Complete</Text>
+                                    <Text style={styles.completeText}>Complete Order</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -161,6 +168,8 @@ const styles = StyleSheet.create({
     actionBtn: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, minWidth: 100, alignItems: 'center' },
     cancelBtn: { backgroundColor: '#FED7D7' },
     cancelText: { color: '#C53030', fontWeight: 'bold' },
+    acceptBtn: { backgroundColor: '#BEE3F8' },
+    acceptText: { color: '#2B6CB0', fontWeight: 'bold' },
     completeBtn: { backgroundColor: '#C6F6D5' },
     completeText: { color: '#22543D', fontWeight: 'bold' },
     emptyText: { textAlign: 'center', color: '#A0AEC0', marginTop: 50 },

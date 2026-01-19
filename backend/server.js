@@ -251,6 +251,23 @@ db.connect((err) => {
             FOREIGN KEY (sender_id) REFERENCES users(id)
         );
 
+        CREATE TABLE IF NOT EXISTS profile_views (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            profile_id INT NOT NULL,
+            viewer_id INT,
+            source VARCHAR(50) DEFAULT 'unknown',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (profile_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS link_clicks (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            link_id INT NOT NULL,
+            clicker_id INT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (link_id) REFERENCES social_links(id) ON DELETE CASCADE
+        );
+
         CREATE TABLE IF NOT EXISTS generic (
           id int(11) NOT NULL AUTO_INCREMENT,
           query text NOT NULL,
@@ -335,7 +352,10 @@ db.connect((err) => {
             // --- NEW MIGRATIONS FOR SERVICE/PRODUCT UPDATE ---
             db.query("SHOW COLUMNS FROM orders LIKE 'status'", (e, r) => {
                 if (r && r.length === 0) {
-                    db.query("ALTER TABLE orders ADD COLUMN status ENUM('pending', 'completed', 'cancelled') DEFAULT 'pending'", () => console.log("Added status to orders"));
+                    db.query("ALTER TABLE orders ADD COLUMN status ENUM('pending', 'accepted', 'completed', 'cancelled') DEFAULT 'pending'", () => console.log("Added status to orders"));
+                } else {
+                    // Update Enum to include 'accepted' if not present (blind update is safe enough here)
+                    db.query("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'accepted', 'completed', 'cancelled') DEFAULT 'pending'", () => console.log("Updated status enum"));
                 }
             });
             db.query("SHOW COLUMNS FROM orders LIKE 'payment_method'", (e, r) => {
@@ -536,6 +556,12 @@ app.get('/api/profile/:userId', (req, res) => {
 
     dbQuery(queries, [userId, userId, userId, userId, userId], req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
+
+        // Log Profile View
+        db.query('INSERT INTO profile_views (profile_id, source) VALUES (?, ?)', [userId, 'app_api'], (e) => {
+            if (e) console.error("Failed to log profile view", e);
+        });
+
         // results is array of arrays because of multipleStatements: true
         res.json({
             success: true,
@@ -545,6 +571,133 @@ app.get('/api/profile/:userId', (req, res) => {
             business: results[3][0] || null,
             payments: results[4]
         });
+    });
+});
+
+app.post('/api/analytics/click', (req, res) => {
+    const { link_id, clicker_id } = req.body;
+    const query = 'INSERT INTO link_clicks (link_id, clicker_id) VALUES (?, ?)';
+    dbQuery(query, [link_id, clicker_id || null], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
+    });
+});
+
+// --- PUBLIC WEB VIEW (SSR) ---
+app.get('/view/:userId', (req, res) => {
+    const userId = req.params.userId;
+    const queries = `
+        SELECT * FROM users WHERE id = ?;
+        SELECT * FROM education WHERE user_id = ?;
+        SELECT * FROM social_links WHERE user_id = ?;
+        SELECT * FROM certificates WHERE user_id = ?;
+        SELECT * FROM business_details WHERE user_id = ?;
+        SELECT * FROM skills WHERE user_id = ?;
+    `;
+
+    dbQuery(queries, [userId, userId, userId, userId, userId, userId], req, (err, results) => {
+        if (err || !results[0][0]) return res.status(404).send('User not found');
+
+        // Log View
+        dbQuery('INSERT INTO profile_views (profile_id, source) VALUES (?, ?)', [userId, 'web_view'], req, () => {});
+
+        const user = results[0][0];
+        const education = results[1];
+        const socials = results[2];
+        const certificates = results[3];
+        const business = results[4][0];
+        const skills = results[5];
+
+        const profilePic = user.profile_pic_url ? `/${user.profile_pic_url}` : 'https://via.placeholder.com/150';
+
+        // Render HTML
+        const html = `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>${user.name} - Raabtaa Profile</title>
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f7fafc; color: #2d3748; }
+                    .container { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                    .header { background: #2b6cb0; color: white; padding: 40px 20px; text-align: center; border-radius: 0 0 20px 20px; }
+                    .profile-pic { width: 120px; height: 120px; border-radius: 60px; border: 4px solid white; margin-top: -60px; object-fit: cover; background: white; }
+                    .profile-section { text-align: center; padding: 20px; }
+                    .name { font-size: 24px; font-weight: bold; margin: 10px 0 5px; }
+                    .title { color: #718096; font-size: 16px; margin-bottom: 20px; }
+                    .bio { color: #4a5568; margin-bottom: 20px; line-height: 1.6; }
+                    .section { padding: 20px; border-top: 1px solid #edf2f7; }
+                    .section-title { font-size: 18px; font-weight: 600; margin-bottom: 15px; color: #2b6cb0; }
+                    .chip-container { display: flex; flex-wrap: wrap; gap: 8px; }
+                    .chip { background: #ebf8ff; color: #2b6cb0; padding: 6px 12px; border-radius: 15px; font-size: 14px; }
+                    .social-link { display: block; padding: 12px; margin-bottom: 10px; background: #edf2f7; color: #4a5568; text-decoration: none; border-radius: 8px; text-align: center; font-weight: 500; transition: background 0.2s; }
+                    .social-link:hover { background: #e2e8f0; }
+                    .footer { text-align: center; padding: 20px; color: #a0aec0; font-size: 12px; }
+                    .btn { display: inline-block; background: #2b6cb0; color: white; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; margin-top: 10px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>Raabtaa</h1>
+                    </div>
+                    <div class="profile-section">
+                        <img src="${profilePic}" alt="Profile" class="profile-pic">
+                        <div class="name">${user.name}</div>
+                        <div class="title">${user.current_job_title || (business ? business.business_type : 'Individual')}</div>
+                        ${business ? `<div class="bio">${business.description || ''}</div>` : ''}
+
+                        <a href="tel:${user.phone}" class="btn">Contact</a>
+                    </div>
+
+                    ${socials.length > 0 ? `
+                    <div class="section">
+                        <div class="section-title">Connect</div>
+                        ${socials.map(s => `<a href="${s.url}" target="_blank" class="social-link" onclick="logClick(${s.id})">${s.platform}</a>`).join('')}
+                    </div>
+                    ` : ''}
+
+                    ${skills.length > 0 ? `
+                    <div class="section">
+                        <div class="section-title">Skills</div>
+                        <div class="chip-container">
+                            ${skills.map(s => `<div class="chip">${s.skill_name}</div>`).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${education.length > 0 ? `
+                    <div class="section">
+                        <div class="section-title">Education</div>
+                        ${education.map(e => `
+                            <div style="margin-bottom: 10px;">
+                                <strong>${e.degree}</strong><br>
+                                <span style="color: #718096;">${e.institution} (${e.year})</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ` : ''}
+
+                    <div class="footer">
+                        Powered by Raabtaa Digital Ecosystem
+                    </div>
+                </div>
+
+                <script>
+                    function logClick(linkId) {
+                        fetch('/api/analytics/click', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ link_id: linkId })
+                        });
+                    }
+                </script>
+            </body>
+            </html>
+        `;
+
+        res.send(html);
     });
 });
 
@@ -886,7 +1039,16 @@ app.get('/api/services/discover', (req, res) => {
     });
 });
 
-app.delete('/api/services/:id', (req, res) => {
+app.put('/api/services/:id', verifyToken, (req, res) => {
+    const { name, description, price, duration_mins } = req.body;
+    const query = 'UPDATE services SET name = ?, description = ?, price = ?, duration_mins = ? WHERE id = ?';
+    dbQuery(query, [name, description, price, duration_mins, req.params.id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
+    });
+});
+
+app.delete('/api/services/:id', verifyToken, (req, res) => {
     const query = 'DELETE FROM services WHERE id = ?';
     dbQuery(query, [req.params.id], req, (err) => {
         if (err) return res.status(500).json({ success: false });
@@ -1109,6 +1271,15 @@ app.get('/api/appointments/slots/:providerId', (req, res) => {
         if (err) return res.status(500).json({ success: false });
         // Return busy slots. Frontend will calculate free slots.
         res.json({ success: true, busySlots: results });
+    });
+});
+
+app.put('/api/appointments/:id/status', (req, res) => {
+    const { status } = req.body; // pending, confirmed, cancelled
+    const query = 'UPDATE appointments SET status = ? WHERE id = ?';
+    dbQuery(query, [status, req.params.id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, message: 'Status updated' });
     });
 });
 

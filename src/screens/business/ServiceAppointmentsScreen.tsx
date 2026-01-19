@@ -39,6 +39,15 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
         }
     };
 
+    const handleStatusUpdate = async (id: number, status: string) => {
+        try {
+            await DataService.updateAppointmentStatus(id, status);
+            setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+        } catch (error) {
+            console.error("Failed to update status", error);
+        }
+    };
+
     const renderItem = ({ item }: any) => {
         const isProvider = item.provider_id === userInfo.id;
         const otherName = isProvider ? item.customer_name : item.provider_name;
@@ -49,8 +58,8 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
             <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
                 <View style={styles.headerRow}>
                     <Text style={[styles.serviceName, { color: theme.text }]}>{item.service_name || 'Appointment'}</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: item.status === 'confirmed' ? '#C6F6D5' : '#FEFCBF' }]}>
-                        <Text style={[styles.statusText, { color: item.status === 'confirmed' ? '#22543D' : '#744210' }]}>
+                    <View style={[styles.statusBadge, { backgroundColor: item.status === 'confirmed' ? '#C6F6D5' : item.status === 'cancelled' ? '#FED7D7' : '#FEFCBF' }]}>
+                        <Text style={[styles.statusText, { color: item.status === 'confirmed' ? '#22543D' : item.status === 'cancelled' ? '#822727' : '#744210' }]}>
                             {item.status.toUpperCase()}
                         </Text>
                     </View>
@@ -80,6 +89,17 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
                         <Text style={[styles.timeValue, { color: theme.text }]}>{item.duration_mins || 30} min</Text>
                     </View>
                 </View>
+
+                {item.status === 'pending' && isProvider && (
+                    <View style={styles.actionButtons}>
+                        <TouchableOpacity style={[styles.actionBtn, styles.rejectBtn]} onPress={() => handleStatusUpdate(item.id, 'cancelled')}>
+                            <Text style={styles.rejectText}>Reject</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.actionBtn, styles.acceptBtn]} onPress={() => handleStatusUpdate(item.id, 'confirmed')}>
+                            <Text style={styles.acceptText}>Confirm</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
             </View>
         );
     };
@@ -120,6 +140,12 @@ const styles = StyleSheet.create({
     timeValue: { fontSize: 14, fontWeight: '600', color: '#2D3748' },
     divider: { width: 1, backgroundColor: '#E2E8F0', height: '100%' },
     emptyText: { textAlign: 'center', color: '#A0AEC0', marginTop: 50 },
+    actionButtons: { flexDirection: 'row', marginTop: 16, justifyContent: 'flex-end', gap: 10 },
+    actionBtn: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, minWidth: 100, alignItems: 'center' },
+    rejectBtn: { backgroundColor: '#FED7D7' },
+    rejectText: { color: '#C53030', fontWeight: 'bold' },
+    acceptBtn: { backgroundColor: '#C6F6D5' },
+    acceptText: { color: '#22543D', fontWeight: 'bold' },
 });
 
 export default ServiceAppointmentsScreen;

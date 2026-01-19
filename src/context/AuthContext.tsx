@@ -23,7 +23,11 @@ export const AuthProvider = ({ children }: any) => {
     }, [isDarkMode]);
 
     const toggleTheme = () => {
-        setIsDarkMode(prev => !prev);
+        setIsDarkMode(prev => {
+            const newValue = !prev;
+            AsyncStorage.setItem('isDarkMode', JSON.stringify(newValue));
+            return newValue;
+        });
     };
 
     const login = async (email: string, pass: string) => {
@@ -162,6 +166,7 @@ export const AuthProvider = ({ children }: any) => {
             setIsLoading(true);
             let userToken = await AsyncStorage.getItem('userToken');
             let userInfo = await AsyncStorage.getItem('userInfo');
+            let savedTheme = await AsyncStorage.getItem('isDarkMode');
 
             if (userToken) {
                 axios.defaults.headers.common['Authorization'] = `Bearer ${userToken}`;
@@ -169,6 +174,9 @@ export const AuthProvider = ({ children }: any) => {
 
             setUserInfo(userInfo ? JSON.parse(userInfo) : null);
             setUserToken(userToken);
+            if (savedTheme) {
+                setIsDarkMode(JSON.parse(savedTheme));
+            }
             setIsLoading(false);
         } catch (e: any) {
             LoggerService.error(`isLogged in error ${e}`, e, 'AuthContext');

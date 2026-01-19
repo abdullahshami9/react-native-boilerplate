@@ -50,7 +50,7 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
                 industry: finalIndustry,
                 category: finalCategory
             });
-            navigation.navigate('PaymentIntegration');
+            navigation.navigate('IdentityGate');
         } catch (error) {
             console.error(error);
             Alert.alert('Error', 'Failed to save details');

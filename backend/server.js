@@ -11,6 +11,9 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const { verifyToken, JWT_SECRET } = require('./middleware/auth');
+const sequelize = require('./config/database');
+const BusinessDetails = require('./models/BusinessDetails');
+const IdentityScan = require('./models/IdentityScan');
 
 const app = express();
 const PORT = 3000;
@@ -47,6 +50,7 @@ ensureDir(path.join(__dirname, 'uploads/services'));
 ensureDir(path.join(__dirname, 'uploads/certificates'));
 ensureDir(path.join(__dirname, 'uploads/resumes'));
 ensureDir(path.join(__dirname, 'uploads/chats'));
+ensureDir(path.join(__dirname, 'uploads/identity'));
 
 // Database Connection Config
 const dbConfig = {
@@ -60,12 +64,22 @@ const dbConfig = {
 let db = mysql.createConnection(dbConfig);
 
 // Initialize Database & Tables
-db.connect((err) => {
+db.connect(async (err) => {
     if (err) {
         console.error('Error connecting to MySQL:', err);
         return;
     }
-    console.log('Connected to MySQL server.');
+    console.log('Connected to MySQL server (Raw).');
+
+    // Initialize Sequelize
+    try {
+        await sequelize.authenticate();
+        console.log('Connected to MySQL via Sequelize.');
+        await sequelize.sync(); // Sync models
+        console.log('Sequelize models synced.');
+    } catch (error) {
+        console.error('Unable to connect to the database via Sequelize:', error);
+    }
 
     const initQuery = `
         CREATE DATABASE IF NOT EXISTS AppStarter;
@@ -377,6 +391,9 @@ db.connect((err) => {
     });
 });
 
+// Helper to sanitize filenames
+const sanitize = (str) => String(str).replace(/[^a-zA-Z0-9_-]/g, '');
+
 // Multer Storage Configuration
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -386,6 +403,7 @@ const storage = multer.diskStorage({
         else if (req.path.includes('service')) dir += 'services/'; // Added services
         else if (req.path.includes('certificate')) dir += 'certificates/';
         else if (req.path.includes('chat')) dir += 'chats/';
+        else if (req.path.includes('identity')) dir += 'identity/';
 
         // Ensure directory exists (mkdir -p logic handled by shell usually but good to be safe)
         cb(null, dir);
@@ -393,8 +411,6 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => {
         // Expect fields: userId (for profile) OR productId, index (for products)
         const ext = path.extname(file.originalname) || '.jpg';
-        // Sanitize input
-        const sanitize = (str) => String(str).replace(/[^a-zA-Z0-9_-]/g, '');
 
         if (req.path.includes('profile')) {
             const userId = sanitize(req.body.userId || 'unknown');
@@ -415,6 +431,9 @@ const storage = multer.diskStorage({
              // sanitize is not available, using simple replace
              const safeName = file.originalname.replace(/[^a-zA-Z0-9_-]/g, '');
              cb(null, `${Date.now()}-${safeName}`);
+        } else if (req.path.includes('identity')) {
+             const userId = sanitize(req.body.userId || 'unknown');
+             cb(null, `${userId}-${Date.now()}${ext}`);
         } else {
             // Generic fallback
             cb(null, `${Date.now()}${ext}`);
@@ -924,6 +943,27 @@ app.post('/api/upload/chat', upload.single('image'), (req, res) => {
     res.json({ success: true, message: 'Chat image uploaded', filePath: fileUrl });
 });
 
+app.post('/api/identity/scan', upload.single('scan'), verifyToken, async (req, res) => {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No scan file uploaded' });
+
+    try {
+        await IdentityScan.create({
+            user_id: req.user.id,
+            scan_file_url: req.file.path,
+            status: 'verified', // Auto-verify for MVP/Demo flow as we don't have real AI backend connected yet
+            meta_data: JSON.stringify({
+                originalname: req.file.originalname,
+                size: req.file.size,
+                mimetype: req.file.mimetype
+            })
+        });
+        res.json({ success: true, message: 'Identity verified' });
+    } catch (err) {
+        console.error("Identity Scan Error:", err);
+        res.status(500).json({ success: false, message: 'Processing failed' });
+    }
+});
+
 // --- CONNECTIONS ---
 
 app.post('/api/connections', (req, res) => {
@@ -1348,15 +1388,20 @@ app.post('/api/tunnel/complete', (req, res) => {
     });
 });
 
-app.post('/api/tunnel/business/location', (req, res) => {
+app.post('/api/tunnel/business/location', async (req, res) => {
     const { user_id, address, location_lat, location_lng } = req.body;
-    const query = `INSERT INTO business_details (user_id, address, location_lat, location_lng)
-                   VALUES (?, ?, ?, ?)
-                   ON DUPLICATE KEY UPDATE address=VALUES(address), location_lat=VALUES(location_lat), location_lng=VALUES(location_lng)`;
-    dbQuery(query, [user_id, address, location_lat, location_lng], req, (err) => {
-        if (err) return res.status(500).json({ success: false });
+    try {
+        await BusinessDetails.upsert({
+            user_id: user_id,
+            address: address,
+            location_lat: location_lat,
+            location_lng: location_lng
+        });
         res.json({ success: true });
-    });
+    } catch (err) {
+        console.error("Sequelize Error:", err);
+        res.status(500).json({ success: false });
+    }
 });
 
 app.post('/api/tunnel/business/type', (req, res) => {

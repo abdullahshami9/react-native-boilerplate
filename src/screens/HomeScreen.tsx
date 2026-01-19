@@ -331,10 +331,6 @@ const HomeScreen = ({ navigation, route }: any) => {
                         <Text style={[styles.sidebarItemText, { color: theme.text }]}>My Network</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.sidebarItem} onPress={() => { toggleSidebar(); navigation.navigate('ARCardScanner'); }}>
-                        <Text style={[styles.sidebarItemText, { color: theme.text }]}>Scan Business Card (AR)</Text>
-                    </TouchableOpacity>
-
                     {user.user_type === 'business' && (
                         <TouchableOpacity style={styles.sidebarItem} onPress={() => { toggleSidebar(); navigation.navigate('Inventory'); }}>
                             <Text style={[styles.sidebarItemText, { color: theme.text }]}>Inventory</Text>

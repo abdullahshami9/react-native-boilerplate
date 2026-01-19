@@ -849,15 +849,34 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                 </View>
                             </>
                         ) : (
-                            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 40, width: '100%' }}>
-                                <View style={{ width: 220, height: 220, borderWidth: 2, borderColor: '#CBD5E0', borderRadius: 20, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#CBD5E0" strokeWidth="2">
-                                        <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                                        <Circle cx="12" cy="13" r="4" />
+                            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 20, width: '100%' }}>
+                                <TouchableOpacity
+                                    style={{
+                                        width: 220,
+                                        height: 220,
+                                        borderWidth: 2,
+                                        borderColor: '#4A9EFF',
+                                        borderRadius: 20,
+                                        borderStyle: 'dashed',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: isDarkMode ? '#2D3748' : '#EBF8FF'
+                                    }}
+                                    onPress={() => {
+                                        setBusinessCardVisible(false);
+                                        navigation.navigate('ARCardScanner');
+                                    }}
+                                >
+                                    <Svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#4A9EFF" strokeWidth="2">
+                                        <Path d="M2 12V7a5 5 0 0 1 5-5h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5h-5" />
+                                        <Path d="M2 12l5 5 5-5" />
+                                        <Path d="M2 12v5" />
                                     </Svg>
-                                    <Text style={{ marginTop: 10, color: '#A0AEC0' }}>Camera View Placeholder</Text>
-                                </View>
-                                <Text style={{ marginTop: 20, textAlign: 'center', color: '#718096' }}>Scan a QR code to quickly{'\n'}view a profile.</Text>
+                                    <Text style={{ marginTop: 15, color: '#4A9EFF', fontWeight: 'bold', fontSize: 16 }}>Launch AR Scanner</Text>
+                                </TouchableOpacity>
+                                <Text style={{ marginTop: 20, textAlign: 'center', color: isDarkMode ? '#A0AEC0' : '#718096' }}>
+                                    Point your camera at a Raabtaa Business Card{'\n'}to see the magic unfold.
+                                </Text>
                             </View>
                         )}
                     </View>

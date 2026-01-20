@@ -16,7 +16,7 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
         try {
             // Save details
             await TunnelService.updatePersonalDetails(userInfo.id, { address: location, jobTitle });
-            navigation.navigate('PaymentIntegration');
+            navigation.navigate('IdentityGate');
         } catch (error) {
             console.error(error);
             Alert.alert('Error', 'Failed to save details');

@@ -1,23 +1,87 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Linking, Platform, PermissionsAndroid } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
-import MapView, { Marker } from 'react-native-maps';
 import Svg, { Path } from 'react-native-svg';
+import Geolocation from 'react-native-geolocation-service';
 
 const BusinessLocationScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);
     const [address, setAddress] = useState('');
+    const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(null);
     const [loading, setLoading] = useState(false);
+    const [locating, setLocating] = useState(false);
+
+    const requestLocationPermission = async () => {
+        if (Platform.OS === 'ios') {
+            const auth = await Geolocation.requestAuthorization("whenInUse");
+            if(auth === "granted") return true;
+        }
+
+        if (Platform.OS === 'android') {
+            try {
+                const granted = await PermissionsAndroid.request(
+                    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                    {
+                        title: "Location Permission",
+                        message: "We need access to your location to set your business address.",
+                        buttonNeutral: "Ask Me Later",
+                        buttonNegative: "Cancel",
+                        buttonPositive: "OK"
+                    }
+                );
+                return granted === PermissionsAndroid.RESULTS.GRANTED;
+            } catch (err) {
+                console.warn(err);
+                return false;
+            }
+        }
+        return false;
+    };
+
+    const handleGetCurrentLocation = async () => {
+        const hasPermission = await requestLocationPermission();
+        if (!hasPermission) {
+            Alert.alert('Permission Denied', 'Location permission is required.');
+            return;
+        }
+
+        setLocating(true);
+        Geolocation.getCurrentPosition(
+            (position) => {
+                setCoords({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                });
+                setLocating(false);
+            },
+            (error) => {
+                console.log(error.code, error.message);
+                Alert.alert('Error', 'Failed to get location: ' + error.message);
+                setLocating(false);
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        );
+    };
+
+    const handleViewMap = () => {
+        if (!coords) return;
+        const url = `https://www.google.com/maps?q=${coords.lat},${coords.lng}`;
+        Linking.openURL(url).catch(err => console.error("Couldn't load page", err));
+    };
 
     const handleNext = async () => {
+        if (!address) {
+            Alert.alert("Missing Address", "Please enter a business address.");
+            return;
+        }
         setLoading(true);
         try {
             await TunnelService.updateBusinessLocation(userInfo.id, {
                 address: address,
-                lat: 0, // Placeholder
-                lng: 0  // Placeholder
+                lat: coords ? coords.lat : 0,
+                lng: coords ? coords.lng : 0
             });
             navigation.navigate('BusinessTypeContact');
         } catch (error) {
@@ -32,45 +96,49 @@ const BusinessLocationScreen = ({ navigation }: any) => {
         <TunnelWrapper title="Business Profile - Location" onBack={() => navigation.goBack()}>
             <View style={styles.container}>
 
-                {/* Map View */}
-                <View style={styles.mapContainer}>
-                    <MapView
-                        style={styles.map}
-                        initialRegion={{
-                            latitude: 37.78825,
-                            longitude: -122.4324,
-                            latitudeDelta: 0.0922,
-                            longitudeDelta: 0.0421,
-                        }}
-                    >
-                        <Marker
-                            coordinate={{ latitude: 37.78825, longitude: -122.4324 }}
-                            title={"Selected Location"}
-                            draggable
-                        />
-                    </MapView>
-                    <View style={styles.locationInputOverlay}>
-                        <View style={styles.locationIcon}>
-                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5568" strokeWidth="2">
+                {/* Location Display Area */}
+                <View style={styles.locationContainer}>
+                    <View style={styles.locationHeader}>
+                        <View style={styles.iconCircle}>
+                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2B6CB0" strokeWidth="2">
                                 <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                                 <Path d="M12 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
                             </Svg>
                         </View>
-                        <TextInput
-                            style={styles.overlayInput}
-                            placeholder="Business Location"
-                            placeholderTextColor="#4A5568"
-                            value={address}
-                            onChangeText={setAddress}
-                        />
+                        <Text style={styles.locationTitle}>Business Coordinates</Text>
                     </View>
+
+                    {coords ? (
+                        <View style={styles.coordsBox}>
+                            <Text style={styles.coordText}>Lat: {coords.lat.toFixed(6)}</Text>
+                            <Text style={styles.coordText}>Lng: {coords.lng.toFixed(6)}</Text>
+                        </View>
+                    ) : (
+                        <Text style={styles.noCoordsText}>No location selected</Text>
+                    )}
+
+                    <TouchableOpacity
+                        style={styles.locateButton}
+                        onPress={handleGetCurrentLocation}
+                        disabled={locating}
+                    >
+                        <Text style={styles.locateButtonText}>
+                            {locating ? "Locating..." : "Use Current Location"}
+                        </Text>
+                    </TouchableOpacity>
+
+                    {coords && (
+                        <TouchableOpacity style={styles.mapLinkButton} onPress={handleViewMap}>
+                            <Text style={styles.mapLinkText}>View on Google Maps</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 <View style={styles.inputGroup}>
                     <View style={styles.inputIcon}>
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
-                            <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                            <Path d="M12 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+                            <Path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                            <Path d="M9 22V12h6v10" />
                         </Svg>
                     </View>
                     <TextInput
@@ -106,41 +174,79 @@ const styles = StyleSheet.create({
         flex: 1,
         gap: 16,
     },
-    mapContainer: {
-        height: 250,
+    locationContainer: {
+        backgroundColor: '#EBF8FF',
         borderRadius: 20,
-        overflow: 'hidden',
+        padding: 20,
+        alignItems: 'center',
         marginBottom: 10,
-        position: 'relative',
+        borderWidth: 1,
+        borderColor: '#BEE3F8'
     },
-    map: {
-        width: '100%',
-        height: '100%',
-    },
-    locationInputOverlay: {
-        position: 'absolute',
-        top: '50%',
-        left: '10%',
-        right: '10%',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        borderRadius: 30,
+    locationHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 15,
-        height: 50,
-        marginTop: -25,
+        marginBottom: 15,
     },
-    locationIcon: {
+    iconCircle: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#BEE3F8',
+        alignItems: 'center',
+        justifyContent: 'center',
         marginRight: 10,
     },
-    overlayInput: {
-        flex: 1,
-        color: '#2D3748',
+    locationTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#2C5282',
+    },
+    coordsBox: {
+        flexDirection: 'row',
+        gap: 20,
+        marginBottom: 15,
+        backgroundColor: 'white',
+        padding: 10,
+        borderRadius: 10,
+        width: '100%',
+        justifyContent: 'center',
+    },
+    coordText: {
+        fontSize: 16,
+        color: '#4A5568',
+        fontWeight: '500',
+    },
+    noCoordsText: {
+        color: '#718096',
+        marginBottom: 15,
+        fontStyle: 'italic',
+    },
+    locateButton: {
+        backgroundColor: '#3182CE',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 25,
+        width: '100%',
+        alignItems: 'center',
+    },
+    locateButtonText: {
+        color: 'white',
+        fontWeight: '600',
+        fontSize: 16,
+    },
+    mapLinkButton: {
+        marginTop: 15,
+    },
+    mapLinkText: {
+        color: '#3182CE',
+        textDecorationLine: 'underline',
+        fontWeight: '600',
     },
     inputGroup: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F7FAFC',
+        backgroundColor: '#FFFFFF',
         borderRadius: 12,
         borderWidth: 1,
         borderColor: '#E2E8F0',

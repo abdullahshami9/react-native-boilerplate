@@ -28,6 +28,7 @@ import ServiceAppointmentsScreen from './src/screens/business/ServiceAppointment
 import ProcurementScreen from './src/screens/business/ProcurementScreen';
 import BusinessOrdersScreen from './src/screens/business/BusinessOrdersScreen';
 import CustomerOrdersScreen from './src/screens/CustomerOrdersScreen';
+import ARCardScannerScreen from './src/screens/ar/ARCardScannerScreen';
 
 // Tunnel Screens
 import ChooseProfileTypeScreen from './src/screens/tunnel/ChooseProfileTypeScreen';
@@ -38,6 +39,7 @@ import BusinessLocationScreen from './src/screens/tunnel/business/BusinessLocati
 import BusinessTypeContactScreen from './src/screens/tunnel/business/BusinessTypeContactScreen';
 import BusinessIndustryScreen from './src/screens/tunnel/business/BusinessIndustryScreen';
 import PaymentIntegrationScreen from './src/screens/tunnel/PaymentIntegrationScreen';
+import IdentityGateScreen from './src/screens/tunnel/IdentityGateScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -86,6 +88,7 @@ const AppNav = () => {
               <Stack.Screen name="ServiceAppointments" component={ServiceAppointmentsScreen} />
               <Stack.Screen name="Procurement" component={ProcurementScreen} />
               <Stack.Screen name="BusinessOrders" component={BusinessOrdersScreen} />
+              <Stack.Screen name="ARCardScanner" component={ARCardScannerScreen} />
             </>
           ) : (
             // Tunnel Stack (Mandatory Onboarding)
@@ -103,6 +106,7 @@ const AppNav = () => {
               <Stack.Screen name="BusinessIndustry" component={BusinessIndustryScreen} />
 
               {/* Common Final Step */}
+              <Stack.Screen name="IdentityGate" component={IdentityGateScreen} />
               <Stack.Screen name="PaymentIntegration" component={PaymentIntegrationScreen} />
             </>
           )

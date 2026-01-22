@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --color-junr-dark-bg: #1A202C;
+  --color-junr-light-bg: #F7FAFC;
+  --color-junr-blue: #4A9EFF;
+  --color-junr-green: #38A169;
+
+  --font-inter: var(--font-inter);
+}
+
+:root {
+  --background: #F7FAFC;
+  --foreground: #2D3748;
+  --card-bg: #FFFFFF;
+  --input-bg: #FFFFFF;
+  --border-color: #E2E8F0;
+
+  /* Text colors */
+  --text-primary: #2D3748;
+  --text-secondary: #718096;
+}
+
+.dark {
+  --background: #1A202C;
+  --foreground: #F7FAFC;
+  --card-bg: #2D3748;
+  --input-bg: #2D3748;
+  --border-color: #4A5568;
+
+  /* Text colors */
+  --text-primary: #F7FAFC;
+  --text-secondary: #A0AEC0;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), sans-serif;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass {
+  background: rgba(26, 32, 44, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-card {
+  @apply rounded-xl shadow-lg transition-all duration-300;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+}

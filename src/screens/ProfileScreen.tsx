@@ -52,7 +52,7 @@ const ContributionGraph = ({ data, onDateClick, isBusiness }: any) => {
 
     return (
         <View style={styles.calendarContainer}>
-            <Text style={styles.calendarTitle}>{isBusiness ? 'Sales Activity' : 'Appointment Activity'}</Text>
+            <Text style={[styles.calendarTitle, { color: isBusiness ? '#2D3748' : '#fff' }]}>{isBusiness ? 'Sales Activity' : 'Appointment Activity'}</Text>
             <View style={styles.calendarGrid}>
                 {days.map((date, index) => {
                     const dateStr = date.toISOString().split('T')[0];
@@ -718,8 +718,14 @@ const ProfileScreen = ({ navigation, route }: any) => {
                             <Text style={{ textAlign: 'center', color: theme.subText }}>No education added.</Text>
                         ) : (
                             education.map((edu, index) => (
-                                <View key={index} style={[styles.eduCard, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', borderBottomColor: theme.borderColor }]}>
-                                    <View style={{ flex: 1 }}>
+                                <View key={index} style={[styles.eduCard, { backgroundColor: theme.cardBg, borderBottomColor: theme.borderColor }]}>
+                                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: isDarkMode ? '#2D3748' : '#EDF2F7', alignItems: 'center', justifyContent: 'center', marginRight: 15 }}>
+                                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
+                                            <Path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                                            <Path d="M6 12v5c3 3 9 3 12 0v-5" />
+                                        </Svg>
+                                    </View>
+                                    <View>
                                         <Text style={[styles.eduSchool, { color: theme.text }]}>{edu.institution}</Text>
                                         <Text style={[styles.eduDegree, { color: theme.subText }]}>{edu.degree}</Text>
                                         <Text style={[styles.eduYear, { color: theme.subText }]}>{edu.year}</Text>
@@ -834,8 +840,13 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                 </View>
 
                                 <View style={styles.cardQrBody}>
-                                    <View style={styles.cardQrWrapper}>
-                                        <QRCode value={`raabtaa://user/${displayedUser?.id}`} size={180} />
+                                    <View style={[styles.cardQrWrapper, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', borderColor: theme.borderColor }]}>
+                                        <QRCode
+                                            value={`raabtaa://user/${displayedUser?.id}`}
+                                            size={180}
+                                            backgroundColor={isDarkMode ? '#2D3748' : 'white'}
+                                            color={isDarkMode ? 'white' : 'black'}
+                                        />
                                     </View>
                                     <Text style={styles.scanText}>Scan to connect</Text>
                                 </View>
@@ -903,7 +914,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                         <View style={styles.menuContainer}>
                             <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}><Text style={[styles.menuItemText, { color: theme.text }]}>Edit Profile</Text></TouchableOpacity>
                             <TouchableOpacity style={styles.menuItem} onPress={() => { closeModal(); navigation.navigate('BusinessCardEditor'); }}>
-                                <Text style={[styles.menuItemText, { color: theme.text }]}>Export Business Card</Text>
+                                <Text style={[styles.menuItemText, { color: theme.text }]}>Business Card</Text>
                             </TouchableOpacity>
 
                             <View style={[styles.menuItem, { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 }]}>

@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Platform, StatusBar, Keyboard } from 'react-native';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { AuthContext } from '../context/AuthContext';
+import { useTheme } from '../theme/useTheme';
 
 // Screens
 import DiscoverScreen from '../screens/DiscoverScreen';
@@ -36,12 +37,8 @@ const BottomTabNavigator = () => {
         };
     }, []);
 
-    const theme = {
-        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
-        tabBg: isDarkMode ? '#2D3748' : '#fff',
-        activeTint: isDarkMode ? '#F7FAFC' : '#2D3748',
-        inactiveTint: isDarkMode ? '#A0AEC0' : '#A0AEC0',
-    };
+    // Replace local theme with global useTheme
+    const theme = useTheme();
 
     return (
         <>
@@ -50,7 +47,7 @@ const BottomTabNavigator = () => {
                 screenOptions={{
                     headerShown: false,
                     tabBarStyle: {
-                        backgroundColor: theme.tabBg,
+                        backgroundColor: theme.navBg, // Matches theme background as requested
                         height: Platform.OS === 'ios' ? 85 : 65,
                         paddingBottom: Platform.OS === 'ios' ? 30 : 10,
                         paddingTop: 10,
@@ -69,8 +66,8 @@ const BottomTabNavigator = () => {
                         display: isKeyboardVisible ? 'none' : 'flex'
                     },
                     tabBarShowLabel: false,
-                    tabBarActiveTintColor: theme.activeTint,
-                    tabBarInactiveTintColor: theme.inactiveTint,
+                    tabBarActiveTintColor: theme.primary, // Using primary theme color (e.g. Blue/Green)
+                    tabBarInactiveTintColor: theme.iconColor, // Using theme icon color (e.g. Grey)
                 }}
             >
                 <Tab.Screen

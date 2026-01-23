@@ -70,7 +70,7 @@ export const darkColors: ColorScheme = {
     success: '#00a884',
     divider: '#37404a',
     borderColor: '#37404a', // Dark gray for borders
-    buttonBg: '#4A9EFF', // Blue for dark mode buttons (as requested)
+    buttonBg: '#37404a', // Subtle Dark Gray for buttons (Replacing Blue)
 };
 
 export const colors = {

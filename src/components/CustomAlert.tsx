@@ -98,15 +98,13 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, type
                         style={[
                             styles.button,
                             {
-                                // Matches 'Add Skill' button styling
-                                // Light Mode: Light Background (#EDF2F7)
-                                // Dark Mode: Blue (#4A9EFF)
-                                backgroundColor: isDark ? '#4A9EFF' : '#EDF2F7'
+                                // Matches global button styling (Subtle Dark / Light)
+                                backgroundColor: theme.buttonBg || (isDark ? '#37404a' : '#EDF2F7')
                             }
                         ]}
                         onPress={onDismiss}
                     >
-                        <Text style={[styles.buttonText, { color: isDark ? '#fff' : theme.text }]}>Dismiss</Text>
+                        <Text style={[styles.buttonText, { color: theme.text }]}>Dismiss</Text>
                     </TouchableOpacity>
                 </Animated.View>
             </View>

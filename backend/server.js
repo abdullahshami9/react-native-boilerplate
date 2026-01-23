@@ -200,6 +200,7 @@ db.connect(async (err) => {
             degree VARCHAR(255) NOT NULL,
             institution VARCHAR(255) NOT NULL,
             year VARCHAR(20),
+            type ENUM('Degree', 'Certificate', 'Diploma') DEFAULT 'Degree',
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
 
@@ -387,6 +388,11 @@ db.connect(async (err) => {
                     db.query("ALTER TABLE appointments ADD COLUMN duration_mins INT DEFAULT 30", () => console.log("Added duration_mins to appointments"));
                 }
             });
+            db.query("SHOW COLUMNS FROM education LIKE 'type'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE education ADD COLUMN type ENUM('Degree', 'Certificate', 'Diploma') DEFAULT 'Degree'", () => console.log("Added type to education"));
+                }
+            });
         }
     });
 });
@@ -571,9 +577,10 @@ app.get('/api/profile/:userId', (req, res) => {
         SELECT * FROM certificates WHERE user_id = ?;
         SELECT * FROM business_details WHERE user_id = ?;
         SELECT * FROM payment_methods WHERE user_id = ?;
+        SELECT id, name, email, phone, user_type, profile_pic_url, resume_url, address, current_job_title FROM users WHERE id = ?;
     `;
 
-    dbQuery(queries, [userId, userId, userId, userId, userId], req, (err, results) => {
+    dbQuery(queries, [userId, userId, userId, userId, userId, userId], req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
 
         // Log Profile View
@@ -588,7 +595,8 @@ app.get('/api/profile/:userId', (req, res) => {
             socials: results[1],
             certificates: results[2],
             business: results[3][0] || null,
-            payments: results[4]
+            payments: results[4],
+            user: results[5][0]
         });
     });
 });
@@ -753,11 +761,11 @@ app.get('/api/orders/customer/:userId', (req, res) => {
 });
 
 app.post('/api/education', (req, res) => {
-    const { user_id, degree, institution, year } = req.body;
-    const query = 'INSERT INTO education (user_id, degree, institution, year) VALUES (?, ?, ?, ?)';
-    dbQuery(query, [user_id, degree, institution, year], req, (err, result) => {
+    const { user_id, degree, institution, year, type } = req.body;
+    const query = 'INSERT INTO education (user_id, degree, institution, year, type) VALUES (?, ?, ?, ?, ?)';
+    dbQuery(query, [user_id, degree, institution, year, type || 'Degree'], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
-        res.json({ success: true, id: result.insertId, education: { id: result.insertId, user_id, degree, institution, year } });
+        res.json({ success: true, id: result.insertId, education: { id: result.insertId, user_id, degree, institution, year, type: type || 'Degree' } });
     });
 });
 
@@ -1168,6 +1176,26 @@ app.post('/api/orders', verifyToken, (req, res) => {
             });
 
             res.json({ success: true, message: 'Order created', orderId });
+        });
+    });
+});
+
+app.get('/api/user/counts/:userId', (req, res) => {
+    const userId = req.params.userId;
+    const queries = `
+        SELECT COUNT(*) as count FROM orders WHERE seller_id = ? AND status = 'pending';
+        SELECT COUNT(*) as count FROM orders WHERE buyer_id = ? AND status = 'pending';
+        SELECT COUNT(*) as count FROM appointments WHERE (provider_id = ? OR customer_id = ?) AND status IN ('pending', 'confirmed') AND appointment_date >= NOW();
+        SELECT COUNT(*) as count FROM chats WHERE user1_id = ? OR user2_id = ?;
+    `;
+    dbQuery(queries, [userId, userId, userId, userId, userId, userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({
+            success: true,
+            sales_pending: results[0][0].count,
+            purchases_pending: results[1][0].count,
+            appointments_upcoming: results[2][0].count,
+            messages_active: results[3][0].count
         });
     });
 });

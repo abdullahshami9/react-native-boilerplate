@@ -76,8 +76,13 @@ const ContributionGraph = ({ data, onDateClick, isBusiness }: any) => {
     );
 };
 
-const DashboardButton = ({ icon, label, onPress, theme }: any) => (
-    <TouchableOpacity style={[styles.dashboardBtn, { backgroundColor: theme.inputBg }]} onPress={onPress}>
+const DashboardButton = ({ icon, label, onPress, theme, badge }: any) => (
+    <TouchableOpacity style={[styles.dashboardBtn, { backgroundColor: theme.inputBg, position: 'relative' }]} onPress={onPress}>
+        {badge > 0 && (
+            <View style={{ position: 'absolute', top: 5, right: 5, backgroundColor: '#E53E3E', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, zIndex: 10 }}>
+                <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>{badge}</Text>
+            </View>
+        )}
         <View style={styles.dashboardIcon}>
             <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
                 {icon}
@@ -95,7 +100,10 @@ const ProfileScreen = ({ navigation, route }: any) => {
     // Otherwise, we are viewing ourselves (userInfo).
     const paramUser = route?.params?.user;
     const isOwnProfile = !paramUser || (userInfo && paramUser.id === userInfo.id);
-    const displayedUser = isOwnProfile ? userInfo : paramUser;
+
+    // Use local user state to support dynamic updates (pic, resume) without full context reload
+    const [localUser, setLocalUser] = useState(isOwnProfile ? userInfo : paramUser);
+    const displayedUser = localUser; // Use this everywhere
 
     const [isEditing, setIsEditing] = useState(false);
 
@@ -111,12 +119,14 @@ const ProfileScreen = ({ navigation, route }: any) => {
     const [education, setEducation] = useState<any[]>([]);
     const [socials, setSocials] = useState<any[]>([]);
     const [businessDetails, setBusinessDetails] = useState<any>(null);
+    const [counts, setCounts] = useState<any>({ sales_pending: 0, purchases_pending: 0, appointments_upcoming: 0, messages_active: 0 });
 
     // New Input State
     const [newSkill, setNewSkill] = useState('');
     const [newEduSchool, setNewEduSchool] = useState('');
     const [newEduDegree, setNewEduDegree] = useState('');
     const [newEduYear, setNewEduYear] = useState('');
+    const [newEduType, setNewEduType] = useState('Degree'); // Degree, Certificate, Diploma
 
     // Add Item Modals
     const [addSkillVisible, setAddSkillVisible] = useState(false);
@@ -164,6 +174,9 @@ const ProfileScreen = ({ navigation, route }: any) => {
             const profileRes = await DataService.getProfile(displayedUser.id);
             if (profileRes.success) {
                 setBusinessDetails(profileRes.business);
+                if (profileRes.user) {
+                     setLocalUser(profileRes.user);
+                }
             }
 
             if (isBusinessUser) {
@@ -184,6 +197,13 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
             const apptRes = await DataService.getAppointments(displayedUser.id);
             if (apptRes.success) setAppointments(apptRes.appointments);
+
+            if (isOwnProfile) {
+                const countsRes = await DataService.getUserCounts(displayedUser.id);
+                if (countsRes.success) {
+                    setCounts(countsRes);
+                }
+            }
 
         } catch (error) {
             console.log("Error fetching profile data", error);
@@ -299,12 +319,13 @@ const ProfileScreen = ({ navigation, route }: any) => {
     const handleAddEducation = async () => {
         if (!newEduSchool.trim() || !newEduDegree.trim()) return;
         try {
-            const res = await DataService.addEducation(userInfo.id, { institution: newEduSchool, degree: newEduDegree, year: newEduYear });
+            const res = await DataService.addEducation(userInfo.id, { institution: newEduSchool, degree: newEduDegree, year: newEduYear, type: newEduType });
             if (res.success) {
                 fetchData();
                 setNewEduSchool('');
                 setNewEduDegree('');
                 setNewEduYear('');
+                setNewEduType('Degree');
                 setAddEduVisible(false);
             }
         } catch (e) { console.error(e); }
@@ -391,6 +412,29 @@ const ProfileScreen = ({ navigation, route }: any) => {
             setAlertVisible(true);
         } finally {
             setUploadingResume(false);
+        }
+    };
+
+    const handleUploadProfilePic = async () => {
+        try {
+            const result = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1 });
+            if (result.assets && result.assets.length > 0) {
+                const asset = result.assets[0];
+                const res = await DataService.uploadProfilePic(userInfo.id, asset);
+                if (res.success) {
+                     setAlertTitle('Success');
+                     setAlertMessage('Profile picture updated!');
+                     setAlertType('success');
+                     setAlertVisible(true);
+                     fetchData(); // Refresh profile to see new pic
+                }
+            }
+        } catch (e: any) {
+            console.error("Profile Pic Upload Error", e);
+            setAlertTitle('Error');
+            setAlertMessage('Failed to upload picture.');
+            setAlertType('error');
+            setAlertVisible(true);
         }
     };
 
@@ -539,9 +583,19 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 </Animated.View>
 
                 <Animated.View style={[styles.avatarContainerAbsolute, avatarStyle]}>
-                    <View style={[styles.avatarWrapper, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', borderColor: isDarkMode ? 'transparent' : '#F7FAFC', elevation: isDarkMode ? 0 : 5 }]}>
-                        <Image source={{ uri: getProfilePicUrl() }} style={styles.avatar} />
-                    </View>
+                    <TouchableOpacity onPress={isOwnProfile ? handleUploadProfilePic : undefined} activeOpacity={isOwnProfile ? 0.8 : 1}>
+                        <View style={[styles.avatarWrapper, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', borderColor: isDarkMode ? 'transparent' : '#F7FAFC', elevation: isDarkMode ? 0 : 5 }]}>
+                            <Image source={{ uri: getProfilePicUrl() }} style={styles.avatar} />
+                            {isOwnProfile && (
+                                <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#4A9EFF', borderRadius: 12, padding: 4 }}>
+                                    <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                                        <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                        <Circle cx="12" cy="13" r="4" />
+                                    </Svg>
+                                </View>
+                            )}
+                        </View>
+                    </TouchableOpacity>
                 </Animated.View>
             </Animated.View>
 
@@ -575,6 +629,11 @@ const ProfileScreen = ({ navigation, route }: any) => {
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.12 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></Svg>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.buttonBg || (isDarkMode ? '#37404a' : '#EDF2F7') }]} onPress={handleChatPress}>
+                        {counts.messages_active > 0 && (
+                            <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: '#E53E3E', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, zIndex: 10 }}>
+                                <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>{counts.messages_active}</Text>
+                            </View>
+                        )}
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
                     </TouchableOpacity>
                     {isBusinessUser && (
@@ -604,6 +663,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                         label="Orders"
                                         onPress={() => navigation.navigate('BusinessOrders')}
                                         theme={theme}
+                                        badge={counts.sales_pending}
                                     />
                                     <DashboardButton
                                         icon={<Path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z" />}
@@ -627,6 +687,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                         label="Bookings"
                                         onPress={() => navigation.navigate('ServiceAppointments')}
                                         theme={theme}
+                                        badge={counts.appointments_upcoming}
                                     />
                                     <DashboardButton
                                         icon={<><Path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" /><Path d="M1 10h22" /></>}
@@ -650,6 +711,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                 label="My Orders"
                                 onPress={() => navigation.navigate('CustomerOrders')}
                                 theme={theme}
+                                badge={counts.purchases_pending}
                             />
                             <DashboardButton
                                 icon={<Path d="M9 20a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM20 20a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />}
@@ -662,6 +724,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                 label="Appointments"
                                 onPress={() => navigation.navigate('ServiceAppointments')}
                                 theme={theme}
+                                badge={counts.appointments_upcoming}
                             />
                             <DashboardButton
                                 icon={<><Path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" /><Path d="M1 10h22" /></>}
@@ -734,13 +797,21 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                 <View key={index} style={[styles.eduCard, { backgroundColor: theme.cardBg, borderBottomColor: theme.borderColor }]}>
                                     <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: isDarkMode ? '#2D3748' : '#EDF2F7', alignItems: 'center', justifyContent: 'center', marginRight: 15 }}>
                                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
-                                            <Path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                                            <Path d="M6 12v5c3 3 9 3 12 0v-5" />
+                                            {edu.type === 'Certificate' ? (
+                                                <Path d="M20.2 18.1L20.2 18.1c.3.4.6.8.8 1.2s.3.9.3 1.4c0 1.2-.5 2.3-1.4 3.1L19 24l-5-3.6L9 24l-.9-.2c-.9-.8-1.4-1.9-1.4-3.1 0-.5.1-.9.3-1.4l.8-1.2" />
+                                            ) : edu.type === 'Diploma' ? (
+                                                <Path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                                            ) : (
+                                                <>
+                                                    <Path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                                                    <Path d="M6 12v5c3 3 9 3 12 0v-5" />
+                                                </>
+                                            )}
                                         </Svg>
                                     </View>
                                     <View>
                                         <Text style={[styles.eduSchool, { color: theme.text }]}>{edu.institution}</Text>
-                                        <Text style={[styles.eduDegree, { color: theme.subText }]}>{edu.degree}</Text>
+                                        <Text style={[styles.eduDegree, { color: theme.subText }]}>{edu.type === 'Degree' ? edu.degree : `${edu.type} in ${edu.degree}`}</Text>
                                         <Text style={[styles.eduYear, { color: theme.subText }]}>{edu.year}</Text>
                                     </View>
                                     {isOwnProfile && (
@@ -1010,6 +1081,17 @@ const ProfileScreen = ({ navigation, route }: any) => {
                         </View>
 
                         <TouchableOpacity
+                            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 10, marginBottom: 20, backgroundColor: theme.inputBg, borderRadius: 10 }}
+                            onPress={handleUploadProfilePic}
+                        >
+                             <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 10 }}>
+                                <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                <Circle cx="12" cy="13" r="4" />
+                            </Svg>
+                            <Text style={{ color: theme.text }}>Change Profile Picture</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
                             style={{ backgroundColor: theme.buttonBg || '#4A9EFF', padding: 15, borderRadius: 12, alignItems: 'center' }}
                             onPress={handleSaveProfile}
                         >
@@ -1065,6 +1147,19 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     </TouchableWithoutFeedback>
                     <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Add Education</Text>
+
+                        <View style={{ flexDirection: 'row', marginBottom: 15, gap: 10 }}>
+                            {['Degree', 'Diploma', 'Certificate'].map((t) => (
+                                <TouchableOpacity
+                                    key={t}
+                                    style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, backgroundColor: newEduType === t ? (theme.buttonBg || '#4A9EFF') : theme.inputBg }}
+                                    onPress={() => setNewEduType(t)}
+                                >
+                                    <Text style={{ color: newEduType === t ? 'white' : theme.text, fontWeight: '600', fontSize: 12 }}>{t}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
                         <TextInput
                             placeholder="School / University"
                             placeholderTextColor={theme.subText}
@@ -1073,7 +1168,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                             style={{ borderWidth: 1, borderColor: theme.borderColor, borderRadius: 10, padding: 10, color: theme.text, marginBottom: 15, backgroundColor: theme.inputBg }}
                         />
                         <TextInput
-                            placeholder="Degree"
+                            placeholder={newEduType === 'Degree' ? "Degree (e.g. Bachelors CS)" : "Field of Study"}
                             placeholderTextColor={theme.subText}
                             value={newEduDegree}
                             onChangeText={setNewEduDegree}

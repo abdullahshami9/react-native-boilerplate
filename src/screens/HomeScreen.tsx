@@ -6,12 +6,14 @@ import { AuthContext } from '../context/AuthContext';
 import { DataService } from '../services/DataService';
 import { CONFIG } from '../Config';
 import PageWrapper from '../components/PageWrapper';
+import { useTheme } from '../theme/useTheme';
 
 const { width, height } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation, route }: any) => {
     const { userInfo, logout, isDarkMode, toggleTheme } = React.useContext(AuthContext);
     const user = userInfo || route.params?.user || { name: 'User', email: 'user@example.com', user_type: 'individual' };
+    const theme = useTheme();
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const sidebarAnim = useRef(new Animated.Value(-width * 0.75)).current;
@@ -72,22 +74,6 @@ const HomeScreen = ({ navigation, route }: any) => {
             setIsSidebarOpen(true);
             Animated.timing(sidebarAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
         }
-    };
-
-    const theme = {
-        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
-        headerBg: isDarkMode ? '#2D3748' : '#F7FAFC',
-        text: isDarkMode ? '#F7FAFC' : '#2D3748',
-        subText: isDarkMode ? '#A0AEC0' : '#718096',
-        cardBg: isDarkMode ? '#2D3748' : '#fff',
-        navBg: isDarkMode ? '#171923' : '#fff',
-        navBorder: isDarkMode ? '#2D3748' : '#E2E8F0',
-        iconColor: isDarkMode ? '#A0AEC0' : '#4A5568',
-        // Ensure availability slots have dark mode colors
-        slotFreeBg: isDarkMode ? '#2F855A' : '#C6F6D5',
-        slotFreeText: isDarkMode ? '#F0FFF4' : '#22543D',
-        slotBusyBg: isDarkMode ? '#9B2C2C' : '#FED7D7',
-        slotBusyText: isDarkMode ? '#FFF5F5' : '#822727',
     };
 
     const renderBusinessDashboard = () => (

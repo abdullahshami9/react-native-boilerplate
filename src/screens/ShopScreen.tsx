@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { DataService } from '../services/DataService';
 import { CONFIG } from '../Config';
 import PageWrapper from '../components/PageWrapper';
+import { useTheme } from '../theme/useTheme';
 
 const { width } = Dimensions.get('window');
 
@@ -16,15 +17,7 @@ const ShopScreen = ({ navigation }: any) => {
     const [services, setServices] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
-    const theme = {
-        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
-        text: isDarkMode ? '#F7FAFC' : '#2D3748',
-        subText: isDarkMode ? '#A0AEC0' : '#718096',
-        cardBg: isDarkMode ? '#2D3748' : '#F7FAFC', // Slightly different for Shop
-        inputBg: isDarkMode ? '#2D3748' : '#fff',
-        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
-        headerBg: isDarkMode ? '#2D3748' : '#F7FAFC',
-    };
+    const theme = useTheme();
 
     useEffect(() => {
         fetchData();

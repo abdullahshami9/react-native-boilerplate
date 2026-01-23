@@ -1,7 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, StatusBar as RNStatusBar, Image, TouchableOpacity } from 'react-native';
+import { useTheme } from '../theme/useTheme';
+
 const OnboardingScreen = ({ navigation }: any) => {
   const [isNavigating, setIsNavigating] = React.useState(false);
+  const theme = useTheme('light'); // Force Light Mode
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -51,7 +54,7 @@ const OnboardingScreen = ({ navigation }: any) => {
   }, [displayText, isDeleting, currentWordIndex, typingSpeed]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.authBg }]}>
       <RNStatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
       {/* Header */}
@@ -66,15 +69,15 @@ const OnboardingScreen = ({ navigation }: any) => {
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.title}>Be {displayText}<Text style={{ color: '#4A9EFF' }}>|</Text></Text>
-        <Text style={styles.description}>
+        <Text style={[styles.title, { color: theme.text }]}>Be {displayText}<Text style={{ color: theme.primary }}>|</Text></Text>
+        <Text style={[styles.description, { color: theme.subText }]}>
           As everything in the world is getting Digital why not we we should also be digital make ourself digitally available to Everyone
         </Text>
       </View>
 
       {/* Register Button */}
       <View style={styles.registerContainer}>
-        <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
+        <TouchableOpacity style={[styles.registerButton, { backgroundColor: theme.secondary }]} onPress={handleRegister}>
           <Text style={styles.registerButtonText}>Register</Text>
         </TouchableOpacity>
       </View>
@@ -85,7 +88,7 @@ const OnboardingScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E8EEF3',
+    // backgroundColor handled in component
   },
   statusBar: {
     flexDirection: 'row',
@@ -123,12 +126,12 @@ const styles = StyleSheet.create({
   },
   logoIcon: {
     fontSize: 28,
-    color: '#4A5568',
+    // color handled in component
   },
   logoText: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#4A5568',
+    // color handled in component
   },
   illustrationContainer: {
     flex: 1,
@@ -148,24 +151,24 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     fontWeight: '700',
-    color: '#4A5568',
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 44,
+    // color handled in component
   },
   description: {
     fontSize: 14,
-    color: '#A0AEC0',
     textAlign: 'center',
     lineHeight: 22,
     maxWidth: 320,
+    // color handled in component
   },
   registerContainer: {
     paddingBottom: 40,
     alignItems: 'center',
   },
   registerButton: {
-    backgroundColor: '#4A5568',
+    // backgroundColor handled in component
     paddingHorizontal: 40,
     paddingVertical: 15,
     borderRadius: 30,

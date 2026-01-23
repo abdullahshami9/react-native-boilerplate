@@ -5,12 +5,14 @@ import { AuthContext } from '../context/AuthContext';
 import { DataService } from '../services/DataService';
 import { CONFIG } from '../Config';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { useTheme } from '../theme/useTheme';
 
 const CheckoutScreen = ({ navigation }: any) => {
     const { cartItems, clearCart, removeFromCart } = useContext(CartContext);
     const { userInfo } = useContext(AuthContext);
     const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
     const [loading, setLoading] = useState(false);
+    const theme = useTheme();
 
     const total = cartItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
 
@@ -31,22 +33,7 @@ const CheckoutScreen = ({ navigation }: any) => {
         });
 
         try {
-            // Execute orders sequentially (or Promise.all)
-            // Note: DataService.createOrder takes (sellerId, items)
-            // items is array of {product_id, quantity, price}
-            // Also it infers buyer_id from server session if implemented, or we need to pass it?
-            // Checking DataService.createOrder: "const response = await axios.post(`${CONFIG.API_URL}/api/orders`, { seller_id: sellerId, items });"
-            // And server.js: "const { seller_id, buyer_id, items } = req.body;"
-            // Server.js expects buyer_id in body if it's not from session (which we don't use fully server-side session here maybe, or we rely on token)
-            // Wait, server.js: "INSERT INTO orders (seller_id, buyer_id, total_amount, status) VALUES (?, ?, ?, "pending")"
-            // The buyer_id comes from req.body.
-            // I need to update DataService.createOrder to pass buyer_id!
-
             const buyerId = userInfo.id;
-
-            // Wait, DataService.createOrder in existing code might not accept buyerId.
-            // I should check DataService.ts again.
-            // If it doesn't, I need to update DataService.ts first or rely on the backend possibly extracting it from token (but the backend code I read uses req.body.buyer_id).
 
             // Execute all orders
             const orderPromises = Object.keys(ordersBySeller).map(sellerId =>
@@ -56,10 +43,12 @@ const CheckoutScreen = ({ navigation }: any) => {
             await Promise.all(orderPromises);
 
             Alert.alert('Success', 'Your order has been placed!', [
-                { text: 'OK', onPress: () => {
-                    clearCart();
-                    navigation.navigate('CustomerOrders');
-                }}
+                {
+                    text: 'OK', onPress: () => {
+                        clearCart();
+                        navigation.navigate('CustomerOrders');
+                    }
+                }
             ]);
         } catch (error) {
             console.error(error);
@@ -70,11 +59,11 @@ const CheckoutScreen = ({ navigation }: any) => {
     };
 
     const renderItem = ({ item }: any) => (
-        <View style={styles.itemCard}>
+        <View style={[styles.itemCard, { backgroundColor: theme.cardBg }]}>
             <Image source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/80' }} style={styles.itemImage} />
             <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemPrice}>{item.price} PKR x {item.quantity}</Text>
+                <Text style={[styles.itemName, { color: theme.text }]}>{item.name}</Text>
+                <Text style={[styles.itemPrice, { color: theme.subText }]}>{item.price} PKR x {item.quantity}</Text>
             </View>
             <TouchableOpacity onPress={() => removeFromCart(item.id)} style={styles.removeBtn}>
                 <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2">
@@ -85,14 +74,14 @@ const CheckoutScreen = ({ navigation }: any) => {
     );
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
+            <View style={[styles.header, { backgroundColor: theme.headerBg }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
                         <Path d="M15 18l-6-6 6-6" />
                     </Svg>
                 </TouchableOpacity>
-                <Text style={styles.title}>Checkout</Text>
+                <Text style={[styles.title, { color: theme.text }]}>Checkout</Text>
             </View>
 
             <FlatList
@@ -100,36 +89,36 @@ const CheckoutScreen = ({ navigation }: any) => {
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={styles.list}
-                ListEmptyComponent={<Text style={styles.emptyText}>Your cart is empty.</Text>}
+                ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>Your cart is empty.</Text>}
             />
 
             {cartItems.length > 0 && (
-                <View style={styles.footer}>
+                <View style={[styles.footer, { backgroundColor: theme.cardBg, borderTopColor: theme.borderColor }]}>
                     <View style={styles.paymentSection}>
-                        <Text style={styles.sectionTitle}>Payment Method</Text>
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Payment Method</Text>
                         <View style={styles.paymentOptions}>
                             <TouchableOpacity
-                                style={[styles.option, paymentMethod === 'cod' && styles.selectedOption]}
+                                style={[styles.option, { borderColor: theme.borderColor }, paymentMethod === 'cod' && { borderColor: theme.primary, backgroundColor: theme.inputBg }]}
                                 onPress={() => setPaymentMethod('cod')}
                             >
-                                <Text style={[styles.optionText, paymentMethod === 'cod' && styles.selectedOptionText]}>Cash on Delivery</Text>
+                                <Text style={[styles.optionText, { color: theme.subText }, paymentMethod === 'cod' && { color: theme.primary, fontWeight: 'bold' }]}>Cash on Delivery</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.option, paymentMethod === 'online' && styles.selectedOption]}
+                                style={[styles.option, { borderColor: theme.borderColor }, paymentMethod === 'online' && { borderColor: theme.primary, backgroundColor: theme.inputBg }]}
                                 onPress={() => setPaymentMethod('online')}
                             >
-                                <Text style={[styles.optionText, paymentMethod === 'online' && styles.selectedOptionText]}>Online Payment</Text>
+                                <Text style={[styles.optionText, { color: theme.subText }, paymentMethod === 'online' && { color: theme.primary, fontWeight: 'bold' }]}>Online Payment</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
                     <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Total:</Text>
-                        <Text style={styles.totalValue}>{total} PKR</Text>
+                        <Text style={[styles.totalLabel, { color: theme.text }]}>Total:</Text>
+                        <Text style={[styles.totalValue, { color: theme.text }]}>{total} PKR</Text>
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.placeOrderBtn, loading && { opacity: 0.7 }]}
+                        style={[styles.placeOrderBtn, { backgroundColor: theme.primary }, loading && { opacity: 0.7 }]}
                         onPress={handlePlaceOrder}
                         disabled={loading}
                     >
@@ -159,9 +148,7 @@ const styles = StyleSheet.create({
     sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 10, color: '#2D3748' },
     paymentOptions: { flexDirection: 'row', gap: 10 },
     option: { flex: 1, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E0', alignItems: 'center' },
-    selectedOption: { borderColor: '#4A9EFF', backgroundColor: '#EBF8FF' },
     optionText: { color: '#718096', fontWeight: '500' },
-    selectedOptionText: { color: '#4A9EFF', fontWeight: 'bold' },
     totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, alignItems: 'center' },
     totalLabel: { fontSize: 18, color: '#2D3748' },
     totalValue: { fontSize: 24, fontWeight: 'bold', color: '#2D3748' },

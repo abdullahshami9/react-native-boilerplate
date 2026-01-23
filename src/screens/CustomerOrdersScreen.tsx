@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { DataService } from '../services/DataService';
 import Svg, { Path } from 'react-native-svg';
 import SecureLoader from '../components/SecureLoader';
+import { useTheme } from '../theme/useTheme';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -17,15 +18,7 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
     const [showLoader, setShowLoader] = useState(false);
     const [expandedId, setExpandedId] = useState<number | null>(null);
 
-    const theme = {
-        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
-        text: isDarkMode ? '#F7FAFC' : '#2D3748',
-        subText: isDarkMode ? '#A0AEC0' : '#718096',
-        cardBg: isDarkMode ? '#2D3748' : '#fff',
-        inputBg: isDarkMode ? '#2D3748' : '#F7FAFC',
-        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
-        headerBg: isDarkMode ? '#2D3748' : '#fff',
-    };
+    const theme = useTheme();
 
     useEffect(() => {
         fetchOrders();
@@ -66,14 +59,14 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
                     <View style={styles.headerInfo}>
                         <Text style={[styles.orderId, { color: theme.subText }]}>Order #{item.id}</Text>
                         <Text style={[styles.customerName, { color: theme.text }]}>{item.seller_name || 'Business'}</Text>
-                        <Text style={[styles.dateText, { color: theme.subText }]}>{dateObj.toLocaleDateString()} • {dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+                        <Text style={[styles.dateText, { color: theme.subText }]}>{dateObj.toLocaleDateString()} • {dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                     </View>
                     <View style={styles.statusCol}>
-                         <View style={[styles.statusBadge,
-                            { backgroundColor: item.status === 'completed' ? '#C6F6D5' : item.status === 'cancelled' ? '#FED7D7' : '#FEFCBF' }
+                        <View style={[styles.statusBadge,
+                        { backgroundColor: item.status === 'completed' ? '#C6F6D5' : item.status === 'cancelled' ? '#FED7D7' : '#FEFCBF' }
                         ]}>
                             <Text style={[styles.statusText,
-                                { color: item.status === 'completed' ? '#22543D' : item.status === 'cancelled' ? '#822727' : '#744210' }
+                            { color: item.status === 'completed' ? '#22543D' : item.status === 'cancelled' ? '#822727' : '#744210' }
                             ]}>{item.status.toUpperCase()}</Text>
                         </View>
                         <Text style={[styles.totalAmount, { color: theme.text }]}>${item.total_amount}</Text>
@@ -98,7 +91,7 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
-             <View style={[styles.header, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
+            <View style={[styles.header, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>My Orders</Text>
             </View>
 
@@ -123,7 +116,7 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
                 transparent={true}
                 animationType="fade"
                 visible={showLoader}
-                onRequestClose={() => {}}
+                onRequestClose={() => { }}
             >
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)' }}>
                     <SecureLoader size={100} color={isDarkMode ? '#63B3ED' : '#3182CE'} />

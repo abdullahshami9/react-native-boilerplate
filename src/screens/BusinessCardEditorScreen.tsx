@@ -9,11 +9,13 @@ import Svg, { Path } from 'react-native-svg';
 import { DataService } from '../services/DataService';
 import { CONFIG } from '../Config';
 import axios from 'axios';
+import { useTheme } from '../theme/useTheme';
 
 const { width } = Dimensions.get('window');
 
 const BusinessCardEditorScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);
+    const theme = useTheme();
     const [selectedTemplate, setSelectedTemplate] = useState('standard');
     const [previewSide, setPreviewSide] = useState<'front' | 'back'>('front');
 
@@ -106,7 +108,7 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Hidden QR Generator */}
             <View style={{ position: 'absolute', opacity: 0, zIndex: -1 }}>
                 <QRCode
@@ -116,21 +118,21 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
                 />
             </View>
 
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: theme.headerBg }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2"><Path d="M15 18l-6-6 6-6" /></Svg>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.iconColor} strokeWidth="2"><Path d="M15 18l-6-6 6-6" /></Svg>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Design Business Card</Text>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Design Business Card</Text>
                 <TouchableOpacity onPress={handleExport}>
-                    <Text style={styles.saveText}>Export</Text>
+                    <Text style={[styles.saveText, { color: theme.primary }]}>Export</Text>
                 </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
                 {/* Preview Area */}
                 <View style={styles.previewContainer}>
-                    <Text style={styles.label}>Preview ({previewSide === 'front' ? 'Front' : 'Back'})</Text>
-                    <View style={styles.cardPreviewPlaceholder}>
+                    <Text style={[styles.label, { color: theme.subText }]}>Preview ({previewSide === 'front' ? 'Front' : 'Back'})</Text>
+                    <View style={[styles.cardPreviewPlaceholder, { backgroundColor: '#EDF2F7', borderColor: theme.navBorder }]}>
                         <WebView
                             originWhitelist={['*']}
                             source={{
@@ -145,11 +147,6 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
                                         qrCode: qrBase64
                                     };
                                     let html = (CardTemplates as any)[selectedTemplate](data);
-                                    // Inject styles to show only the selected side and fit the container
-                                    // Card is 350x200. Container is 300x170.
-                                    // We need to scale it down slightly but fill the view.
-                                    // 300/350 = 0.85. 
-                                    // We will use zoom property or scale transform on the body/page.
                                     const hideStyle = previewSide === 'front'
                                         ? `
                                             <meta name="viewport" content="width=420, user-scalable=no" />
@@ -172,43 +169,47 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
                             scrollEnabled={false}
                         />
                     </View>
-                    <View style={styles.toggleRow}>
-                        <TouchableOpacity onPress={() => setPreviewSide('front')} style={[styles.toggleBtn, previewSide === 'front' && styles.activeToggle]}><Text style={previewSide === 'front' ? styles.activeText : styles.inactiveText}>Front</Text></TouchableOpacity>
-                        <TouchableOpacity onPress={() => setPreviewSide('back')} style={[styles.toggleBtn, previewSide === 'back' && styles.activeToggle]}><Text style={previewSide === 'back' ? styles.activeText : styles.inactiveText}>Back</Text></TouchableOpacity>
+                    <View style={[styles.toggleRow, { backgroundColor: theme.inputBg }]}>
+                        <TouchableOpacity onPress={() => setPreviewSide('front')} style={[styles.toggleBtn, previewSide === 'front' && { backgroundColor: theme.cardBg, shadowColor: theme.text }]}><Text style={previewSide === 'front' ? { fontWeight: 'bold', color: theme.text } : { color: theme.subText }}>Front</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => setPreviewSide('back')} style={[styles.toggleBtn, previewSide === 'back' && { backgroundColor: theme.cardBg, shadowColor: theme.text }]}><Text style={previewSide === 'back' ? { fontWeight: 'bold', color: theme.text } : { color: theme.subText }}>Back</Text></TouchableOpacity>
                     </View>
                 </View>
 
                 {/* Templates */}
-                <Text style={styles.sectionHeader}>Choose Template</Text>
+                <Text style={[styles.sectionHeader, { color: theme.text }]}>Choose Template</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templateList}>
                     {templates.map((t) => (
                         <TouchableOpacity
                             key={t.id}
-                            style={[styles.templateCard, selectedTemplate === t.id && styles.selectedTemplate]}
+                            style={[
+                                styles.templateCard,
+                                { backgroundColor: theme.cardBg, borderColor: theme.navBorder },
+                                selectedTemplate === t.id && { borderColor: theme.primary, backgroundColor: theme.authBg }
+                            ]}
                             onPress={() => setSelectedTemplate(t.id)}
                         >
-                            <Text style={[styles.templateName, selectedTemplate === t.id && { color: '#4A9EFF' }]}>{t.name}</Text>
+                            <Text style={[styles.templateName, { color: theme.subText }, selectedTemplate === t.id && { color: theme.primary }]}>{t.name}</Text>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
 
                 {/* Edit Details */}
-                <Text style={styles.sectionHeader}>Customize Details</Text>
-                <View style={styles.form}>
-                    <Text style={styles.inputLabel}>Name</Text>
-                    <TextInput style={styles.input} value={name} onChangeText={setName} />
+                <Text style={[styles.sectionHeader, { color: theme.text }]}>Customize Details</Text>
+                <View style={[styles.form, { backgroundColor: theme.cardBg }]}>
+                    <Text style={[styles.inputLabel, { color: theme.subText }]}>Name</Text>
+                    <TextInput style={[styles.input, { borderColor: theme.navBorder, color: theme.text }]} value={name} onChangeText={setName} placeholderTextColor={theme.subText} />
 
-                    <Text style={styles.inputLabel}>Role / Title</Text>
-                    <TextInput style={styles.input} value={role} onChangeText={setRole} />
+                    <Text style={[styles.inputLabel, { color: theme.subText }]}>Role / Title</Text>
+                    <TextInput style={[styles.input, { borderColor: theme.navBorder, color: theme.text }]} value={role} onChangeText={setRole} placeholderTextColor={theme.subText} />
 
-                    <Text style={styles.inputLabel}>Phone</Text>
-                    <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+                    <Text style={[styles.inputLabel, { color: theme.subText }]}>Phone</Text>
+                    <TextInput style={[styles.input, { borderColor: theme.navBorder, color: theme.text }]} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholderTextColor={theme.subText} />
 
-                    <Text style={styles.inputLabel}>Email</Text>
-                    <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" />
+                    <Text style={[styles.inputLabel, { color: theme.subText }]}>Email</Text>
+                    <TextInput style={[styles.input, { borderColor: theme.navBorder, color: theme.text }]} value={email} onChangeText={setEmail} keyboardType="email-address" placeholderTextColor={theme.subText} />
 
-                    <Text style={styles.inputLabel}>Address / Tagline</Text>
-                    <TextInput style={styles.input} value={address} onChangeText={setAddress} />
+                    <Text style={[styles.inputLabel, { color: theme.subText }]}>Address / Tagline</Text>
+                    <TextInput style={[styles.input, { borderColor: theme.navBorder, color: theme.text }]} value={address} onChangeText={setAddress} placeholderTextColor={theme.subText} />
                 </View>
             </ScrollView>
         </View>
@@ -216,28 +217,25 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F7FAFC' },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingTop: 50, backgroundColor: '#fff' },
+    container: { flex: 1 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingTop: 50 },
     backBtn: { padding: 5 },
-    headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#2D3748' },
-    saveText: { color: '#4A9EFF', fontWeight: 'bold', fontSize: 16 },
+    headerTitle: { fontSize: 18, fontWeight: 'bold' },
+    saveText: { fontWeight: 'bold', fontSize: 16 },
     content: { padding: 20, paddingBottom: 50 },
     previewContainer: { alignItems: 'center', marginBottom: 20 },
-    label: { marginBottom: 10, color: '#718096', fontWeight: '600' },
-    cardPreviewPlaceholder: { width: 300, height: 170, backgroundColor: '#EDF2F7', borderRadius: 10, borderWidth: 1, borderColor: '#CBD5E0', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-    toggleRow: { flexDirection: 'row', backgroundColor: '#E2E8F0', borderRadius: 20, padding: 3 },
+    label: { marginBottom: 10, fontWeight: '600' },
+    cardPreviewPlaceholder: { width: 300, height: 170, borderRadius: 10, borderWidth: 1, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+    toggleRow: { flexDirection: 'row', borderRadius: 20, padding: 3 },
     toggleBtn: { paddingVertical: 6, paddingHorizontal: 20, borderRadius: 18 },
-    activeToggle: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 },
-    activeText: { fontWeight: 'bold', color: '#2D3748' },
-    inactiveText: { color: '#718096' },
-    sectionHeader: { fontSize: 16, fontWeight: 'bold', color: '#2D3748', marginBottom: 10, marginTop: 10 },
+    activeToggle: { shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }, // Used conditionally inline now
+    sectionHeader: { fontSize: 16, fontWeight: 'bold', marginBottom: 10, marginTop: 10 },
     templateList: { flexDirection: 'row', marginBottom: 20 },
-    templateCard: { padding: 15, backgroundColor: '#fff', borderRadius: 10, marginRight: 10, borderWidth: 1, borderColor: '#E2E8F0', width: 100, alignItems: 'center' },
-    selectedTemplate: { borderColor: '#4A9EFF', backgroundColor: '#EBF8FF' },
-    templateName: { fontWeight: '600', color: '#4A5568' },
-    form: { backgroundColor: '#fff', padding: 15, borderRadius: 10 },
-    inputLabel: { fontSize: 12, color: '#718096', marginBottom: 5 },
-    input: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 8, padding: 10, marginBottom: 15, color: '#2D3748' }
+    templateCard: { padding: 15, borderRadius: 10, marginRight: 10, borderWidth: 1, width: 100, alignItems: 'center' },
+    templateName: { fontWeight: '600' },
+    form: { padding: 15, borderRadius: 10 },
+    inputLabel: { fontSize: 12, marginBottom: 5 },
+    input: { borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 15 }
 });
 
 export default BusinessCardEditorScreen;

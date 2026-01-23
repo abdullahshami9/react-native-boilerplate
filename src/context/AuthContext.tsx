@@ -5,6 +5,7 @@ import { AuthService } from '../services/AuthService';
 import DeviceInfo from 'react-native-device-info';
 import LoggerService from '../services/LoggerService';
 import axios from 'axios';
+import { colors } from '../theme/colors';
 
 const { NavBarColor } = NativeModules;
 
@@ -18,7 +19,7 @@ export const AuthProvider = ({ children }: any) => {
 
     useEffect(() => {
         if (Platform.OS === 'android' && NavBarColor) {
-            NavBarColor.setBackgroundColor(isDarkMode ? '#1A202C' : '#FFFFFF', !isDarkMode);
+            NavBarColor.setBackgroundColor(isDarkMode ? colors.dark.navBg : colors.light.navBg, !isDarkMode);
         }
     }, [isDarkMode]);
 

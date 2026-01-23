@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Dimensions, Animated } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
 import Svg, { Path } from 'react-native-svg';
+import { useTheme } from '../theme/useTheme';
 
 const { width } = Dimensions.get('window');
 
@@ -16,6 +17,7 @@ interface CustomAlertProps {
 const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, type = 'error', onDismiss }) => {
     const scaleValue = useRef(new Animated.Value(0)).current;
     const opacityValue = useRef(new Animated.Value(0)).current;
+    const theme = useTheme();
 
     useEffect(() => {
         if (visible) {
@@ -55,7 +57,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, type
                 />
 
                 {/* Alert Box */}
-                <Animated.View style={[styles.alertBox, { transform: [{ scale: scaleValue }], opacity: opacityValue }]}>
+                <Animated.View style={[styles.alertBox, { transform: [{ scale: scaleValue }], opacity: opacityValue }, { backgroundColor: theme.cardBg }]}>
                     {/* Icon */}
                     <View style={styles.iconContainer}>
                         {type === 'error' && (
@@ -79,12 +81,12 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, type
                     </View>
 
                     {/* Text Content */}
-                    <Text style={styles.title}>{title}</Text>
-                    <Text style={styles.message}>{message}</Text>
+                    <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+                    <Text style={[styles.message, { color: theme.subText }]}>{message}</Text>
 
                     {/* Dismiss Button */}
-                    <TouchableOpacity style={styles.button} onPress={onDismiss}>
-                        <Text style={styles.buttonText}>Dismiss</Text>
+                    <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={onDismiss}>
+                        <Text style={[styles.buttonText, { color: '#fff' }]}>Dismiss</Text>
                     </TouchableOpacity>
                 </Animated.View>
             </View>
@@ -97,6 +99,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)' // Added fallback dimming
     },
     absolute: {
         position: 'absolute',
@@ -107,7 +110,6 @@ const styles = StyleSheet.create({
     },
     alertBox: {
         width: width * 0.85,
-        backgroundColor: 'white',
         borderRadius: 20,
         padding: 25,
         alignItems: 'center',
@@ -123,26 +125,22 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: '#1A202C',
         textAlign: 'center',
         marginBottom: 10,
     },
     message: {
         fontSize: 16,
-        color: '#718096',
         textAlign: 'center',
         marginBottom: 25,
         lineHeight: 22,
     },
     button: {
-        backgroundColor: '#1A202C', // Black button
         width: '100%',
         paddingVertical: 16,
         borderRadius: 50, // Rounded like Signup button
         alignItems: 'center',
     },
     buttonText: {
-        color: 'white',
         fontSize: 16,
         fontWeight: '600',
     },

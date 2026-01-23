@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, StatusBar as RNStatusBar, ScrollView, Alert } from 'react-native';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { AuthContext } from '../context/AuthContext';
+import { useTheme } from '../theme/useTheme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -13,6 +14,7 @@ const SignupScreen = ({ navigation }: any) => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const { register, login } = useContext(AuthContext);
+    const theme = useTheme('light'); // Force Light Mode
 
     // Alert State
     const [alertConfig, setAlertConfig] = useState<{
@@ -74,33 +76,28 @@ const SignupScreen = ({ navigation }: any) => {
         console.log('Google sign up clicked');
     };
 
-    // User Type logic moved to Tunnel flow
-    // const [userType, setUserType] = useState<'individual' | 'business'>('individual');
-
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.authBg }]}>
             <RNStatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
             <ScrollView contentContainerStyle={styles.contentContainer}>
                 {/* Back Button */}
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <Path d="M15 18L9 12L15 6" stroke="#4A5568" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <Path d="M15 18L9 12L15 6" stroke={theme.iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </Svg>
                 </TouchableOpacity>
 
                 <View style={styles.content}>
                     {/* Welcome Text */}
                     <View style={styles.welcomeSection}>
-                        <Text style={styles.welcomeText}>Let's get{'\n'}started</Text>
+                        <Text style={[styles.welcomeText, { color: theme.text }]}>Let's get{'\n'}started</Text>
                     </View>
-
-                    {/* User Type Selection Removed */}
 
                     {/* Form Section */}
                     <View style={styles.formSection}>
                         {/* Email Input */}
-                        <View style={styles.inputContainer}>
+                        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
                             <View style={styles.inputIcon}>
                                 <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                                     <Rect x="3" y="5" width="18" height="14" rx="2" stroke="#A0AEC0" strokeWidth="2" />
@@ -108,9 +105,9 @@ const SignupScreen = ({ navigation }: any) => {
                                 </Svg>
                             </View>
                             <TextInput
-                                style={styles.inputField}
+                                style={[styles.inputField, { color: theme.text }]}
                                 placeholder="Enter your email"
-                                placeholderTextColor="#A0AEC0"
+                                placeholderTextColor={theme.subText}
                                 value={email}
                                 onChangeText={setEmail}
                                 keyboardType="email-address"
@@ -119,7 +116,7 @@ const SignupScreen = ({ navigation }: any) => {
                         </View>
 
                         {/* Phone Input */}
-                        <View style={styles.inputContainer}>
+                        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
                             <View style={styles.inputIcon}>
                                 <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                                     <Rect x="6" y="2" width="12" height="20" rx="2" stroke="#A0AEC0" strokeWidth="2" />
@@ -127,9 +124,9 @@ const SignupScreen = ({ navigation }: any) => {
                                 </Svg>
                             </View>
                             <TextInput
-                                style={styles.inputField}
+                                style={[styles.inputField, { color: theme.text }]}
                                 placeholder="Enter your phone no"
-                                placeholderTextColor="#A0AEC0"
+                                placeholderTextColor={theme.subText}
                                 value={phone}
                                 onChangeText={setPhone}
                                 keyboardType="phone-pad"
@@ -137,7 +134,7 @@ const SignupScreen = ({ navigation }: any) => {
                         </View>
 
                         {/* Password Input */}
-                        <View style={styles.inputContainer}>
+                        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
                             <View style={styles.inputIcon}>
                                 <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                                     <Rect x="5" y="11" width="14" height="10" rx="2" stroke="#A0AEC0" strokeWidth="2" />
@@ -146,9 +143,9 @@ const SignupScreen = ({ navigation }: any) => {
                                 </Svg>
                             </View>
                             <TextInput
-                                style={styles.inputField}
+                                style={[styles.inputField, { color: theme.text }]}
                                 placeholder="Enter your password"
-                                placeholderTextColor="#A0AEC0"
+                                placeholderTextColor={theme.subText}
                                 value={password}
                                 onChangeText={setPassword}
                                 secureTextEntry={!showPassword}
@@ -168,31 +165,31 @@ const SignupScreen = ({ navigation }: any) => {
                         </View>
 
                         {/* Sign Up Button */}
-                        <TouchableOpacity style={styles.signupButton} onPress={handleSignUp}>
+                        <TouchableOpacity style={[styles.signupButton, { backgroundColor: theme.secondary }]} onPress={handleSignUp}>
                             <Text style={styles.signupButtonText}>Sign up</Text>
                         </TouchableOpacity>
 
                         {/* Divider */}
                         <View style={styles.dividerContainer}>
-                            <Text style={styles.dividerText}>or continue with</Text>
+                            <Text style={[styles.dividerText, { color: theme.subText }]}>or continue with</Text>
                         </View>
 
                         {/* Google Button */}
-                        <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignUp}>
+                        <TouchableOpacity style={[styles.googleButton, { backgroundColor: 'rgba(255, 255, 255, 0.6)', borderColor: theme.inputBorder }]} onPress={handleGoogleSignUp}>
                             <Svg width="20" height="20" viewBox="0 0 24 24">
                                 <Path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                                 <Path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                                 <Path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                                 <Path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                             </Svg>
-                            <Text style={styles.googleButtonText}>Google</Text>
+                            <Text style={[styles.googleButtonText, { color: theme.text }]}>Google</Text>
                         </TouchableOpacity>
 
                         {/* Login Link */}
                         <View style={styles.loginContainer}>
-                            <Text style={styles.loginText}>Already have an account? </Text>
+                            <Text style={[styles.loginText, { color: theme.subText }]}>Already have an account? </Text>
                             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                                <Text style={styles.loginLink}>Login</Text>
+                                <Text style={[styles.loginLink, { color: theme.secondary }]}>Login</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -215,7 +212,7 @@ const SignupScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#E8EEF3',
+        // backgroundColor handled via theme
     },
 
     contentContainer: {
@@ -238,39 +235,9 @@ const styles = StyleSheet.create({
     welcomeSection: {
         marginBottom: 20,
     },
-    userTypeContainer: {
-        flexDirection: 'row',
-        backgroundColor: '#E2E8F0',
-        borderRadius: 25,
-        padding: 4,
-        marginBottom: 30,
-    },
-    userTypeButton: {
-        flex: 1,
-        paddingVertical: 10,
-        alignItems: 'center',
-        borderRadius: 22,
-    },
-    userTypeActive: {
-        backgroundColor: '#fff',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    userTypeText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#718096',
-    },
-    userTypeActiveText: {
-        color: '#2D3748',
-    },
     welcomeText: {
-        fontSize: 36, // Slightly smaller than Login for "Let's get started" or keep same? Design had similar
+        fontSize: 36,
         fontWeight: '700',
-        color: '#4A5568',
         lineHeight: 44,
     },
     formSection: {
@@ -279,9 +246,8 @@ const styles = StyleSheet.create({
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.4)',
+        // backgroundColor, borderColor handled via theme
         borderWidth: 1,
-        borderColor: 'rgba(160, 174, 192, 0.3)',
         borderRadius: 50,
         paddingHorizontal: 20,
         height: 56,
@@ -292,14 +258,13 @@ const styles = StyleSheet.create({
     inputField: {
         flex: 1,
         fontSize: 15,
-        color: '#4A5568',
         height: '100%',
     },
     eyeIcon: {
         padding: 4,
     },
     signupButton: {
-        backgroundColor: '#4A5568',
+        // backgroundColor handled via theme
         borderRadius: 50,
         paddingVertical: 18,
         alignItems: 'center',
@@ -320,22 +285,18 @@ const styles = StyleSheet.create({
         marginVertical: 8,
     },
     dividerText: {
-        color: '#718096',
         fontSize: 14,
     },
     googleButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.6)',
         borderWidth: 1,
-        borderColor: 'rgba(160, 174, 192, 0.3)',
         borderRadius: 50,
         paddingVertical: 16,
         gap: 12,
     },
     googleButtonText: {
-        color: '#4A5568',
         fontSize: 16,
         fontWeight: '600',
     },
@@ -345,11 +306,9 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     loginText: {
-        color: '#718096',
         fontSize: 14,
     },
     loginLink: {
-        color: '#4A5568',
         fontSize: 14,
         fontWeight: '600',
         textDecorationLine: 'underline',

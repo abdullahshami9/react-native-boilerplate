@@ -4,6 +4,7 @@ import Svg, { Path, Circle, Line } from 'react-native-svg';
 import { DataService } from '../services/DataService';
 import { AuthContext } from '../context/AuthContext';
 import { CONFIG } from '../Config';
+import { useTheme } from '../theme/useTheme';
 
 const { width } = Dimensions.get('window');
 
@@ -15,14 +16,9 @@ const ConnectionsScreen = ({ navigation }: any) => {
     const [loading, setLoading] = useState(false);
     const [searchText, setSearchText] = useState('');
 
+    const globalTheme = useTheme();
     const theme = {
-        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
-        text: isDarkMode ? '#F7FAFC' : '#2D3748',
-        subText: isDarkMode ? '#A0AEC0' : '#718096',
-        cardBg: isDarkMode ? '#2D3748' : '#fff',
-        inputBg: isDarkMode ? '#2D3748' : '#fff',
-        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
-        headerBg: isDarkMode ? '#2D3748' : '#F7FAFC',
+        ...globalTheme,
         activeTabBg: isDarkMode ? '#4A5568' : '#E2E8F0',
         inactiveTabBg: 'transparent',
         activeTabText: isDarkMode ? '#F7FAFC' : '#2D3748',

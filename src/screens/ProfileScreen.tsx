@@ -12,6 +12,7 @@ import { CONFIG } from '../Config';
 import Animated, { useSharedValue, useAnimatedStyle, interpolate, interpolateColor, Extrapolate, useAnimatedScrollHandler, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import CustomAlert from '../components/CustomAlert';
 import SecureLoader from '../components/SecureLoader';
+import { useTheme } from '../theme/useTheme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -143,16 +144,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
     // Reanimated Shared Values
     const scrollY = useSharedValue(0);
 
-    const theme = {
-        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
-        text: isDarkMode ? '#F7FAFC' : '#2D3748',
-        subText: isDarkMode ? '#A0AEC0' : '#718096',
-        cardBg: isDarkMode ? '#2D3748' : '#fff',
-        inputBg: isDarkMode ? '#2D3748' : '#fff',
-        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
-        headerBg: isDarkMode ? '#2D3748' : '#fff',
-        buttonBg: isDarkMode ? '#4A9EFF' : '#EDF2F7'
-    };
+    const theme = useTheme();
 
     useEffect(() => {
         if (displayedUser?.id) {
@@ -566,10 +558,10 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 </Animated.View>
 
                 <View style={styles.actionRow}>
-                    <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.buttonBg || '#4A9EFF' }]} onPress={() => Linking.openURL(`tel:${displayedUser?.phone}`)}>
+                    <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.primary }]} onPress={() => Linking.openURL(`tel:${displayedUser?.phone}`)}>
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2"><Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.12 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></Svg>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.buttonBg || '#4A9EFF' }]} onPress={handleChatPress}>
+                    <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.primary }]} onPress={handleChatPress}>
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
                     </TouchableOpacity>
                     {isBusinessUser && (
@@ -1102,7 +1094,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 transparent={true}
                 animationType="fade"
                 visible={showLoader}
-                onRequestClose={() => {}}
+                onRequestClose={() => { }}
             >
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)' }}>
                     <SecureLoader size={100} color={isDarkMode ? '#63B3ED' : '#3182CE'} />

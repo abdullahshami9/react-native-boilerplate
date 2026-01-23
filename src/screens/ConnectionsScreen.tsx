@@ -148,17 +148,17 @@ const ConnectionsScreen = ({ navigation }: any) => {
                 <View style={{ width: 44 }} />
             </View>
 
-            {/* Custom Tab Bar */}
-            <View style={styles.tabContainer}>
-                <View style={[styles.tabWrapper, { backgroundColor: theme.inputBg, borderColor: theme.borderColor }]}>
+            {/* Round Tabs behaving like Shop Search Bar */}
+            <View style={[styles.tabContainer, { marginTop: 0, paddingBottom: 15, backgroundColor: theme.bg }]}>
+                <View style={[styles.tabWrapper, { backgroundColor: theme.inputBg, borderColor: theme.borderColor, borderRadius: 25, height: 50, padding: 4 }]}>
                     <TouchableOpacity
-                        style={[styles.tab, activeTab === 'connections' && { backgroundColor: theme.activeTabBg }]}
+                        style={[styles.tab, activeTab === 'connections' && { backgroundColor: theme.activeTabBg, borderRadius: 21 }]}
                         onPress={() => setActiveTab('connections')}
                     >
                         <Text style={[styles.tabText, { color: activeTab === 'connections' ? theme.activeTabText : theme.inactiveTabText }]}>Following</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.tab, activeTab === 'discover' && { backgroundColor: theme.activeTabBg }]}
+                        style={[styles.tab, activeTab === 'discover' && { backgroundColor: theme.activeTabBg, borderRadius: 21 }]}
                         onPress={() => setActiveTab('discover')}
                     >
                         <Text style={[styles.tabText, { color: activeTab === 'discover' ? theme.activeTabText : theme.inactiveTabText }]}>Discover</Text>

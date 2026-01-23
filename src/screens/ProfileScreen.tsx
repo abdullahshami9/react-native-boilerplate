@@ -133,6 +133,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
     const [alertTitle, setAlertTitle] = useState('');
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState<'success' | 'error' | 'info'>('info');
+    const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null); // For confirmations
     const [qrTab, setQrTab] = useState<'my' | 'scan'>('my');
 
     // Refresh State
@@ -327,14 +328,24 @@ const ProfileScreen = ({ navigation, route }: any) => {
         setAlertVisible(true);
     };
 
+    const promptDeleteEdu = (id: number) => {
+        setAlertTitle('Remove Education');
+        setAlertMessage('Are you sure you want to remove this education?');
+        setAlertType('info');
+        setConfirmAction(() => () => handleDeleteEdu(id)); // Closure to capture ID
+        setAlertVisible(true);
+    };
+
     const handleDeleteEdu = async (id: number) => {
         try {
             const res = await DataService.deleteEducation(id);
             if (res.success) {
                 setEducation(education.filter(e => e.id !== id));
+                setAlertVisible(false);
             }
         } catch (e) {
             console.error('ProfileScreen: Delete Error:', e);
+            // If error, we show error alert (overriding the confirm one)
             setAlertTitle('Delete Failed');
             setAlertMessage(JSON.stringify(e));
             setAlertType('error');
@@ -413,7 +424,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
         const textColor = interpolateColor(
             scrollY.value,
             [0, SCROLL_DISTANCE],
-            ['#FFFFFF', '#2D3748'] // White to Dark Grey
+            ['#FFFFFF', isDarkMode ? '#FFFFFF' : '#2D3748'] // White to Dark Grey (or White in Dark Mode)
         );
         return { color: textColor };
     });
@@ -468,12 +479,12 @@ const ProfileScreen = ({ navigation, route }: any) => {
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Animated Header */}
-            <Animated.View style={[styles.headerBackground, headerHeightStyle, { backgroundColor: 'rgba(217, 225, 235, 0.9)' }]}>
+            <Animated.View style={[styles.headerBackground, headerHeightStyle, { backgroundColor: isDarkMode ? 'rgba(32, 44, 51, 0.95)' : 'rgba(217, 225, 235, 0.9)' }]}>
                 <View style={styles.headerTop}>
                     {/* Small Animated QR Icon for Collapsed Header */}
                     <Animated.View style={[{ marginRight: 15, marginTop: 5 }, smallQrStyle]}>
                         <TouchableOpacity onPress={() => setBusinessCardVisible(true)}>
-                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? '#fff' : '#2D3748'} strokeWidth="2">
                                 <Path d="M3 7V5a2 2 0 0 1 2-2h2" />
                                 <Path d="M17 3h2a2 2 0 0 1 2 2v2" />
                                 <Path d="M21 17v2a2 2 0 0 1-2 2h-2" />
@@ -493,9 +504,9 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                         <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                                     </Svg>
                                 </Animated.View>
-                                {/* Dark Icon */}
+                                {/* Dark Icon (Visible on Scroll/White Header, or Dark Header in Dark Mode -> needs to be white if dark mode) */}
                                 <Animated.View style={darkIconStyle}>
-                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? '#fff' : '#2D3748'} strokeWidth="2">
                                         <Circle cx="12" cy="12" r="3" />
                                         <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                                     </Svg>
@@ -519,14 +530,14 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
                 <Animated.View style={[styles.qrContainer, qrStyle]}>
                     <TouchableOpacity onPress={() => setBusinessCardVisible(true)}>
-                        <View style={styles.qrWrapper}>
-                            <QRCode value={`raabtaa://user/${displayedUser?.id}`} size={140} />
+                        <View style={[styles.qrWrapper, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', elevation: isDarkMode ? 0 : 5 }]}>
+                            <QRCode value={`raabtaa://user/${displayedUser?.id}`} size={140} color={isDarkMode ? 'white' : 'black'} backgroundColor={isDarkMode ? '#2D3748' : 'white'} />
                         </View>
                     </TouchableOpacity>
                 </Animated.View>
 
                 <Animated.View style={[styles.avatarContainerAbsolute, avatarStyle]}>
-                    <View style={styles.avatarWrapper}>
+                    <View style={[styles.avatarWrapper, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', borderColor: isDarkMode ? 'transparent' : '#F7FAFC', elevation: isDarkMode ? 0 : 5 }]}>
                         <Image source={{ uri: getProfilePicUrl() }} style={styles.avatar} />
                     </View>
                 </Animated.View>
@@ -731,8 +742,11 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                         <Text style={[styles.eduYear, { color: theme.subText }]}>{edu.year}</Text>
                                     </View>
                                     {isOwnProfile && (
-                                        <TouchableOpacity onPress={() => handleDeleteEdu(edu.id)} style={{ padding: 5 }}>
-                                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
+                                        <TouchableOpacity onPress={() => promptDeleteEdu(edu.id)} style={{ padding: 10, marginLeft: 'auto' }}>
+                                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2">
+                                                <Path d="M3 6h18" />
+                                                <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                            </Svg>
                                         </TouchableOpacity>
                                     )}
                                 </View>
@@ -891,7 +905,16 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 title={alertTitle}
                 message={alertMessage}
                 type={alertType}
-                onDismiss={() => setAlertVisible(false)}
+                onDismiss={() => {
+                    setAlertVisible(false);
+                    setConfirmAction(null);
+                }}
+                onConfirm={confirmAction ? () => {
+                    confirmAction();
+                    setConfirmAction(null);
+                } : undefined}
+                confirmText="Delete"
+                cancelText="Cancel"
             />
             {/* ... other modals code ... */}
             <Modal

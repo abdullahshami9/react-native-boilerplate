@@ -12,20 +12,17 @@ interface CustomAlertProps {
     message: string;
     type?: 'error' | 'success' | 'info';
     onDismiss: () => void;
+    onConfirm?: () => void; // Optional confirm action
+    confirmText?: string;
+    cancelText?: string;
 }
 
-const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, type = 'error', onDismiss }) => {
+const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, type = 'error', onDismiss, onConfirm, confirmText = 'Confirm', cancelText = 'Cancel' }) => {
     const scaleValue = useRef(new Animated.Value(0)).current;
     const opacityValue = useRef(new Animated.Value(0)).current;
     const theme = useTheme();
-    // Use explicit context if needed, or rely on properties. 
-    // Since useTheme returns colors based on context, we can check if theme.bg is dark to infer mode, 
-    // or better, just import AuthContext.
-    // However, to keep it clean, let's look at the colors. 
-    // Light Secondary is #4A5568. Dark Primary/Secondary is #00a884 (Green).
-    // User wants Light: Login Color (#4A5568). Dark: Blue (#4A9EFF).
 
-    // We can infer IsDark from the text color or background. 
+    // We can infer IsDark from the text color or background (or reuse theme)
     const isDark = theme.bg === '#0b141a';
 
     useEffect(() => {
@@ -93,19 +90,49 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, type
                     <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
                     <Text style={[styles.message, { color: theme.subText }]}>{message}</Text>
 
-                    {/* Dismiss Button */}
-                    <TouchableOpacity
-                        style={[
-                            styles.button,
-                            {
-                                // Matches global button styling (Subtle Dark / Light)
-                                backgroundColor: theme.buttonBg || (isDark ? '#37404a' : '#EDF2F7')
-                            }
-                        ]}
-                        onPress={onDismiss}
-                    >
-                        <Text style={[styles.buttonText, { color: theme.text }]}>Dismiss</Text>
-                    </TouchableOpacity>
+                    {/* Buttons */}
+                    {onConfirm ? (
+                        <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.button,
+                                    {
+                                        flex: 1,
+                                        backgroundColor: 'transparent',
+                                        borderWidth: 1,
+                                        borderColor: theme.borderColor
+                                    }
+                                ]}
+                                onPress={onDismiss}
+                            >
+                                <Text style={[styles.buttonText, { color: theme.subText }]}>{cancelText}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.button,
+                                    {
+                                        flex: 1,
+                                        backgroundColor: theme.buttonBg || (isDark ? '#37404a' : '#EDF2F7')
+                                    }
+                                ]}
+                                onPress={onConfirm}
+                            >
+                                <Text style={[styles.buttonText, { color: theme.text }]}>{confirmText}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <TouchableOpacity
+                            style={[
+                                styles.button,
+                                {
+                                    backgroundColor: theme.buttonBg || (isDark ? '#37404a' : '#EDF2F7')
+                                }
+                            ]}
+                            onPress={onDismiss}
+                        >
+                            <Text style={[styles.buttonText, { color: theme.text }]}>Dismiss</Text>
+                        </TouchableOpacity>
+                    )}
                 </Animated.View>
             </View>
         </Modal>

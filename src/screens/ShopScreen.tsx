@@ -35,9 +35,15 @@ const ShopScreen = ({ navigation }: any) => {
                 }
             } else {
                 const res = await DataService.discoverServices(search);
-                if (res.success && Array.isArray(res.services)) {
-                    setServices(res.services);
+                console.log('Services API Response:', JSON.stringify(res));
+
+                const results = res.services || res.data || (Array.isArray(res) ? res : []);
+                console.log('Parsed Services Results:', results.length, results[0]);
+
+                if (Array.isArray(results)) {
+                    setServices(results);
                 } else {
+                    console.log('Services Results is NOT an array');
                     setServices([]);
                 }
             }

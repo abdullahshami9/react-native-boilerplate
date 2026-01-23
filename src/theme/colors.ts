@@ -33,7 +33,7 @@ export const lightColors: ColorScheme = {
     navBg: '#FFFFFF',
     navBorder: '#E2E8F0',
     iconColor: '#4A5568',
-    primary: '#4A9EFF',
+    primary: '#00a884',
     secondary: '#4A5568',
     inputBg: 'rgba(255, 255, 255, 0.4)',
     inputBorder: 'rgba(160, 174, 192, 0.3)',

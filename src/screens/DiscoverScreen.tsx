@@ -5,6 +5,7 @@ import { DataService } from '../services/DataService';
 import { AuthContext } from '../context/AuthContext';
 import { CONFIG } from '../Config';
 import PageWrapper from '../components/PageWrapper';
+import { useTheme } from '../theme/useTheme';
 
 const { width } = Dimensions.get('window');
 
@@ -16,15 +17,7 @@ const DiscoverScreen = ({ navigation }: any) => {
     const [businessProducts, setBusinessProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const { userInfo, isDarkMode } = React.useContext(AuthContext);
-
-    const theme = {
-        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
-        text: isDarkMode ? '#F7FAFC' : '#2D3748',
-        subText: isDarkMode ? '#A0AEC0' : '#718096',
-        cardBg: isDarkMode ? '#2D3748' : '#fff',
-        inputBg: isDarkMode ? '#2D3748' : '#fff',
-        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
-    };
+    const theme = useTheme();
 
     React.useEffect(() => {
         fetchData();

@@ -50,9 +50,11 @@ const ContributionGraph = ({ data, onDateClick, isBusiness }: any) => {
         return '#216E39';
     };
 
+    const theme = useTheme();
+
     return (
         <View style={styles.calendarContainer}>
-            <Text style={[styles.calendarTitle, { color: isBusiness ? '#2D3748' : '#fff' }]}>{isBusiness ? 'Sales Activity' : 'Appointment Activity'}</Text>
+            <Text style={[styles.calendarTitle, { color: theme.text }]}>{isBusiness ? 'Sales Activity' : 'Appointment Activity'}</Text>
             <View style={styles.calendarGrid}>
                 {days.map((date, index) => {
                     const dateStr = date.toISOString().split('T')[0];

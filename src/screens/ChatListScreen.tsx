@@ -7,8 +7,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import SecureLoader from '../components/SecureLoader';
 
+import { useTheme } from '../theme/useTheme';
+
 export default function ChatListScreen({ navigation }: any) {
     const { userInfo, isDarkMode } = useContext(AuthContext);
+    const theme = useTheme();
     const [chats, setChats] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -56,27 +59,27 @@ export default function ChatListScreen({ navigation }: any) {
 
         return (
             <TouchableOpacity
-                style={styles.chatItem}
+                style={[styles.chatItem, { borderBottomColor: theme.divider }]}
                 onPress={() => navigation.navigate('Chat', { chatId: item.id, otherUser })}
             >
-                <Image source={{ uri: profileUrl }} style={styles.avatar} />
+                <Image source={{ uri: profileUrl }} style={[styles.avatar, { backgroundColor: theme.inputBg }]} />
                 <View style={styles.chatInfo}>
-                    <Text style={styles.name}>{otherUser.name}</Text>
-                    <Text style={styles.lastMessage} numberOfLines={1}>
+                    <Text style={[styles.name, { color: theme.text }]}>{otherUser.name}</Text>
+                    <Text style={[styles.lastMessage, { color: theme.subText }]} numberOfLines={1}>
                         {item.last_message || 'Start a conversation'}
                     </Text>
                 </View>
                 <View style={styles.meta}>
-                     <Text style={styles.time}>{new Date(item.last_message_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+                    <Text style={[styles.time, { color: theme.subText }]}>{new Date(item.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                 </View>
             </TouchableOpacity>
         );
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Messages</Text>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+            <View style={[styles.header, { borderBottomColor: theme.divider, backgroundColor: theme.headerBg }]}>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Messages</Text>
             </View>
             <FlatList
                 data={chats}
@@ -92,14 +95,14 @@ export default function ChatListScreen({ navigation }: any) {
                         progressBackgroundColor="transparent"
                     />
                 }
-                ListEmptyComponent={<Text style={styles.emptyText}>No conversations yet.</Text>}
+                ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>No conversations yet.</Text>}
             />
 
             <Modal
                 transparent={true}
                 animationType="fade"
                 visible={showLoader}
-                onRequestClose={() => {}}
+                onRequestClose={() => { }}
             >
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)' }}>
                     <SecureLoader size={100} color={isDarkMode ? '#63B3ED' : '#3182CE'} />
@@ -110,16 +113,16 @@ export default function ChatListScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
-    header: { padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee' },
-    headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#333' },
+    container: { flex: 1 },
+    header: { padding: 20, borderBottomWidth: 1 },
+    headerTitle: { fontSize: 24, fontWeight: 'bold' },
     list: { padding: 10 },
-    chatItem: { flexDirection: 'row', padding: 15, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-    avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#ddd' },
+    chatItem: { flexDirection: 'row', padding: 15, alignItems: 'center', borderBottomWidth: 1 },
+    avatar: { width: 50, height: 50, borderRadius: 25 },
     chatInfo: { flex: 1, marginLeft: 15 },
-    name: { fontSize: 16, fontWeight: '600', color: '#333' },
-    lastMessage: { color: '#666', marginTop: 4 },
+    name: { fontSize: 16, fontWeight: '600' },
+    lastMessage: { marginTop: 4 },
     meta: { alignItems: 'flex-end' },
-    time: { fontSize: 12, color: '#999' },
-    emptyText: { textAlign: 'center', marginTop: 50, color: '#999' }
+    time: { fontSize: 12 },
+    emptyText: { textAlign: 'center', marginTop: 50 }
 });

@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { View, ScrollView, RefreshControl, Modal, StyleSheet, ViewStyle } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import SecureLoader from './SecureLoader';
+import { useTheme } from '../theme/useTheme';
 
 interface PageWrapperProps {
     children: React.ReactNode;
@@ -12,15 +13,14 @@ interface PageWrapperProps {
 
 const PageWrapper: React.FC<PageWrapperProps> = ({ children, onRefresh, style, contentContainerStyle }) => {
     const { isDarkMode } = useContext(AuthContext);
+    const theme = useTheme();
     const [refreshing, setRefreshing] = useState(false);
     const [showLoader, setShowLoader] = useState(false);
 
     const handleRefresh = async () => {
         if (!onRefresh) return;
-
-        setRefreshing(true); // Triggers RefreshControl state
-        setShowLoader(true); // Shows our Hard Loader
-
+        setRefreshing(true);
+        setShowLoader(true);
         try {
             await onRefresh();
         } catch (error) {
@@ -31,8 +31,8 @@ const PageWrapper: React.FC<PageWrapperProps> = ({ children, onRefresh, style, c
         }
     };
 
-    const backgroundColor = isDarkMode ? '#1A202C' : '#F7FAFC';
-    const textColor = isDarkMode ? '#F7FAFC' : '#1A202C';
+    const backgroundColor = theme.bg;
+    const textColor = theme.text;
 
     return (
         <View style={[styles.container, { backgroundColor }, style]}>
@@ -57,7 +57,7 @@ const PageWrapper: React.FC<PageWrapperProps> = ({ children, onRefresh, style, c
                 transparent={true}
                 animationType="fade"
                 visible={showLoader}
-                onRequestClose={() => {}} // Prevent closing by back button
+                onRequestClose={() => { }} // Prevent closing by back button
             >
                 <View style={[styles.loaderContainer, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)' }]}>
                     <SecureLoader size={100} color={isDarkMode ? '#63B3ED' : '#3182CE'} />

@@ -20,6 +20,7 @@ export type ColorScheme = {
     success: string;
     divider: string;
     borderColor: string;
+    buttonBg?: string; // Optional for now as it wasn't there before
 };
 
 export const lightColors: ColorScheme = {
@@ -44,6 +45,7 @@ export const lightColors: ColorScheme = {
     success: '#38A169',
     divider: '#E2E8F0',
     borderColor: '#E2E8F0', // Light gray for borders
+    buttonBg: '#EDF2F7', // Default light button bg
 };
 
 export const darkColors: ColorScheme = {
@@ -68,6 +70,7 @@ export const darkColors: ColorScheme = {
     success: '#00a884',
     divider: '#37404a',
     borderColor: '#37404a', // Dark gray for borders
+    buttonBg: '#4A9EFF', // Blue for dark mode buttons (as requested)
 };
 
 export const colors = {

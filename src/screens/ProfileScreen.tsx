@@ -558,11 +558,11 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 </Animated.View>
 
                 <View style={styles.actionRow}>
-                    <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.primary }]} onPress={() => Linking.openURL(`tel:${displayedUser?.phone}`)}>
-                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2"><Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.12 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></Svg>
+                    <TouchableOpacity style={[styles.circleBtn, { backgroundColor: isDarkMode ? theme.primary : '#EDF2F7' }]} onPress={() => Linking.openURL(`tel:${displayedUser?.phone}`)}>
+                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? '#000' : theme.text} strokeWidth="2"><Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.12 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></Svg>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.primary }]} onPress={handleChatPress}>
-                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
+                    <TouchableOpacity style={[styles.circleBtn, { backgroundColor: isDarkMode ? theme.primary : '#EDF2F7' }]} onPress={handleChatPress}>
+                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? '#000' : theme.text} strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
                     </TouchableOpacity>
                     {isBusinessUser && (
                         <View style={styles.locationSnippet}>
@@ -775,16 +775,16 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
                         {isOwnProfile && (
                             <TouchableOpacity
-                                style={{ marginTop: 15, backgroundColor: theme.buttonBg || '#4A9EFF', padding: 12, borderRadius: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+                                style={{ marginTop: 15, backgroundColor: isDarkMode ? (theme.buttonBg || '#4A9EFF') : '#EDF2F7', padding: 12, borderRadius: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
                                 onPress={handleUploadResume}
                                 disabled={uploadingResume}
                             >
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? 'white' : '#2D3748'} strokeWidth="2" style={{ marginRight: 8 }}>
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? 'white' : theme.text} strokeWidth="2" style={{ marginRight: 8 }}>
                                     <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                     <Path d="M17 8l-5-5-5 5" />
                                     <Path d="M12 3v12" />
                                 </Svg>
-                                <Text style={{ color: isDarkMode ? 'white' : '#2D3748', fontWeight: 'bold' }}>{uploadingResume ? 'Uploading...' : 'Upload Resume'}</Text>
+                                <Text style={{ color: isDarkMode ? 'white' : theme.text, fontWeight: 'bold' }}>{uploadingResume ? 'Uploading...' : 'Upload Resume'}</Text>
                             </TouchableOpacity>
                         )}
                     </View>
@@ -1012,8 +1012,8 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                 backgroundColor: theme.inputBg
                             }}
                         />
-                        <TouchableOpacity style={{ backgroundColor: theme.buttonBg || '#4A9EFF', padding: 15, borderRadius: 12, alignItems: 'center' }} onPress={handleAddSkill}>
-                            <Text style={{ color: isDarkMode ? 'white' : '#2D3748', fontWeight: 'bold' }}>Add Skill</Text>
+                        <TouchableOpacity style={{ backgroundColor: isDarkMode ? (theme.buttonBg || '#4A9EFF') : '#EDF2F7', padding: 15, borderRadius: 12, alignItems: 'center' }} onPress={handleAddSkill}>
+                            <Text style={{ color: isDarkMode ? 'white' : theme.text, fontWeight: 'bold' }}>Add Skill</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={{ marginTop: 15, alignItems: 'center' }} onPress={() => setAddSkillVisible(false)}>
                             <Text style={{ color: theme.subText }}>Cancel</Text>
@@ -1050,8 +1050,8 @@ const ProfileScreen = ({ navigation, route }: any) => {
                             onChangeText={setNewEduYear}
                             style={{ borderWidth: 1, borderColor: theme.borderColor, borderRadius: 10, padding: 10, color: theme.text, marginBottom: 20, backgroundColor: theme.inputBg }}
                         />
-                        <TouchableOpacity style={{ backgroundColor: theme.buttonBg || '#4A9EFF', padding: 15, borderRadius: 12, alignItems: 'center' }} onPress={handleAddEducation}>
-                            <Text style={{ color: isDarkMode ? 'white' : '#2D3748', fontWeight: 'bold' }}>Add Education</Text>
+                        <TouchableOpacity style={{ backgroundColor: isDarkMode ? (theme.buttonBg || '#4A9EFF') : '#EDF2F7', padding: 15, borderRadius: 12, alignItems: 'center' }} onPress={handleAddEducation}>
+                            <Text style={{ color: isDarkMode ? 'white' : theme.text, fontWeight: 'bold' }}>Add Education</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={{ marginTop: 15, alignItems: 'center' }} onPress={() => setAddEduVisible(false)}>
                             <Text style={{ color: theme.subText }}>Cancel</Text>

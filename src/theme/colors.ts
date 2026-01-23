@@ -19,6 +19,7 @@ export type ColorScheme = {
     error: string;
     success: string;
     divider: string;
+    borderColor: string;
 };
 
 export const lightColors: ColorScheme = {
@@ -42,6 +43,7 @@ export const lightColors: ColorScheme = {
     error: '#E53E3E',
     success: '#38A169',
     divider: '#E2E8F0',
+    borderColor: '#E2E8F0', // Light gray for borders
 };
 
 export const darkColors: ColorScheme = {
@@ -65,6 +67,7 @@ export const darkColors: ColorScheme = {
     error: '#f15c6d',
     success: '#00a884',
     divider: '#37404a',
+    borderColor: '#37404a', // Dark gray for borders
 };
 
 export const colors = {

@@ -18,6 +18,15 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, type
     const scaleValue = useRef(new Animated.Value(0)).current;
     const opacityValue = useRef(new Animated.Value(0)).current;
     const theme = useTheme();
+    // Use explicit context if needed, or rely on properties. 
+    // Since useTheme returns colors based on context, we can check if theme.bg is dark to infer mode, 
+    // or better, just import AuthContext.
+    // However, to keep it clean, let's look at the colors. 
+    // Light Secondary is #4A5568. Dark Primary/Secondary is #00a884 (Green).
+    // User wants Light: Login Color (#4A5568). Dark: Blue (#4A9EFF).
+
+    // We can infer IsDark from the text color or background. 
+    const isDark = theme.bg === '#0b141a';
 
     useEffect(() => {
         if (visible) {
@@ -51,8 +60,8 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, type
                 {/* Blur Background */}
                 <BlurView
                     style={styles.absolute}
-                    blurType="light"
-                    blurAmount={3} // Reduced from 10 to 3
+                    blurType={isDark ? "dark" : "light"}
+                    blurAmount={3}
                     reducedTransparencyFallbackColor="white"
                 />
 
@@ -85,7 +94,17 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, type
                     <Text style={[styles.message, { color: theme.subText }]}>{message}</Text>
 
                     {/* Dismiss Button */}
-                    <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={onDismiss}>
+                    <TouchableOpacity
+                        style={[
+                            styles.button,
+                            {
+                                // Light Mode: Login Button Color (Secondary #4A5568)
+                                // Dark Mode: Blue (#4A9EFF) instead of Green
+                                backgroundColor: isDark ? '#4A9EFF' : '#4A5568'
+                            }
+                        ]}
+                        onPress={onDismiss}
+                    >
                         <Text style={[styles.buttonText, { color: '#fff' }]}>Dismiss</Text>
                     </TouchableOpacity>
                 </Animated.View>

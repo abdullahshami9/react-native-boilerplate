@@ -42,6 +42,15 @@ export const DataService = {
            throw error.response?.data || { message: 'Network Error' };
        }
    },
+   getUserCounts: async (userId: number) => {
+       try {
+           const response = await axios.get(`${CONFIG.API_URL}/api/user/counts/${userId}`);
+           return response.data;
+       } catch (error: any) {
+           LoggerService.error('Get User Counts Error:', error, 'DataService');
+           throw error.response?.data || { message: 'Network Error' };
+       }
+   },
     getSkills: async (userId: number) => {
         try {
             const response = await axios.get(`${CONFIG.API_URL}/api/skills/${userId}`);
@@ -62,7 +71,7 @@ export const DataService = {
     },
 
     // --- EDUCATION ---
-    addEducation: async (userId: number, eduData: any) => {
+    addEducation: async (userId: number, eduData: { institution: string, degree: string, year: string, type: string }) => {
         try {
             const response = await axios.post(`${CONFIG.API_URL}/api/education`, { user_id: userId, ...eduData });
             return response.data;

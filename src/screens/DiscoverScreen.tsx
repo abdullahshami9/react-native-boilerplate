@@ -153,13 +153,17 @@ const DiscoverScreen = ({ navigation }: any) => {
 
                 <View style={styles.gridContainer}>
                     {businessProducts.map((item) => (
-                        <View key={item.id} style={[styles.productCard, { backgroundColor: theme.cardBg }]}>
+                        <TouchableOpacity
+                            key={item.id}
+                            style={[styles.productCard, { backgroundColor: theme.cardBg }]}
+                            onPress={() => navigation.navigate('ProductDetails', { product: item })}
+                        >
                             <Image source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/150' }} style={styles.productImage} />
                             <View style={styles.productInfo}>
                                 <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
                                 <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price}</Text>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     ))}
                 </View>
             </PageWrapper>

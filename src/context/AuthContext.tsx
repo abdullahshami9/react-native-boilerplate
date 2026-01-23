@@ -20,6 +20,9 @@ export const AuthProvider = ({ children }: any) => {
     useEffect(() => {
         if (Platform.OS === 'android' && NavBarColor) {
             NavBarColor.setBackgroundColor(isDarkMode ? colors.dark.navBg : colors.light.navBg, !isDarkMode);
+            if (NavBarColor.setNightMode) {
+                NavBarColor.setNightMode(isDarkMode);
+            }
         }
     }, [isDarkMode]);
 

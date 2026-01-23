@@ -10,6 +10,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.UiThreadUtil;
+import androidx.appcompat.app.AppCompatDelegate;
 
 public class NavBarColorModule extends ReactContextBaseJavaModule {
     public NavBarColorModule(ReactApplicationContext reactContext) {
@@ -49,6 +50,20 @@ public class NavBarColorModule extends ReactContextBaseJavaModule {
                     }
                 } catch (Exception e) {
                     // Ignore errors
+                }
+            }
+        });
+    }
+
+    @ReactMethod
+    public void setNightMode(final boolean isDark) {
+        UiThreadUtil.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (isDark) {
+                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+                } else {
+                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
                 }
             }
         });

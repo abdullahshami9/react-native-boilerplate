@@ -63,7 +63,7 @@ const ContributionGraph = ({ data, onDateClick, isBusiness }: any) => {
                             style={[
                                 styles.calendarCell,
                                 { backgroundColor: getColor(dateStr) },
-                                isToday && { borderWidth: 1, borderColor: '#2D3748' }
+                                isToday && { borderWidth: 1, borderColor: '#ff0000ff' }
                             ]}
                             onPress={() => onDateClick(dateStr)}
                         />

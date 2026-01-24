@@ -11,7 +11,6 @@ const { width } = Dimensions.get('window');
 
 import { CONFIG } from '../Config';
 
-const { width } = Dimensions.get('window');
 
 const AddProductScreen = ({ navigation, route }: any) => {
     const { userInfo } = useContext(AuthContext);

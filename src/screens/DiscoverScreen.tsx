@@ -51,7 +51,7 @@ const DiscoverScreen = ({ navigation }: any) => {
             <AnimatedSearchHeader
                 title="Discover"
                 onBack={() => navigation.goBack()}
-                onSearch={() => {}}
+                onSearch={() => { }}
                 onChangeText={setSearch}
                 placeholder={filterType === 'All' ? "Search..." : "Type to search..."}
                 initialValue={search}
@@ -76,7 +76,7 @@ const DiscoverScreen = ({ navigation }: any) => {
                         <Text style={{ color: '#A0AEC0' }}>Close</Text>
                     </TouchableOpacity>
                 </View>
-            )}
+            </View>
 
             <PageWrapper
                 contentContainerStyle={styles.scrollContent}

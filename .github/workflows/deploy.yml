@@ -1,0 +1,40 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**' # Only trigger if backend files change
+
+jobs:
+  deploy:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}          # Your EC2 Public IP
+          username: ${{ secrets.EC2_USERNAME }}  # Usually 'ubuntu'
+          key: ${{ secrets.EC2_SSH_KEY }}        # Content of your .pem file
+          port: 22
+          script: |
+            # Stop the server on error
+            set -e
+
+            # Navigate to backend directory
+            cd ~/your-repo/backend
+            
+            # Pull latest code
+            git pull origin main
+            
+            # Install new dependencies
+            npm install
+            
+            # Restart the app
+            pm2 restart backend

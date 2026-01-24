@@ -13,6 +13,24 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
+    updateProduct: async (productId: number, data: any) => {
+        try {
+            const response = await axios.put(`${CONFIG.API_URL}/api/products/${productId}`, data);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Update Product Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getProductLogs: async (productId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/products/${productId}/logs`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Product Logs Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
     updateAppointmentStatus: async (apptId: number, status: string) => {
         try {
             const response = await axios.put(`${CONFIG.API_URL}/api/appointments/${apptId}/status`, { status });
@@ -383,6 +401,53 @@ export const DataService = {
             return response.data;
         } catch (error: any) {
             LoggerService.error('Initiate Chat Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+
+    // --- LOCATIONS ---
+    getProvinces: async () => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/provinces`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Provinces Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getCities: async (provinceId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/cities/${provinceId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Cities Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getLocations: async (cityId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/locations/${cityId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Locations Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getSublocations: async (locationId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/sublocations/${locationId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Sublocations Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getStreets: async (sublocationId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/streets/${sublocationId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Streets Error:', error, 'DataService');
             throw error.response?.data || { message: 'Network Error' };
         }
     }

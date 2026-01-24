@@ -43,42 +43,73 @@ const BookingScreen = ({ route, navigation }: any) => {
             const data = await DataService.getAppointmentSlots(service.user_id, dateStr);
             const busySlots = data.busySlots || [];
 
-            // Generate slots (9 AM to 5 PM, every 30 mins)
-            // Ideally we check service duration. If service is 60 mins, we need 60 min slots?
-            // For simplicity, we use fixed start times (9:00, 9:30, ...) and check overlap.
+            let rules = service.booking_rules;
+            if (typeof rules === 'string') {
+                try { rules = JSON.parse(rules); } catch(e) {}
+            }
 
-            const generatedSlots = [];
-            let startTime = 9 * 60; // 9:00 AM in minutes
-            const endTime = 17 * 60; // 5:00 PM
+            if (rules?.type === 'day_night') {
+                // Day/Night Logic
+                // Day = 10:00 (600 mins), Night = 20:00 (1200 mins)
+                const slotsToCheck = [
+                    { label: 'Day Shift', time: '10:00', start: 600 },
+                    { label: 'Night Shift', time: '20:00', start: 1200 }
+                ];
 
-            const serviceDuration = service.duration_mins || 30;
+                const generatedSlots: string[] = [];
 
-            while (startTime + serviceDuration <= endTime) {
-                const hour = Math.floor(startTime / 60);
-                const mins = startTime % 60;
-                const timeString = `${hour.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+                slotsToCheck.forEach(slot => {
+                    // Check if occupied
+                    const isBusy = busySlots.some((busy: any) => {
+                        const busyDate = new Date(busy.appointment_date);
+                        const busyStart = busyDate.getHours() * 60 + busyDate.getMinutes();
+                        // Simple check: if start time matches approx
+                        return Math.abs(busyStart - slot.start) < 60; // 1 hour buffer
+                    });
 
-                // Check collision
-                // A slot is busy if [slotStart, slotEnd] overlaps with any [busyStart, busyEnd]
-                // Need to parse busySlots
-                const isBusy = busySlots.some((busy: any) => {
-                    const busyDate = new Date(busy.appointment_date);
-                    const busyStart = busyDate.getHours() * 60 + busyDate.getMinutes();
-                    const busyEnd = busyStart + (busy.duration_mins || 30);
-
-                    const slotStart = startTime;
-                    const slotEnd = startTime + serviceDuration;
-
-                    return (slotStart < busyEnd && slotEnd > busyStart);
+                    if (!isBusy) {
+                        generatedSlots.push(slot.time); // Use time as value, but maybe label for display?
+                        // For MVP simplicity, we display '10:00' and '20:00' but user knows context if title says "Day/Night"
+                        // Or we can change the UI to show labels.
+                        // I'll stick to time format for consistency with availableSlots type, but render conditionally?
+                    }
                 });
 
-                if (!isBusy) {
-                    generatedSlots.push(timeString);
-                }
+                setAvailableSlots(generatedSlots);
 
-                startTime += 30; // Increment by 30 mins for next potential slot
+            } else {
+                // Duration Logic
+                const generatedSlots = [];
+                let startTime = 9 * 60; // 9:00 AM in minutes
+                const endTime = 17 * 60; // 5:00 PM
+
+                const serviceDuration = service.duration_mins || 30;
+
+                while (startTime + serviceDuration <= endTime) {
+                    const hour = Math.floor(startTime / 60);
+                    const mins = startTime % 60;
+                    const timeString = `${hour.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+
+                    // Check collision
+                    const isBusy = busySlots.some((busy: any) => {
+                        const busyDate = new Date(busy.appointment_date);
+                        const busyStart = busyDate.getHours() * 60 + busyDate.getMinutes();
+                        const busyEnd = busyStart + (busy.duration_mins || 30);
+
+                        const slotStart = startTime;
+                        const slotEnd = startTime + serviceDuration;
+
+                        return (slotStart < busyEnd && slotEnd > busyStart);
+                    });
+
+                    if (!isBusy) {
+                        generatedSlots.push(timeString);
+                    }
+
+                    startTime += 30;
+                }
+                setAvailableSlots(generatedSlots);
             }
-            setAvailableSlots(generatedSlots);
 
         } catch (error) {
             console.error(error);

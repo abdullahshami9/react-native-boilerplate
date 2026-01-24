@@ -15,7 +15,7 @@ const ChooseProfileTypeScreen = ({ navigation }: any) => {
             await TunnelService.updateUserType(userInfo.id, type);
             // Navigate to next step
             if (type === 'Individual') {
-                navigation.navigate('PersonalSkills');
+                navigation.navigate('PersonalDetails');
             } else {
                 navigation.navigate('BusinessLocation');
             }

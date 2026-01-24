@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Lay
 import { AuthContext } from '../context/AuthContext';
 import { DataService } from '../services/DataService';
 import Svg, { Path } from 'react-native-svg';
-import SecureLoader from '../components/SecureLoader';
+import StandardLoader from '../components/StandardLoader';
 import { useTheme } from '../theme/useTheme';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -112,16 +112,7 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
                 ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>You haven't placed any orders.</Text>}
             />
 
-            <Modal
-                transparent={true}
-                animationType="fade"
-                visible={showLoader}
-                onRequestClose={() => { }}
-            >
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)' }}>
-                    <SecureLoader size={100} color={isDarkMode ? '#63B3ED' : '#3182CE'} />
-                </View>
-            </Modal>
+            <StandardLoader visible={showLoader} />
         </View>
     );
 };

@@ -18,6 +18,7 @@ const ManageServicesScreen = ({ navigation }: any) => {
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState('');
     const [duration, setDuration] = useState('');
+    const [bookingType, setBookingType] = useState('duration'); // 'duration' or 'day_night'
     const [image, setImage] = useState<any>(null);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -66,14 +67,21 @@ const ManageServicesScreen = ({ navigation }: any) => {
 
         setSubmitting(true);
         try {
+            const rules = bookingType === 'day_night'
+                ? { type: 'day_night', slots: ['Day', 'Night'] }
+                : { type: 'duration', duration_mins: parseInt(duration) };
+
+            const serviceData = {
+                name,
+                description,
+                price: parseFloat(price),
+                duration_mins: parseInt(duration) || 0,
+                booking_rules: rules, // Pass as object, backend might need to stringify or handled by JSON column
+                user_id: userInfo.id // Needed for add, ignored for update
+            };
+
             if (editingId) {
                 // Update Service
-                const serviceData = {
-                    name,
-                    description,
-                    price: parseFloat(price),
-                    duration_mins: parseInt(duration),
-                };
                 await DataService.updateService(editingId, serviceData);
 
                 if (image && image.uri) {
@@ -82,13 +90,6 @@ const ManageServicesScreen = ({ navigation }: any) => {
                 setAlertConfig({ visible: true, title: 'Success', message: 'Service updated successfully', type: 'success' });
             } else {
                 // Add Service
-                const serviceData = {
-                    user_id: userInfo.id,
-                    name,
-                    description,
-                    price: parseFloat(price),
-                    duration_mins: parseInt(duration),
-                };
                 const response = await DataService.addService(serviceData);
 
                 if (response.success && image) {
@@ -113,6 +114,12 @@ const ManageServicesScreen = ({ navigation }: any) => {
         setDescription(item.description || '');
         setPrice(String(item.price));
         setDuration(String(item.duration_mins));
+        // Parse rules
+        let rules = item.booking_rules;
+        if (typeof rules === 'string') {
+            try { rules = JSON.parse(rules); } catch(e) {}
+        }
+        setBookingType(rules?.type || 'duration');
         setImage(null);
         setModalVisible(true);
     };
@@ -131,6 +138,7 @@ const ManageServicesScreen = ({ navigation }: any) => {
         setDescription('');
         setPrice('');
         setDuration('');
+        setBookingType('duration');
         setImage(null);
         setEditingId(null);
     };
@@ -225,8 +233,28 @@ const ManageServicesScreen = ({ navigation }: any) => {
                         <Text style={[styles.label, { color: theme.text }]}>Price ($)</Text>
                         <TextInput style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]} value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="50" placeholderTextColor={theme.subText} />
 
-                        <Text style={[styles.label, { color: theme.text }]}>Duration (Minutes)</Text>
-                        <TextInput style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]} value={duration} onChangeText={setDuration} keyboardType="numeric" placeholder="60" placeholderTextColor={theme.subText} />
+                        <Text style={[styles.label, { color: theme.text }]}>Booking Type</Text>
+                        <View style={{ flexDirection: 'row', marginBottom: 10, gap: 10 }}>
+                            <TouchableOpacity
+                                style={{ padding: 10, backgroundColor: bookingType === 'duration' ? theme.text : theme.inputBg, borderRadius: 8, borderWidth: 1, borderColor: theme.borderColor }}
+                                onPress={() => setBookingType('duration')}
+                            >
+                                <Text style={{ color: bookingType === 'duration' ? theme.bg : theme.text }}>Duration Based</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={{ padding: 10, backgroundColor: bookingType === 'day_night' ? theme.text : theme.inputBg, borderRadius: 8, borderWidth: 1, borderColor: theme.borderColor }}
+                                onPress={() => setBookingType('day_night')}
+                            >
+                                <Text style={{ color: bookingType === 'day_night' ? theme.bg : theme.text }}>Day/Night Slots</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {bookingType === 'duration' && (
+                            <>
+                                <Text style={[styles.label, { color: theme.text }]}>Duration (Minutes)</Text>
+                                <TextInput style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]} value={duration} onChangeText={setDuration} keyboardType="numeric" placeholder="60" placeholderTextColor={theme.subText} />
+                            </>
+                        )}
 
                         <Text style={[styles.label, { color: theme.text }]}>Description</Text>
                         <TextInput style={[styles.input, styles.textArea, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]} value={description} onChangeText={setDescription} multiline placeholder="Describe your service..." placeholderTextColor={theme.subText} />

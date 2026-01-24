@@ -3,11 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Linking, Pl
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
-import Svg, { Path } from 'react-native-svg';
+import AddressSelector from '../../../components/AddressSelector';
+import Svg, { Path, Circle } from 'react-native-svg';
 import Geolocation from 'react-native-geolocation-service';
 
 const BusinessLocationScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);
+    const [username, setUsername] = useState('');
     const [address, setAddress] = useState('');
     const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(null);
     const [loading, setLoading] = useState(false);
@@ -73,20 +75,29 @@ const BusinessLocationScreen = ({ navigation }: any) => {
 
     const handleNext = async () => {
         if (!address) {
-            Alert.alert("Missing Address", "Please enter a business address.");
+            Alert.alert("Missing Address", "Please select a business address.");
             return;
         }
+        if (!username.trim()) {
+            Alert.alert("Missing Username", "Please enter a username.");
+            return;
+        }
+
         setLoading(true);
         try {
+            // Save Username
+            await TunnelService.updatePersonalAdditionalInfo(userInfo.id, { username, gender: '', interests: [] });
+
+            // Save Location
             await TunnelService.updateBusinessLocation(userInfo.id, {
                 address: address,
                 lat: coords ? coords.lat : 0,
                 lng: coords ? coords.lng : 0
             });
             navigation.navigate('BusinessTypeContact');
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            Alert.alert('Error', 'Failed to save details');
+            Alert.alert('Error', error.message || 'Failed to save details');
         } finally {
             setLoading(false);
         }
@@ -95,6 +106,25 @@ const BusinessLocationScreen = ({ navigation }: any) => {
     return (
         <TunnelWrapper title="Business Profile - Location" onBack={() => navigation.goBack()}>
             <View style={styles.container}>
+
+                {/* Username Section */}
+                <View style={{ marginBottom: 20 }}>
+                     <Text style={{ fontSize: 14, fontWeight: '600', color: '#4A5568', marginBottom: 8, marginLeft: 4 }}>Username</Text>
+                     <View style={styles.inputGroup}>
+                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={{ marginRight: 10 }}>
+                            <Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <Circle cx="12" cy="7" r="4" />
+                        </Svg>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="username"
+                            placeholderTextColor="#A0AEC0"
+                            value={username}
+                            onChangeText={setUsername}
+                            autoCapitalize="none"
+                        />
+                    </View>
+                </View>
 
                 {/* Location Display Area */}
                 <View style={styles.locationContainer}>
@@ -134,21 +164,9 @@ const BusinessLocationScreen = ({ navigation }: any) => {
                     )}
                 </View>
 
-                <View style={styles.inputGroup}>
-                    <View style={styles.inputIcon}>
-                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
-                            <Path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                            <Path d="M9 22V12h6v10" />
-                        </Svg>
-                    </View>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="123 Business Road, City"
-                        placeholderTextColor="#A0AEC0"
-                        value={address}
-                        onChangeText={setAddress}
-                    />
-                </View>
+                <AddressSelector
+                     onAddressChange={(addr) => setAddress(addr)}
+                />
 
                 <View style={styles.spacer} />
 

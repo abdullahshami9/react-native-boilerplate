@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
-import { View, ScrollView, RefreshControl, Modal, StyleSheet, ViewStyle } from 'react-native';
+import { View, ScrollView, RefreshControl, StyleSheet, ViewStyle } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import SecureLoader from './SecureLoader';
+import StandardLoader from './StandardLoader';
 import { useTheme } from '../theme/useTheme';
 
 interface PageWrapperProps {
@@ -53,16 +53,7 @@ const PageWrapper: React.FC<PageWrapperProps> = ({ children, onRefresh, style, c
                 {children}
             </ScrollView>
 
-            <Modal
-                transparent={true}
-                animationType="fade"
-                visible={showLoader}
-                onRequestClose={() => { }} // Prevent closing by back button
-            >
-                <View style={[styles.loaderContainer, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)' }]}>
-                    <SecureLoader size={100} color={isDarkMode ? '#63B3ED' : '#3182CE'} />
-                </View>
-            </Modal>
+            <StandardLoader visible={showLoader} />
         </View>
     );
 };
@@ -74,11 +65,6 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
     },
-    loaderContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    }
 });
 
 export default PageWrapper;

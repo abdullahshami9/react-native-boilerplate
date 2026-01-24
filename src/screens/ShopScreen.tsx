@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, TextInput, ActivityIndicator } from 'react-native';
-import Svg, { Path, Circle } from 'react-native-svg';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { DataService } from '../services/DataService';
 import { CONFIG } from '../Config';
 import PageWrapper from '../components/PageWrapper';
+import AnimatedSearchHeader from '../components/AnimatedSearchHeader';
 import { useTheme } from '../theme/useTheme';
 
 const { width } = Dimensions.get('window');
@@ -56,33 +56,15 @@ const ShopScreen = ({ navigation }: any) => {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
-            {/* Header */}
-            <View style={[styles.header, { backgroundColor: theme.bg }]}>
-                <Text style={{ position: 'absolute', top: 15, left: 20, zIndex: 10, fontSize: 14, fontWeight: 'bold', color: theme.text }}>Junr</Text>
-                <TouchableOpacity style={[styles.backButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.goBack()}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
-                        <Path d="M19 12H5M12 19l-7-7 7-7" />
-                    </Svg>
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Shop</Text>
-                <View style={{ width: 24 }} />
-            </View>
 
-            {/* Search Bar */}
-            <View style={[styles.searchContainer, { backgroundColor: theme.inputBg, borderColor: theme.borderColor }]}>
-                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={styles.searchIcon}>
-                    <Circle cx="11" cy="11" r="8" />
-                    <Path d="M21 21L16.65 16.65" />
-                </Svg>
-                <TextInput
-                    style={[styles.searchInput, { color: theme.text }]}
-                    placeholder={`Search ${activeTab}...`}
-                    placeholderTextColor="#A0AEC0"
-                    value={search}
-                    onChangeText={setSearch}
-                />
-            </View>
-
+            <AnimatedSearchHeader
+                title="Shop"
+                onBack={() => navigation.goBack()}
+                onSearch={() => {}} // Live search via onChangeText
+                onChangeText={setSearch}
+                placeholder={`Search ${activeTab}...`}
+                initialValue={search}
+            />
 
             {/* Tabs */}
             <View style={[styles.tabContainer, { backgroundColor: theme.bg, borderBottomColor: theme.borderColor }]}>

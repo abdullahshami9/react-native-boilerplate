@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
-import Svg, { Path, Circle } from 'react-native-svg';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { DataService } from '../services/DataService';
 import { AuthContext } from '../context/AuthContext';
 import { CONFIG } from '../Config';
 import PageWrapper from '../components/PageWrapper';
+import AnimatedSearchHeader from '../components/AnimatedSearchHeader';
 import { useTheme } from '../theme/useTheme';
 
 const { width } = Dimensions.get('window');
@@ -46,42 +47,18 @@ const DiscoverScreen = ({ navigation }: any) => {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
-            {/* Header */}
-            <View style={[styles.header, { backgroundColor: theme.bg }]}>
-                <TouchableOpacity style={[styles.backButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.goBack()}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
-                        <Path d="M19 12H5M12 19l-7-7 7-7" />
-                    </Svg>
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Discover</Text>
-                <View style={{ width: 24 }} />
-            </View>
 
-            <View style={[styles.searchContainer, { backgroundColor: theme.inputBg, borderColor: theme.borderColor }]}>
-                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={styles.searchIcon}>
-                    <Circle cx="11" cy="11" r="8" />
-                    <Path d="M21 21L16.65 16.65" />
-                </Svg>
-                {filterType !== 'All' && (
-                    <TouchableOpacity style={styles.inBarChip} onPress={() => setFilterType('All')}>
-                        <Text style={styles.inBarChipText}>{filterType}</Text>
-                        <Svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" style={{ marginLeft: 4 }}>
-                            <Path d="M18 6L6 18M6 6l12 12" />
-                        </Svg>
-                    </TouchableOpacity>
-                )}
-                <TextInput
-                    style={[styles.searchInput, { color: theme.text }]}
-                    placeholder={filterType === 'All' ? "Search..." : "Type to search..."}
-                    placeholderTextColor="#A0AEC0"
-                    value={search}
-                    onChangeText={setSearch}
-                    onFocus={() => setIsSearchFocused(true)}
-                // We don't blur immediately to allow clicking chips
-                />
-            </View>
+            <AnimatedSearchHeader
+                title="Discover"
+                onBack={() => navigation.goBack()}
+                onSearch={() => {}}
+                onChangeText={setSearch}
+                placeholder={filterType === 'All' ? "Search..." : "Type to search..."}
+                initialValue={search}
+            />
 
-            {isSearchFocused && (
+            {/* Filter Chips - Simplified placement */}
+            <View style={[styles.filterContainer, { marginTop: 10 }]}>
                 <View style={styles.filterContainer}>
                     {['All', 'Skills', 'Location'].map((f) => (
                         <TouchableOpacity

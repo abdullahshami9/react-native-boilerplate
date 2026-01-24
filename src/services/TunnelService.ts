@@ -13,6 +13,21 @@ export const TunnelService = {
         }
     },
 
+    updatePersonalAdditionalInfo: async (userId: number, data: any) => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/tunnel/personal/additional`, {
+                user_id: userId,
+                username: data.username,
+                gender: data.gender,
+                interests: data.interests
+            });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Update Personal Additional Info Error:', error, 'TunnelService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+
     updatePersonalSkills: async (userId: number, skills: string[]) => {
         try {
             const response = await axios.post(`${CONFIG.API_URL}/api/tunnel/personal/skills`, { user_id: userId, skills });

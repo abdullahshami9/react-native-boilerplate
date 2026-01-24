@@ -32,6 +32,7 @@ import ARCardScannerScreen from './src/screens/ar/ARCardScannerScreen';
 
 // Tunnel Screens
 import ChooseProfileTypeScreen from './src/screens/tunnel/ChooseProfileTypeScreen';
+import PersonalDetailsScreen from './src/screens/tunnel/personal/PersonalDetailsScreen';
 import PersonalSkillsScreen from './src/screens/tunnel/personal/PersonalSkillsScreen';
 import PersonalEducationScreen from './src/screens/tunnel/personal/PersonalEducationScreen';
 import PersonalLocationJobScreen from './src/screens/tunnel/personal/PersonalLocationJobScreen';
@@ -96,6 +97,7 @@ const AppNav = () => {
               <Stack.Screen name="ChooseProfileType" component={ChooseProfileTypeScreen} />
 
               {/* Personal Flow */}
+              <Stack.Screen name="PersonalDetails" component={PersonalDetailsScreen} />
               <Stack.Screen name="PersonalSkills" component={PersonalSkillsScreen} />
               <Stack.Screen name="PersonalEducation" component={PersonalEducationScreen} />
               <Stack.Screen name="PersonalLocationJob" component={PersonalLocationJobScreen} />

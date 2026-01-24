@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Linking } f
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
+import AddressSelector from '../../../components/AddressSelector';
 import Svg, { Path, Circle as SvgCircle } from 'react-native-svg';
 
 const PersonalLocationJobScreen = ({ navigation }: any) => {
@@ -25,42 +26,15 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
         }
     };
 
-    const openExternalMap = () => {
-        const query = location ? encodeURIComponent(location) : '';
-        const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
-        Linking.openURL(url).catch(err => console.error("Couldn't load page", err));
-    };
-
     return (
         <TunnelWrapper title="Personal Profile - Location & Job" onBack={() => navigation.goBack()}>
             <View style={styles.container}>
 
                 {/* Location Section */}
                 <View style={styles.section}>
-                    <Text style={styles.label}>Location</Text>
-                    <View style={styles.inputGroup}>
-                        <View style={styles.iconContainer}>
-                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
-                                <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                <SvgCircle cx="12" cy="10" r="3" />
-                            </Svg>
-                        </View>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter your address (e.g. New York, NY)"
-                            placeholderTextColor="#A0AEC0"
-                            value={location}
-                            onChangeText={setLocation}
-                        />
-                    </View>
-                    <TouchableOpacity onPress={openExternalMap} style={styles.linkButton}>
-                        <Text style={styles.linkText}>Find on Google Maps</Text>
-                        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3182CE" strokeWidth="2">
-                            <Path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                            <Path d="M15 3h6v6" />
-                            <Path d="M10 14L21 3" />
-                        </Svg>
-                    </TouchableOpacity>
+                    <AddressSelector
+                        onAddressChange={(addr) => setLocation(addr)}
+                    />
                 </View>
 
                 {/* Job Title Section */}

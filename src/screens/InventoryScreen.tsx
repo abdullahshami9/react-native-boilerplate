@@ -5,7 +5,7 @@ import { DataService } from '../services/DataService';
 import { AuthContext } from '../context/AuthContext';
 import { CONFIG } from '../Config';
 import CustomAlert from '../components/CustomAlert';
-import SecureLoader from '../components/SecureLoader';
+import StandardLoader from '../components/StandardLoader';
 
 const InventoryScreen = ({ navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
@@ -65,35 +65,7 @@ const InventoryScreen = ({ navigation }: any) => {
     };
 
     const handleEditStock = (product: any) => {
-        setEditingId(product.id);
-        setTempStock(String(product.stock_quantity || 0));
-    };
-
-    const handleSaveStock = async (id: number) => {
-        try {
-            const stock = parseInt(tempStock);
-            if (isNaN(stock)) {
-                setAlertTitle("Invalid Input");
-                setAlertMessage("Please enter a valid number.");
-                setAlertType("error");
-                setAlertVisible(true);
-                return;
-            }
-            const res = await DataService.updateStock(id, stock);
-            if (res.success) {
-                setProducts(prev => prev.map(p => p.id === id ? { ...p, stock_quantity: stock } : p));
-                setEditingId(null);
-                setAlertTitle("Success");
-                setAlertMessage("Stock updated successfully.");
-                setAlertType("success");
-                setAlertVisible(true);
-            }
-        } catch (error) {
-            setAlertTitle("Error");
-            setAlertMessage("Failed to update stock.");
-            setAlertType("error");
-            setAlertVisible(true);
-        }
+        navigation.navigate('AddProduct', { product });
     };
 
     return (
@@ -146,36 +118,18 @@ const InventoryScreen = ({ navigation }: any) => {
                                     <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
                                     <Text style={[styles.price, { color: theme.subText }]}>{item.price} PKR</Text>
 
-                                    {editingId === item.id ? (
-                                        <View style={styles.stockEditContainer}>
-                                            <Text style={[styles.stockLabel, { color: theme.subText }]}>Qty:</Text>
-                                            <TextInput
-                                                style={[styles.stockInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]}
-                                                value={tempStock}
-                                                onChangeText={setTempStock}
-                                                keyboardType="numeric"
-                                                autoFocus
-                                            />
-                                            <TouchableOpacity onPress={() => handleSaveStock(item.id)} style={styles.saveButton}>
-                                                <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><Path d="M20 6L9 17l-5-5"/></Svg>
-                                            </TouchableOpacity>
-                                        </View>
-                                    ) : (
-                                        <Text style={[styles.stock, item.stock_quantity < 5 ? { color: '#E53E3E' } : { color: theme.subText }]}>
-                                            Stock: {item.stock_quantity || 0}
-                                        </Text>
-                                    )}
+                                    <Text style={[styles.stock, item.stock_quantity < 5 ? { color: '#E53E3E' } : { color: theme.subText }]}>
+                                        Stock: {item.stock_quantity || 0}
+                                    </Text>
                                 </View>
 
-                                {editingId !== item.id && (
-                                    <TouchableOpacity style={[styles.editButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => handleEditStock(item)}>
-                                        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 5 }}>
-                                            <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                            <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                        </Svg>
-                                        <Text style={[styles.editButtonText, { color: theme.text }]}>Edit</Text>
-                                    </TouchableOpacity>
-                                )}
+                                <TouchableOpacity style={[styles.editButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => handleEditStock(item)}>
+                                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 5 }}>
+                                        <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                    </Svg>
+                                    <Text style={[styles.editButtonText, { color: theme.text }]}>Edit</Text>
+                                </TouchableOpacity>
                             </View>
                         );
                     }}
@@ -195,16 +149,7 @@ const InventoryScreen = ({ navigation }: any) => {
                 onDismiss={() => setAlertVisible(false)}
             />
 
-            <Modal
-                transparent={true}
-                animationType="fade"
-                visible={showLoader}
-                onRequestClose={() => {}}
-            >
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)' }}>
-                    <SecureLoader size={100} color={isDarkMode ? '#63B3ED' : '#3182CE'} />
-                </View>
-            </Modal>
+            <StandardLoader visible={showLoader} />
         </View>
     );
 };

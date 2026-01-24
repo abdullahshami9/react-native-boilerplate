@@ -291,6 +291,95 @@ db.connect(async (err) => {
           creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
           PRIMARY KEY (id) USING BTREE
         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+        CREATE TABLE IF NOT EXISTS province (
+          provinceId int(11) NOT NULL AUTO_INCREMENT,
+          provinceName varchar(50) NOT NULL,
+          creationDate timestamp NULL DEFAULT NULL,
+          modifiedDate timestamp NULL DEFAULT NULL,
+          terminus_region_id int(11) DEFAULT NULL,
+          PRIMARY KEY (provinceId)
+        );
+
+        CREATE TABLE IF NOT EXISTS city (
+          cityId int(3) NOT NULL AUTO_INCREMENT,
+          province_provinceId int(11) NOT NULL,
+          cityName varchar(50) NOT NULL,
+          cityCode varchar(5) DEFAULT NULL,
+          creationDate timestamp NULL DEFAULT NULL,
+          modifiedDate timestamp NULL DEFAULT NULL,
+          sap_id int(11) DEFAULT 0,
+          costCenter varchar(50) DEFAULT NULL,
+          provisionEmail varchar(50) DEFAULT NULL,
+          cityIata varchar(3) DEFAULT NULL,
+          support_number varchar(15) DEFAULT NULL,
+          odnEmail varchar(50) DEFAULT NULL,
+          huaweiVASProfile varchar(255) DEFAULT NULL,
+          available_tv_services tinyint(1) DEFAULT '1',
+          operational tinyint(1) unsigned NOT NULL DEFAULT '1',
+          ticket_system enum('OTRS','TERMINUS') DEFAULT 'OTRS',
+          terminus_city_id int(11) DEFAULT NULL,
+          modified_by int(11) DEFAULT NULL,
+          internet_blocked tinyint(1) DEFAULT '0',
+          PRIMARY KEY (cityId),
+          FOREIGN KEY (province_provinceId) REFERENCES province (provinceId) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS location (
+          locationId int(11) NOT NULL AUTO_INCREMENT,
+          city_cityId int(11) NOT NULL,
+          locationName varchar(50) NOT NULL,
+          locationCharges decimal(4,2) NOT NULL DEFAULT 0.00,
+          charges_type varchar(1) NOT NULL DEFAULT 'F',
+          creationDate timestamp NULL DEFAULT NULL,
+          modifiedDate timestamp NULL DEFAULT NULL,
+          visible_np_coverage tinyint(1) DEFAULT '0',
+          np_flag_modified_by int(11) DEFAULT NULL,
+          np_flag_modified_date datetime DEFAULT NULL,
+          available_tv_services tinyint(1) DEFAULT '1',
+          internet_blocked tinyint(1) DEFAULT '0',
+          PRIMARY KEY (locationId),
+          FOREIGN KEY (city_cityId) REFERENCES city (cityId) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS sublocation (
+          sublocationId int(11) NOT NULL AUTO_INCREMENT,
+          location_LocationId int(11) NOT NULL,
+          sublocationName varchar(50) NOT NULL,
+          sublocationLink varchar(100) DEFAULT '',
+          creationDate timestamp NULL DEFAULT NULL,
+          modifiedDate timestamp NULL DEFAULT NULL,
+          visible_np_coverage tinyint(1) DEFAULT '0',
+          np_flag_modified_by int(11) DEFAULT NULL,
+          np_flag_modified_date datetime DEFAULT NULL,
+          available_tv_services tinyint(1) DEFAULT '1',
+          total_housepass int(5) DEFAULT NULL,
+          current_housepass_occupancy int(5) DEFAULT NULL,
+          energize_date date DEFAULT NULL,
+          internet_blocked tinyint(1) DEFAULT '0',
+          PRIMARY KEY (sublocationId),
+          FOREIGN KEY (location_LocationId) REFERENCES location (locationId) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS streetinfo (
+          streetId int(11) NOT NULL AUTO_INCREMENT,
+          sublocation_sublocationId int(11) NOT NULL,
+          streetName varchar(100) NOT NULL,
+          creationDate timestamp NULL DEFAULT NULL,
+          modifiedDate timestamp NULL DEFAULT NULL,
+          PRIMARY KEY (streetId),
+          FOREIGN KEY (sublocation_sublocationId) REFERENCES sublocation (sublocationId) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS product_logs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            product_id INT NOT NULL,
+            old_price DECIMAL(10, 2),
+            new_price DECIMAL(10, 2),
+            action VARCHAR(50) DEFAULT 'update',
+            change_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+        );
     `;
 
     db.query(initQuery, (err, result) => {
@@ -391,6 +480,62 @@ db.connect(async (err) => {
             db.query("SHOW COLUMNS FROM education LIKE 'type'", (e, r) => {
                 if (r && r.length === 0) {
                     db.query("ALTER TABLE education ADD COLUMN type ENUM('Degree', 'Certificate', 'Diploma') DEFAULT 'Degree'", () => console.log("Added type to education"));
+                }
+            });
+
+            // --- NEW MIGRATIONS FOR TUNNEL & BUSINESS LOGIC ---
+            db.query("SHOW COLUMNS FROM users LIKE 'username'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE users ADD COLUMN username VARCHAR(50) UNIQUE", () => console.log("Added username to users"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM users LIKE 'gender'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE users ADD COLUMN gender VARCHAR(20)", () => console.log("Added gender to users"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM users LIKE 'interests'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE users ADD COLUMN interests JSON", () => console.log("Added interests to users"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM services LIKE 'booking_rules'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE services ADD COLUMN booking_rules JSON", () => console.log("Added booking_rules to services"));
+                }
+            });
+
+            // Seed Dummy Data for Location (If empty)
+            db.query("SELECT COUNT(*) as count FROM province", (e, r) => {
+                if (r && r[0].count === 0) {
+                    console.log("Seeding Location Data...");
+                    const sql = "INSERT INTO province (provinceName) VALUES ('Sindh'), ('Punjab')";
+                    db.query(sql, (err, res) => {
+                        if(!err) {
+                            const sindhId = res.insertId; // Assuming first insert is Sindh. Auto-inc might vary but good enough for mvp.
+                            // Insert City
+                            db.query("INSERT INTO city (province_provinceId, cityName) VALUES (?, ?)", [sindhId, 'Karachi'], (e2, r2) => {
+                                if (!e2) {
+                                    const khiId = r2.insertId;
+                                    // Insert Location
+                                    db.query("INSERT INTO location (city_cityId, locationName) VALUES (?, ?)", [khiId, 'Gulshan-e-Iqbal'], (e3, r3) => {
+                                        if(!e3) {
+                                            const locId = r3.insertId;
+                                            // Insert Sublocation
+                                            db.query("INSERT INTO sublocation (location_LocationId, sublocationName) VALUES (?, ?)", [locId, 'Block 13-D'], (e4, r4) => {
+                                                if(!e4) {
+                                                    const subId = r4.insertId;
+                                                    // Insert Street
+                                                    db.query("INSERT INTO streetinfo (sublocation_sublocationId, streetName) VALUES (?, ?)", [subId, 'Street 1'], () => {});
+                                                    db.query("INSERT INTO streetinfo (sublocation_sublocationId, streetName) VALUES (?, ?)", [subId, 'Street 2'], () => {});
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
                 }
             });
         }
@@ -1479,6 +1624,105 @@ app.post('/api/tunnel/business/industry', (req, res) => {
     dbQuery(query, [user_id, industry, category], req, (err) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true });
+    });
+});
+
+// --- NEW LOCATION APIS ---
+
+app.get('/api/provinces', (req, res) => {
+    dbQuery('SELECT * FROM province', [], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, provinces: results });
+    });
+});
+
+app.get('/api/cities/:provinceId', (req, res) => {
+    dbQuery('SELECT * FROM city WHERE province_provinceId = ?', [req.params.provinceId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, cities: results });
+    });
+});
+
+app.get('/api/locations/:cityId', (req, res) => {
+    dbQuery('SELECT * FROM location WHERE city_cityId = ?', [req.params.cityId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, locations: results });
+    });
+});
+
+app.get('/api/sublocations/:locationId', (req, res) => {
+    dbQuery('SELECT * FROM sublocation WHERE location_LocationId = ?', [req.params.locationId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, sublocations: results });
+    });
+});
+
+app.get('/api/streets/:sublocationId', (req, res) => {
+    dbQuery('SELECT * FROM streetinfo WHERE sublocation_sublocationId = ?', [req.params.sublocationId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, streets: results });
+    });
+});
+
+// --- PRODUCT LOGS & FULL UPDATE ---
+
+app.put('/api/products/:id', verifyToken, (req, res) => {
+    const { name, price, description, image_url, stock_quantity } = req.body;
+    const productId = req.params.id;
+
+    // First get old values for logging
+    dbQuery('SELECT * FROM products WHERE id = ?', [productId], req, (err, results) => {
+        if (err || results.length === 0) return res.status(500).json({ success: false, message: 'Product not found' });
+
+        const oldProduct = results[0];
+
+        // Log price change if any
+        if (price !== undefined && price != oldProduct.price) {
+            dbQuery('INSERT INTO product_logs (product_id, old_price, new_price, action) VALUES (?, ?, ?, "price_update")',
+                [productId, oldProduct.price, price], req, () => {});
+        }
+         // Log stock change if significant? Or just price. User mentioned "Yesterday price 10... today 15".
+         // Let's log updates generally if we want, but price is key.
+
+        const query = 'UPDATE products SET name = ?, price = ?, description = ?, image_url = ?, stock_quantity = ? WHERE id = ?';
+        dbQuery(query, [name, price, description, image_url, stock_quantity, productId], req, (updateErr) => {
+            if (updateErr) return res.status(500).json({ success: false });
+            res.json({ success: true, message: 'Product updated' });
+        });
+    });
+});
+
+app.get('/api/products/:id/logs', verifyToken, (req, res) => {
+    // Get logs + sales summary associated with those dates?
+    // User wants: "Yesterday 10$ sold 5, Today 15$ sold 2"
+    // This is a complex query joining orders.
+    // Ideally we want to show a timeline.
+
+    // For MVP, let's return the logs and let frontend merge with sales or do a smart query.
+    // Let's try to get sales per day/price period.
+    // It's easier to just return the logs and the daily sales, and let the UI visualize it.
+
+    const query = 'SELECT * FROM product_logs WHERE product_id = ? ORDER BY change_date DESC';
+    dbQuery(query, [req.params.id], req, (err, logs) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, logs: logs });
+    });
+});
+
+
+// --- UPDATE USER ADDITIONAL INFO ---
+app.post('/api/tunnel/personal/additional', (req, res) => {
+    const { user_id, username, gender, interests } = req.body;
+
+    // Check uniqueness of username
+    dbQuery('SELECT id FROM users WHERE username = ? AND id != ?', [username, user_id], req, (err, results) => {
+        if (results && results.length > 0) return res.status(409).json({ success: false, message: 'Username taken' });
+
+        const query = 'UPDATE users SET username = ?, gender = ?, interests = ? WHERE id = ?';
+        dbQuery(query, [username, gender, JSON.stringify(interests || []), user_id], req, (uErr) => {
+            if (uErr) return res.status(500).json({ success: false });
+            res.json({ success: true });
+        });
     });
 });
 

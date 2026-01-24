@@ -1,20 +1,33 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, StatusBar } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, StatusBar, Share } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 
 import { CartContext } from '../context/CartContext';
 import { CONFIG } from '../Config';
+import MiniToast, { MiniToastRef } from '../components/MiniToast';
 
 const { width } = Dimensions.get('window');
 
 const ProductDetailsScreen = ({ navigation, route }: any) => {
     const { product } = route.params || {};
     const { addToCart } = React.useContext(CartContext);
+    const toastRef = useRef<MiniToastRef>(null);
 
     const handleAddToCart = () => {
         addToCart(product);
-        // Maybe show feedback?
-        navigation.goBack();
+        toastRef.current?.show('Added to cart');
+    };
+
+    const handleShare = async () => {
+        try {
+            await Share.share({
+                message: `Check out ${product.name} for ${product.price} PKR on Raabtaa!`,
+                url: product.image_url ? `${CONFIG.API_URL}/${product.image_url}` : undefined,
+                title: product.name
+            });
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     if (!product) return null;
@@ -68,11 +81,23 @@ const ProductDetailsScreen = ({ navigation, route }: any) => {
                         {product.description || 'No description available.'}
                     </Text>
 
-                    <TouchableOpacity style={styles.buyButton} onPress={handleAddToCart}>
-                        <Text style={styles.buyButtonText}>Add to Cart</Text>
-                    </TouchableOpacity>
+                    <View style={styles.actionRow}>
+                        <TouchableOpacity style={styles.buyButton} onPress={handleAddToCart}>
+                            <Text style={styles.buyButtonText}>Add to Cart</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+                                <Circle cx="18" cy="5" r="3" />
+                                <Circle cx="6" cy="12" r="3" />
+                                <Circle cx="18" cy="19" r="3" />
+                                <Path d="M8.59 13.51l6.83 3.98" />
+                                <Path d="M15.41 6.51l-6.82 3.98" />
+                            </Svg>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </ScrollView>
+            <MiniToast ref={toastRef} />
         </View>
     );
 };
@@ -169,7 +194,13 @@ const styles = StyleSheet.create({
         lineHeight: 22,
         marginBottom: 30,
     },
+    actionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 15,
+    },
     buyButton: {
+        flex: 1,
         backgroundColor: '#2D3748',
         paddingVertical: 18,
         borderRadius: 30,
@@ -184,6 +215,14 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    shareButton: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#EDF2F7',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });
 

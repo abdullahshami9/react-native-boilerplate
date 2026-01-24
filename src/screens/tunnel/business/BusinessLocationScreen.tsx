@@ -6,6 +6,8 @@ import TunnelWrapper from '../../../components/TunnelWrapper';
 import AddressSelector from '../../../components/AddressSelector';
 import Svg, { Path, Circle } from 'react-native-svg';
 import Geolocation from 'react-native-geolocation-service';
+import CustomAlert from '../../../components/CustomAlert';
+import { useTheme } from '../../../theme/useTheme';
 
 const BusinessLocationScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);
@@ -14,11 +16,17 @@ const BusinessLocationScreen = ({ navigation }: any) => {
     const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(null);
     const [loading, setLoading] = useState(false);
     const [locating, setLocating] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info' });
+    const theme = useTheme();
+
+    const showAlert = (title: string, message: string, type: 'error' | 'success' | 'info' = 'error') => {
+        setAlertConfig({ visible: true, title, message, type });
+    };
 
     const requestLocationPermission = async () => {
         if (Platform.OS === 'ios') {
             const auth = await Geolocation.requestAuthorization("whenInUse");
-            if(auth === "granted") return true;
+            if (auth === "granted") return true;
         }
 
         if (Platform.OS === 'android') {
@@ -45,7 +53,7 @@ const BusinessLocationScreen = ({ navigation }: any) => {
     const handleGetCurrentLocation = async () => {
         const hasPermission = await requestLocationPermission();
         if (!hasPermission) {
-            Alert.alert('Permission Denied', 'Location permission is required.');
+            showAlert('Permission Denied', 'Location permission is required.');
             return;
         }
 
@@ -60,7 +68,7 @@ const BusinessLocationScreen = ({ navigation }: any) => {
             },
             (error) => {
                 console.log(error.code, error.message);
-                Alert.alert('Error', 'Failed to get location: ' + error.message);
+                showAlert('Error', 'Failed to get location: ' + error.message);
                 setLocating(false);
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
@@ -75,11 +83,11 @@ const BusinessLocationScreen = ({ navigation }: any) => {
 
     const handleNext = async () => {
         if (!address) {
-            Alert.alert("Missing Address", "Please select a business address.");
+            showAlert("Missing Address", "Please select a business address.");
             return;
         }
         if (!username.trim()) {
-            Alert.alert("Missing Username", "Please enter a username.");
+            showAlert("Missing Username", "Please enter a username.");
             return;
         }
 
@@ -97,7 +105,7 @@ const BusinessLocationScreen = ({ navigation }: any) => {
             navigation.navigate('BusinessTypeContact');
         } catch (error: any) {
             console.error(error);
-            Alert.alert('Error', error.message || 'Failed to save details');
+            showAlert('Error', error.message || 'Failed to save details');
         } finally {
             setLoading(false);
         }
@@ -109,8 +117,8 @@ const BusinessLocationScreen = ({ navigation }: any) => {
 
                 {/* Username Section */}
                 <View style={{ marginBottom: 20 }}>
-                     <Text style={{ fontSize: 14, fontWeight: '600', color: '#4A5568', marginBottom: 8, marginLeft: 4 }}>Username</Text>
-                     <View style={styles.inputGroup}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#4A5568', marginBottom: 8, marginLeft: 4 }}>Username</Text>
+                    <View style={styles.inputGroup}>
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2" style={{ marginRight: 10 }}>
                             <Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                             <Circle cx="12" cy="7" r="4" />
@@ -165,7 +173,7 @@ const BusinessLocationScreen = ({ navigation }: any) => {
                 </View>
 
                 <AddressSelector
-                     onAddressChange={(addr) => setAddress(addr)}
+                    onAddressChange={(addr) => setAddress(addr)}
                 />
 
                 <View style={styles.spacer} />
@@ -183,7 +191,14 @@ const BusinessLocationScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </View>
             </View>
-        </TunnelWrapper>
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
+        </TunnelWrapper >
     );
 };
 
@@ -241,7 +256,7 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
     },
     locateButton: {
-        backgroundColor: '#3182CE',
+        backgroundColor: '#2D3748',
         paddingVertical: 12,
         paddingHorizontal: 24,
         borderRadius: 25,
@@ -257,7 +272,7 @@ const styles = StyleSheet.create({
         marginTop: 15,
     },
     mapLinkText: {
-        color: '#3182CE',
+        color: '#2D3748',
         textDecorationLine: 'underline',
         fontWeight: '600',
     },

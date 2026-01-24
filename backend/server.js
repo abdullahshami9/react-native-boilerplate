@@ -21,8 +21,8 @@ const PORT = 3000;
 // Security Middleware
 app.use(helmet());
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
 });
 app.use(limiter);
 
@@ -511,7 +511,7 @@ db.connect(async (err) => {
                     console.log("Seeding Location Data...");
                     const sql = "INSERT INTO province (provinceName) VALUES ('Sindh'), ('Punjab')";
                     db.query(sql, (err, res) => {
-                        if(!err) {
+                        if (!err) {
                             const sindhId = res.insertId; // Assuming first insert is Sindh. Auto-inc might vary but good enough for mvp.
                             // Insert City
                             db.query("INSERT INTO city (province_provinceId, cityName) VALUES (?, ?)", [sindhId, 'Karachi'], (e2, r2) => {
@@ -519,15 +519,15 @@ db.connect(async (err) => {
                                     const khiId = r2.insertId;
                                     // Insert Location
                                     db.query("INSERT INTO location (city_cityId, locationName) VALUES (?, ?)", [khiId, 'Gulshan-e-Iqbal'], (e3, r3) => {
-                                        if(!e3) {
+                                        if (!e3) {
                                             const locId = r3.insertId;
                                             // Insert Sublocation
                                             db.query("INSERT INTO sublocation (location_LocationId, sublocationName) VALUES (?, ?)", [locId, 'Block 13-D'], (e4, r4) => {
-                                                if(!e4) {
+                                                if (!e4) {
                                                     const subId = r4.insertId;
                                                     // Insert Street
-                                                    db.query("INSERT INTO streetinfo (sublocation_sublocationId, streetName) VALUES (?, ?)", [subId, 'Street 1'], () => {});
-                                                    db.query("INSERT INTO streetinfo (sublocation_sublocationId, streetName) VALUES (?, ?)", [subId, 'Street 2'], () => {});
+                                                    db.query("INSERT INTO streetinfo (sublocation_sublocationId, streetName) VALUES (?, ?)", [subId, 'Street 1'], () => { });
+                                                    db.query("INSERT INTO streetinfo (sublocation_sublocationId, streetName) VALUES (?, ?)", [subId, 'Street 2'], () => { });
                                                 }
                                             });
                                         }
@@ -575,16 +575,16 @@ const storage = multer.diskStorage({
             cb(null, `${productId}-${index}${ext}`);
         } else if (req.path.includes('service')) {
             const serviceId = sanitize(req.body.serviceId || 'unknown');
-             // services usually have one image, but let's stick to convention if needed
-             // or just serviceId.ext
+            // services usually have one image, but let's stick to convention if needed
+            // or just serviceId.ext
             cb(null, `${serviceId}${ext}`);
         } else if (req.path.includes('chat')) {
-             // sanitize is not available, using simple replace
-             const safeName = file.originalname.replace(/[^a-zA-Z0-9_-]/g, '');
-             cb(null, `${Date.now()}-${safeName}`);
+            // sanitize is not available, using simple replace
+            const safeName = file.originalname.replace(/[^a-zA-Z0-9_-]/g, '');
+            cb(null, `${Date.now()}-${safeName}`);
         } else if (req.path.includes('identity')) {
-             const userId = sanitize(req.body.userId || 'unknown');
-             cb(null, `${userId}-${Date.now()}${ext}`);
+            const userId = sanitize(req.body.userId || 'unknown');
+            cb(null, `${userId}-${Date.now()}${ext}`);
         } else {
             // Generic fallback
             cb(null, `${Date.now()}${ext}`);
@@ -681,8 +681,8 @@ app.post('/login', (req, res) => {
         const user = results[0];
         // Generate Token
         jwt.sign({ id: user.id, email: user.email, user_type: user.user_type }, JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
-             if(err) return res.status(500).json({ success: false, message: 'Token generation failed' });
-             res.json({ success: true, message: 'Login successful', user: user, token: token });
+            if (err) return res.status(500).json({ success: false, message: 'Token generation failed' });
+            res.json({ success: true, message: 'Login successful', user: user, token: token });
         });
     });
 });
@@ -771,7 +771,7 @@ app.get('/view/:userId', (req, res) => {
         if (err || !results[0][0]) return res.status(404).send('User not found');
 
         // Log View
-        dbQuery('INSERT INTO profile_views (profile_id, source) VALUES (?, ?)', [userId, 'web_view'], req, () => {});
+        dbQuery('INSERT INTO profile_views (profile_id, source) VALUES (?, ?)', [userId, 'web_view'], req, () => { });
 
         const user = results[0][0];
         const education = results[1];
@@ -894,13 +894,13 @@ app.get('/api/orders/customer/:userId', (req, res) => {
             WHERE oi.order_id IN (?)
         `;
         db.query(itemQuery, [orderIds], (err2, items) => {
-             if (err2) return res.status(500).json({ success: false });
+            if (err2) return res.status(500).json({ success: false });
 
-             const orders = results.map(o => ({
-                 ...o,
-                 items: items.filter(i => i.order_id === o.id)
-             }));
-             res.json({ success: true, orders });
+            const orders = results.map(o => ({
+                ...o,
+                items: items.filter(i => i.order_id === o.id)
+            }));
+            res.json({ success: true, orders });
         });
     });
 });
@@ -1349,8 +1349,8 @@ app.put('/api/orders/:orderId/status', (req, res) => {
     const { status } = req.body; // pending, completed, cancelled
     const query = 'UPDATE orders SET status = ? WHERE id = ?';
     dbQuery(query, [status, req.params.orderId], req, (err) => {
-         if (err) return res.status(500).json({ success: false });
-         res.json({ success: true, message: 'Order status updated' });
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, message: 'Order status updated' });
     });
 });
 
@@ -1377,13 +1377,13 @@ app.get('/api/orders/business/:userId', (req, res) => {
             WHERE oi.order_id IN (?)
         `;
         db.query(itemQuery, [orderIds], (err2, items) => {
-             if (err2) return res.status(500).json({ success: false });
+            if (err2) return res.status(500).json({ success: false });
 
-             const orders = results.map(o => ({
-                 ...o,
-                 items: items.filter(i => i.order_id === o.id)
-             }));
-             res.json({ success: true, orders });
+            const orders = results.map(o => ({
+                ...o,
+                items: items.filter(i => i.order_id === o.id)
+            }));
+            res.json({ success: true, orders });
         });
     });
 });
@@ -1507,8 +1507,8 @@ app.post('/biometric/login', (req, res) => {
 
         const user = results[0];
         jwt.sign({ id: user.id, email: user.email, user_type: user.user_type }, JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
-             if(err) return res.status(500).json({ success: false, message: 'Token generation failed' });
-             res.json({ success: true, user: user, token: token });
+            if (err) return res.status(500).json({ success: false, message: 'Token generation failed' });
+            res.json({ success: true, user: user, token: token });
         });
     });
 });
@@ -1537,9 +1537,22 @@ app.post('/api/tunnel/personal/skills', (req, res) => {
         const values = skills.map(s => [user_id, s]);
         const query = 'INSERT INTO skills (user_id, skill_name) VALUES ?';
         db.query(query, [values], (err2) => {
-             if (err2) return res.status(500).json({ success: false });
-             res.json({ success: true });
+            if (err2) return res.status(500).json({ success: false });
+            res.json({ success: true });
         });
+    });
+});
+
+app.post('/api/tunnel/personal/additional', (req, res) => {
+    const { user_id, username, gender, interests } = req.body;
+    // interests is array, store as JSON
+    const query = 'UPDATE users SET username = ?, gender = ?, interests = ? WHERE id = ?';
+    dbQuery(query, [username, gender, JSON.stringify(interests), user_id], req, (err) => {
+        if (err) {
+            if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ success: false, message: 'Username already taken' });
+            return res.status(500).json({ success: false, message: 'Database error' });
+        }
+        res.json({ success: true });
     });
 });
 
@@ -1592,14 +1605,14 @@ app.post('/api/tunnel/business/type', (req, res) => {
         // Simplification: Clear and re-insert or just append?
         // Tunnel usually implies setting up fresh. Let's delete existing and insert.
         if (payment_methods && payment_methods.length > 0) {
-             db.query('DELETE FROM payment_methods WHERE user_id = ?', [user_id], (e) => {
-                 if (!e) {
-                     const payValues = payment_methods.map(p => [user_id, p.provider, p.account_number, p.account_title]);
-                     db.query('INSERT INTO payment_methods (user_id, provider, account_number, account_title) VALUES ?', [payValues], (e2) => {
-                         if (e2) console.error("Payment methods save error", e2);
-                     });
-                 }
-             });
+            db.query('DELETE FROM payment_methods WHERE user_id = ?', [user_id], (e) => {
+                if (!e) {
+                    const payValues = payment_methods.map(p => [user_id, p.provider, p.account_number, p.account_title]);
+                    db.query('INSERT INTO payment_methods (user_id, provider, account_number, account_title) VALUES ?', [payValues], (e2) => {
+                        if (e2) console.error("Payment methods save error", e2);
+                    });
+                }
+            });
         }
 
         // Update Socials (Contact info might be here too if formatted as socials)
@@ -1608,7 +1621,7 @@ app.post('/api/tunnel/business/type', (req, res) => {
         if (phone || email) {
             const userUpdate = 'UPDATE users SET phone = COALESCE(?, phone), email = COALESCE(?, email) WHERE id = ?';
             db.query(userUpdate, [phone, email, user_id], (e) => {
-                 if (e) console.error("User contact update error", e);
+                if (e) console.error("User contact update error", e);
             });
         }
 
@@ -1679,10 +1692,10 @@ app.put('/api/products/:id', verifyToken, (req, res) => {
         // Log price change if any
         if (price !== undefined && price != oldProduct.price) {
             dbQuery('INSERT INTO product_logs (product_id, old_price, new_price, action) VALUES (?, ?, ?, "price_update")',
-                [productId, oldProduct.price, price], req, () => {});
+                [productId, oldProduct.price, price], req, () => { });
         }
-         // Log stock change if significant? Or just price. User mentioned "Yesterday price 10... today 15".
-         // Let's log updates generally if we want, but price is key.
+        // Log stock change if significant? Or just price. User mentioned "Yesterday price 10... today 15".
+        // Let's log updates generally if we want, but price is key.
 
         const query = 'UPDATE products SET name = ?, price = ?, description = ?, image_url = ?, stock_quantity = ? WHERE id = ?';
         dbQuery(query, [name, price, description, image_url, stock_quantity, productId], req, (updateErr) => {

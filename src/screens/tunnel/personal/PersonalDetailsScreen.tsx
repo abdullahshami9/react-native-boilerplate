@@ -5,6 +5,8 @@ import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
 import ChipInput from '../../../components/ChipInput';
 import Svg, { Path, Circle } from 'react-native-svg';
+import CustomAlert from '../../../components/CustomAlert';
+import { useTheme } from '../../../theme/useTheme';
 
 const PersonalDetailsScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);
@@ -12,6 +14,12 @@ const PersonalDetailsScreen = ({ navigation }: any) => {
     const [gender, setGender] = useState('');
     const [interests, setInterests] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info' });
+    const theme = useTheme();
+
+    const showAlert = (title: string, message: string, type: 'error' | 'success' | 'info' = 'error') => {
+        setAlertConfig({ visible: true, title, message, type });
+    };
 
     const predefinedInterests = ["Clothing", "Home Decor", "Fashion", "Watches", "Sports"];
 
@@ -35,7 +43,7 @@ const PersonalDetailsScreen = ({ navigation }: any) => {
 
     const handleNext = async () => {
         if (!username.trim()) {
-            Alert.alert("Required", "Please enter a username.");
+            showAlert("Required", "Please enter a username.");
             return;
         }
         setLoading(true);
@@ -44,7 +52,7 @@ const PersonalDetailsScreen = ({ navigation }: any) => {
             navigation.navigate('PersonalSkills');
         } catch (error: any) {
             console.error(error);
-            Alert.alert("Error", error.message || "Failed to update details.");
+            showAlert("Error", error.message || "Failed to update details.");
         } finally {
             setLoading(false);
         }
@@ -123,6 +131,13 @@ const PersonalDetailsScreen = ({ navigation }: any) => {
                 </TouchableOpacity>
 
             </ScrollView>
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </TunnelWrapper>
     );
 };
@@ -193,8 +208,8 @@ const styles = StyleSheet.create({
         borderColor: '#E2E8F0',
     },
     chipActive: {
-        backgroundColor: '#4299E1',
-        borderColor: '#4299E1',
+        backgroundColor: '#2D3748',
+        borderColor: '#2D3748',
     },
     chipText: {
         color: '#4A5568',

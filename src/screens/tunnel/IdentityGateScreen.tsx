@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } fr
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import { AuthContext } from '../../context/AuthContext';
 import TunnelWrapper from '../../components/TunnelWrapper';
+import CustomAlert from '../../components/CustomAlert';
 import Svg, { Circle } from 'react-native-svg';
 import { CONFIG } from '../../Config';
 
@@ -15,6 +16,7 @@ const IdentityGateScreen = ({ navigation }: any) => {
     const [isRecording, setIsRecording] = useState(false);
     const [recordingStep, setRecordingStep] = useState(0); // 0: Ready, 1: Left, 2: Right, 3: Up/Down, 4: Done
     const [loading, setLoading] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
     useEffect(() => {
         requestPermission();
@@ -88,11 +90,15 @@ const IdentityGateScreen = ({ navigation }: any) => {
 
             const result = await response.json();
             if (result.success) {
-                Alert.alert("Success", "Identity verified securely.", [
-                    { text: "Continue", onPress: () => navigation.navigate('PaymentIntegration') }
-                ]);
+                setAlertConfig({
+                    visible: true,
+                    title: "Success",
+                    message: "Identity verified securely.",
+                    type: 'success',
+                    onConfirm: () => navigation.navigate('PaymentIntegration')
+                });
             } else {
-                Alert.alert("Failed", "Verification failed. Please try again.");
+                setAlertConfig({ visible: true, title: "Failed", message: "Verification failed. Please try again.", type: 'error', onConfirm: undefined });
             }
         } catch (error) {
             console.error(error);
@@ -121,7 +127,7 @@ const IdentityGateScreen = ({ navigation }: any) => {
 
     return (
         <TunnelWrapper title="Identity Verification" onBack={() => navigation.goBack()}>
-             <View style={styles.container}>
+            <View style={styles.container}>
                 <Text style={styles.subtitle}>
                     Before connecting financial accounts, we need to verify your identity with a secure face scan.
                 </Text>
@@ -153,25 +159,34 @@ const IdentityGateScreen = ({ navigation }: any) => {
                 </View>
 
                 <View style={styles.footer}>
-                     {!isRecording && !loading && (
+                    {!isRecording && !loading && (
                         <TouchableOpacity style={styles.recordButton} onPress={startScan}>
                             <View style={styles.recordInner} />
                         </TouchableOpacity>
-                     )}
+                    )}
 
-                     {loading && (
-                         <View style={styles.loadingBox}>
-                             <ActivityIndicator size="large" color="#3182CE" />
-                             <Text style={styles.loadingText}>Verifying Identity...</Text>
-                         </View>
-                     )}
+                    {loading && (
+                        <View style={styles.loadingBox}>
+                            <ActivityIndicator size="large" color="#3182CE" />
+                            <Text style={styles.loadingText}>Verifying Identity...</Text>
+                        </View>
+                    )}
 
-                     {!isRecording && !loading && (
-                         <Text style={styles.hintText}>Tap button to start 6-second scan</Text>
-                     )}
+                    {!isRecording && !loading && (
+                        <Text style={styles.hintText}>Tap button to start 6-second scan</Text>
+                    )}
                 </View>
-             </View>
-        </TunnelWrapper>
+            </View>
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+                confirmText="Continue"
+            />
+        </TunnelWrapper >
     );
 };
 

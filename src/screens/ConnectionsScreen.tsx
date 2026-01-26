@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
 import Svg, { Path, Circle, Line } from 'react-native-svg';
 import { DataService } from '../services/DataService';
 import { AuthContext } from '../context/AuthContext';
 import { CONFIG } from '../Config';
 import { useTheme } from '../theme/useTheme';
+import AnimatedSearchHeader from '../components/AnimatedSearchHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -16,18 +17,7 @@ const ConnectionsScreen = ({ navigation }: any) => {
     const [loading, setLoading] = useState(false);
     const [searchText, setSearchText] = useState('');
 
-    const globalTheme = useTheme();
-    const theme = {
-        ...globalTheme,
-        activeTabBg: isDarkMode ? '#4A5568' : '#E2E8F0',
-        inactiveTabBg: 'transparent',
-        activeTabText: isDarkMode ? '#F7FAFC' : '#2D3748',
-        inactiveTabText: isDarkMode ? '#A0AEC0' : '#718096',
-        buttonBg: isDarkMode ? '#4A9EFF' : '#3182CE',
-        buttonText: '#fff',
-        disconnectBg: isDarkMode ? '#742A2A' : '#FED7D7',
-        disconnectText: isDarkMode ? '#FC8181' : '#C53030'
-    };
+    const theme = useTheme();
 
     useEffect(() => {
         if (activeTab === 'connections') {
@@ -36,6 +26,15 @@ const ConnectionsScreen = ({ navigation }: any) => {
             fetchDiscover();
         }
     }, [activeTab]);
+
+    useEffect(() => {
+        if (activeTab === 'discover') {
+            const timer = setTimeout(() => {
+                fetchDiscover();
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [searchText]);
 
     const fetchConnections = async () => {
         setLoading(true);
@@ -97,7 +96,7 @@ const ConnectionsScreen = ({ navigation }: any) => {
             <TouchableOpacity
                 activeOpacity={0.9}
                 style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}
-                onPress={() => navigation.navigate('UserProfile', { user: item })} // Navigate to UserProfile stack screen
+                onPress={() => navigation.navigate('UserProfile', { user: item })}
             >
                 <Image source={{ uri: imageUrl }} style={styles.avatar} />
                 <View style={styles.info}>
@@ -112,20 +111,20 @@ const ConnectionsScreen = ({ navigation }: any) => {
                     <TouchableOpacity
                         style={[
                             styles.actionButton,
-                            { backgroundColor: isConnected ? theme.activeTabBg : theme.buttonBg }
+                            { backgroundColor: isConnected ? '#E2E8F0' : '#3182CE' } // Use explicit colors or theme logic
                         ]}
                         onPress={() => handleConnect(item.id, isConnected ? 'accepted' : 'none')}
                     >
-                        <Text style={[styles.actionButtonText, { color: isConnected ? theme.text : '#fff' }]}>
+                        <Text style={[styles.actionButtonText, { color: isConnected ? '#2D3748' : '#fff' }]}>
                             {isConnected ? 'Following' : 'Follow'}
                         </Text>
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: theme.disconnectBg }]}
+                        style={[styles.actionButton, { backgroundColor: isDarkMode ? '#742A2A' : '#FED7D7' }]}
                         onPress={() => handleConnect(item.id, 'accepted')}
                     >
-                        <Text style={[styles.actionButtonText, { color: theme.disconnectText }]}>
+                        <Text style={[styles.actionButtonText, { color: isDarkMode ? '#FC8181' : '#C53030' }]}>
                             Unfollow
                         </Text>
                     </TouchableOpacity>
@@ -136,59 +135,36 @@ const ConnectionsScreen = ({ navigation }: any) => {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
-            {/* Header */}
-            <View style={[styles.header, { backgroundColor: theme.bg }]}>
-                <Text style={{ position: 'absolute', top: 15, left: 20, zIndex: 10, fontSize: 14, fontWeight: 'bold', color: theme.text }}>Junr</Text>
-                <TouchableOpacity style={[styles.backButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.goBack()}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
-                        <Path d="M19 12H5M12 19l-7-7 7-7" />
-                    </Svg>
+            <AnimatedSearchHeader
+                title="Network"
+                onBack={() => navigation.goBack()}
+                onSearch={() => { handleSearch() }}
+                onChangeText={setSearchText}
+                placeholder="Find people & businesses..."
+                initialValue={searchText}
+            />
+
+            {/* Standard Tabs matching ShopScreen */}
+            <View style={[styles.tabContainer, { backgroundColor: theme.bg, borderColor: theme.borderColor }]}>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'connections' && styles.activeTab]}
+                    onPress={() => setActiveTab('connections')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'connections' ? { color: theme.text, fontWeight: '600' } : { color: theme.subText }]}>Following</Text>
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Network</Text>
-                <View style={{ width: 44 }} />
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'discover' && styles.activeTab]}
+                    onPress={() => {
+                        setActiveTab('discover');
+                        // Auto focus search if needed, but not forcing it
+                    }}
+                >
+                    <Text style={[styles.tabText, activeTab === 'discover' ? { color: theme.text, fontWeight: '600' } : { color: theme.subText }]}>Discover</Text>
+                </TouchableOpacity>
             </View>
-
-            {/* Round Tabs behaving like Shop Search Bar */}
-            <View style={[styles.tabContainer, { marginTop: 0, paddingBottom: 15, backgroundColor: theme.bg }]}>
-                <View style={[styles.tabWrapper, { backgroundColor: theme.inputBg, borderColor: theme.borderColor, borderRadius: 25, height: 50, padding: 4 }]}>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'connections' && { backgroundColor: theme.activeTabBg, borderRadius: 21 }]}
-                        onPress={() => setActiveTab('connections')}
-                    >
-                        <Text style={[styles.tabText, { color: activeTab === 'connections' ? theme.activeTabText : theme.inactiveTabText }]}>Following</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'discover' && { backgroundColor: theme.activeTabBg, borderRadius: 21 }]}
-                        onPress={() => setActiveTab('discover')}
-                    >
-                        <Text style={[styles.tabText, { color: activeTab === 'discover' ? theme.activeTabText : theme.inactiveTabText }]}>Discover</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* Search (only for discover) */}
-            {activeTab === 'discover' && (
-                <View style={styles.searchSection}>
-                    <View style={[styles.searchContainer, { backgroundColor: theme.inputBg, borderColor: theme.borderColor }]}>
-                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2" style={styles.searchIcon}>
-                            <Circle cx="11" cy="11" r="8" />
-                            <Path d="M21 21L16.65 16.65" />
-                        </Svg>
-                        <TextInput
-                            style={[styles.searchInput, { color: theme.text }]}
-                            placeholder="Find people & businesses..."
-                            placeholderTextColor={theme.subText}
-                            value={searchText}
-                            onChangeText={setSearchText}
-                            onSubmitEditing={handleSearch}
-                            returnKeyType="search"
-                        />
-                    </View>
-                </View>
-            )}
 
             {loading ? (
-                <View style={styles.center}><ActivityIndicator size="large" color={theme.buttonBg} /></View>
+                <View style={styles.center}><ActivityIndicator size="large" color="#3182CE" /></View>
             ) : (
                 <FlatList
                     data={activeTab === 'connections' ? connections : discoverUsers}
@@ -219,60 +195,24 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingTop: 50,
-        paddingHorizontal: 20,
-        paddingBottom: 20,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-    },
-    backButton: {
-        padding: 5,
-        borderRadius: 20,
-    },
     tabContainer: {
-        paddingHorizontal: 20,
-        marginTop: 20,
-        marginBottom: 10
-    },
-    tabWrapper: {
         flexDirection: 'row',
-        borderRadius: 12,
-        padding: 4,
-        borderWidth: 1,
+        justifyContent: 'center',
+        paddingBottom: 0,
+        borderBottomWidth: 1,
+        // Match ShopScreen style exactly if possible
+        paddingTop: 0
     },
     tab: {
-        flex: 1,
-        paddingVertical: 10,
-        alignItems: 'center',
-        borderRadius: 8,
+        paddingVertical: 15,
+        paddingHorizontal: 30,
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
+    },
+    activeTab: {
+        borderBottomColor: '#2D3748', // Or theme.text
     },
     tabText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    searchSection: {
-        paddingHorizontal: 20,
-        marginBottom: 10,
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderRadius: 12,
-        paddingHorizontal: 15,
-        height: 50,
-        borderWidth: 1,
-    },
-    searchIcon: {
-        marginRight: 10,
-    },
-    searchInput: {
-        flex: 1,
         fontSize: 16,
     },
     listContent: {

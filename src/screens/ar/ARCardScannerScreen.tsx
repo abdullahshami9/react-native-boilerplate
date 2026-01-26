@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { WebView } from 'react-native-webview';
 import { AuthContext } from '../../context/AuthContext';
 import { DataService } from '../../services/DataService';
 
 // Safely import Viro
 let ViroComponents: any = {};
+let ViroAvailable = false;
 try {
   ViroComponents = require('@viro-community/react-viro');
+  if (ViroComponents && ViroComponents.ViroARSceneNavigator) {
+    ViroAvailable = true;
+  }
 } catch (e) {
   console.warn("Viro not found:", e);
 }
@@ -18,12 +23,13 @@ const {
   ViroARImageMarker,
   ViroAmbientLight,
   ViroNode,
+  Viro3DObject,
   ViroARTrackingTargets,
   ViroText,
-} = ViroComponents;
+} = ViroComponents || {};
 
 // Register Targets safely outside if Viro exists
-if (ViroARTrackingTargets) {
+if (ViroAvailable && ViroARTrackingTargets) {
   try {
     ViroARTrackingTargets.createTargets({
       "businessCard": {
@@ -38,10 +44,10 @@ if (ViroARTrackingTargets) {
 }
 
 const ARCardScene = (props: any) => {
-  const [textVisible, setTextVisible] = useState(false);
+  const [showAvatar, setShowAvatar] = useState(false);
 
   const _onAnchorFound = (anchor: any) => {
-    setTextVisible(true);
+    setShowAvatar(true);
     if (props.sceneNavigator.viroAppProps?.onFound) {
       props.sceneNavigator.viroAppProps.onFound(anchor);
     }
@@ -49,12 +55,16 @@ const ARCardScene = (props: any) => {
 
   return (
     <ViroARScene>
-      <ViroAmbientLight color="#ffffff" />
+      <ViroAmbientLight color="#ffffff" intensity={1000} />
       <ViroARImageMarker target={"businessCard"} onAnchorFound={_onAnchorFound}>
-        {textVisible && (
-          <ViroNode rotation={[-90, 0, 0]}>
-            <ViroText text="Card Detected!" scale={[0.1, 0.1, 0.1]} style={{ fontSize: 20, color: '#00FF00' }} />
-          </ViroNode>
+        {showAvatar && (
+          <Viro3DObject
+            source={{ uri: "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb" }} // Demo Avatar
+            type="GLB"
+            scale={[0.1, 0.1, 0.1]} // Adjust scale for AR
+            position={[0, 0, 0]}
+            rotation={[-90, 0, 0]}
+          />
         )}
       </ViroARImageMarker>
     </ViroARScene>
@@ -67,6 +77,34 @@ const ARCardScannerScreen = () => {
   const mode = (route.params as any)?.mode;
   const { userInfo } = useContext(AuthContext);
   const [scannedUserId, setScannedUserId] = useState<number | null>(null);
+
+  // HTML for 3D View Fallback (Model Viewer)
+  // Uses ReadyPlayerMe avatar to simulate the "Face Mapped" avatar
+  const avatarHtml = `
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.1.1/model-viewer.min.js"></script>
+          <style>
+            body { margin: 0; background-color: #1A202C; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; }
+            model-viewer { width: 100%; height: 100%; }
+            .badge { position: absolute; bottom: 20px; color: white; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 20px; }
+          </style>
+        </head>
+        <body>
+          <model-viewer 
+            src="https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb" 
+            alt="3D Avatar" 
+            auto-rotate 
+            camera-controls 
+            ar
+            shadow-intensity="1"
+          >
+          </model-viewer>
+          <div class="badge">Virtual Avatar View</div>
+        </body>
+      </html>
+  `;
 
   const handleCardFound = (anchor: any) => {
     console.log("Card Anchor Found");
@@ -98,22 +136,27 @@ const ARCardScannerScreen = () => {
     }
   };
 
-  // Fallback if Viro is missing or on simple Simulator
-  if (!ViroARSceneNavigator) {
+  // FALLBACK: If Viro is unavailable, show 3D Web View
+  if (!ViroAvailable) {
     return (
       <View style={styles.container}>
-        <View style={[styles.arView, { backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' }]}>
-          <Text style={{ color: 'white', marginBottom: 20 }}>AR Not Supported on this device</Text>
+        <View style={styles.arView}>
+          <WebView
+            originWhitelist={['*']}
+            source={{ html: avatarHtml }}
+            style={{ flex: 1 }}
+          />
           {mode === 'booking' && (
             <TouchableOpacity
-              style={{ backgroundColor: 'white', padding: 15, borderRadius: 10 }}
+              style={{ position: 'absolute', bottom: 50, alignSelf: 'center', backgroundColor: 'white', padding: 15, borderRadius: 10 }}
               onPress={() => handleCardFound(null)}
             >
-              <Text style={{ fontWeight: 'bold' }}>Simulate Scan (Debug)</Text>
+              <Text style={{ fontWeight: 'bold' }}>Book Now (Simulated)</Text>
             </TouchableOpacity>
           )}
         </View>
         <View style={styles.overlay}>
+          <Text style={[styles.instructionText, { marginBottom: 10, fontSize: 14 }]}>AR Unavailable. Showing 3D Avatar.</Text>
           <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
             <Text style={styles.closeText}>Close</Text>
           </TouchableOpacity>
@@ -122,6 +165,7 @@ const ARCardScannerScreen = () => {
     );
   }
 
+  // NORMAL VIRO AR MODE
   return (
     <View style={styles.container}>
       <ViroARSceneNavigator
@@ -131,12 +175,13 @@ const ARCardScannerScreen = () => {
         viroAppProps={{ onFound: handleCardFound }}
         style={styles.arView}
       />
+      {/* Debug button for Simulator even if Viro checks pass but camera fails */}
       {mode === 'booking' && (
         <TouchableOpacity
-          style={{ position: 'absolute', bottom: 50, alignSelf: 'center', backgroundColor: 'white', padding: 15, borderRadius: 10 }}
+          style={{ position: 'absolute', bottom: 50, alignSelf: 'center', backgroundColor: 'white', padding: 15, borderRadius: 10, opacity: 0.8 }}
           onPress={() => handleCardFound(null)}
         >
-          <Text style={{ fontWeight: 'bold' }}>Simulate Scan (Debug)</Text>
+          <Text style={{ fontWeight: 'bold' }}>Simulate Scan</Text>
         </TouchableOpacity>
       )}
 

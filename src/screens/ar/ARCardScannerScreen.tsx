@@ -1,45 +1,61 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import {
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { AuthContext } from '../../context/AuthContext';
+import { DataService } from '../../services/DataService';
+
+// Safely import Viro
+let ViroComponents: any = {};
+try {
+  ViroComponents = require('@viro-community/react-viro');
+} catch (e) {
+  console.warn("Viro not found:", e);
+}
+
+const {
   ViroARScene,
   ViroARSceneNavigator,
   ViroARImageMarker,
-  Viro3DObject,
   ViroAmbientLight,
-  ViroSpotLight,
   ViroNode,
   ViroARTrackingTargets,
-} from '@viro-community/react-viro';
-import { useNavigation } from '@react-navigation/native';
+  ViroText,
+} = ViroComponents;
 
-// Register tracking targets moved effectively to inside component to avoid crash on load
-// ViroARTrackingTargets.createTargets({...})
+// Register Targets safely outside if Viro exists
+if (ViroARTrackingTargets) {
+  try {
+    ViroARTrackingTargets.createTargets({
+      "businessCard": {
+        source: require('../../assets/card_target.png'),
+        orientation: "Up",
+        physicalWidth: 0.09
+      },
+    });
+  } catch (e) {
+    console.warn("Target creation failed:", e);
+  }
+}
 
-const ARCardScene = () => {
-  const [avatarVisible, setAvatarVisible] = useState(false);
+const ARCardScene = (props: any) => {
+  const [textVisible, setTextVisible] = useState(false);
 
-  const _onAnchorFound = () => {
-    setAvatarVisible(true);
+  const _onAnchorFound = (anchor: any) => {
+    setTextVisible(true);
+    if (props.sceneNavigator.viroAppProps?.onFound) {
+      props.sceneNavigator.viroAppProps.onFound(anchor);
+    }
   };
 
   return (
     <ViroARScene>
       <ViroAmbientLight color="#ffffff" />
-      <ViroSpotLight innerAngle={5} outerAngle={90} direction={[0, -1, -.2]}
-        position={[0, 3, 1]} color="#ffffff" castsShadow={true} />
-
       <ViroARImageMarker target={"businessCard"} onAnchorFound={_onAnchorFound}>
-        <ViroNode scale={[0.1, 0.1, 0.1]} rotation={[-90, 0, 0]}>
-          {/* Placeholder 3D Avatar */}
-          {avatarVisible && (
-            <Viro3DObject
-              source={{ uri: "https://github.com/khronosgroup/glTF-Sample-Models/raw/master/2.0/Duck/glTF-Binary/Duck.glb" }} // Placeholder GLB
-              type="GLB"
-              scale={[0.1, 0.1, 0.1]}
-              position={[0, 0, 0]}
-            />
-          )}
-        </ViroNode>
+        {textVisible && (
+          <ViroNode rotation={[-90, 0, 0]}>
+            <ViroText text="Card Detected!" scale={[0.1, 0.1, 0.1]} style={{ fontSize: 20, color: '#00FF00' }} />
+          </ViroNode>
+        )}
       </ViroARImageMarker>
     </ViroARScene>
   );
@@ -47,21 +63,64 @@ const ARCardScene = () => {
 
 const ARCardScannerScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+  const mode = (route.params as any)?.mode;
+  const { userInfo } = useContext(AuthContext);
+  const [scannedUserId, setScannedUserId] = useState<number | null>(null);
 
-  React.useEffect(() => {
-    try {
-      // Register tracking targets safely
-      ViroARTrackingTargets.createTargets({
-        "businessCard": {
-          source: require('../../assets/card_target.png'), // Placeholder target
-          orientation: "Up",
-          physicalWidth: 0.09 // Real world width in meters (standard business card is ~9cm)
-        },
-      });
-    } catch (error) {
-      console.warn("Failed to initialize Viro AR Targets", error);
+  const handleCardFound = (anchor: any) => {
+    console.log("Card Anchor Found");
+    if (mode === 'booking') {
+      checkProvider(2); // Demo Provider ID
     }
-  }, []);
+  };
+
+  const checkProvider = async (providerId: number) => {
+    if (scannedUserId === providerId) return;
+    setScannedUserId(providerId);
+
+    try {
+      const profile = await DataService.getProfile(providerId);
+      if (profile.is_business) {
+        Alert.alert(
+          "Provider Found",
+          `Book with ${profile.name}?`,
+          [
+            { text: "Cancel", style: "cancel", onPress: () => setScannedUserId(null) },
+            { text: "View Services", onPress: () => (navigation as any).navigate('ServiceDetails', { service: { ...profile, user_id: providerId } }) }
+          ]
+        );
+      } else {
+        Alert.alert("Invalid Provider", "This user is not a business provider.");
+      }
+    } catch (err) {
+      Alert.alert("Error", "Could not fetch provider details.");
+    }
+  };
+
+  // Fallback if Viro is missing or on simple Simulator
+  if (!ViroARSceneNavigator) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.arView, { backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' }]}>
+          <Text style={{ color: 'white', marginBottom: 20 }}>AR Not Supported on this device</Text>
+          {mode === 'booking' && (
+            <TouchableOpacity
+              style={{ backgroundColor: 'white', padding: 15, borderRadius: 10 }}
+              onPress={() => handleCardFound(null)}
+            >
+              <Text style={{ fontWeight: 'bold' }}>Simulate Scan (Debug)</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <View style={styles.overlay}>
+          <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.closeText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -69,8 +128,17 @@ const ARCardScannerScreen = () => {
         initialScene={{
           scene: ARCardScene,
         }}
+        viroAppProps={{ onFound: handleCardFound }}
         style={styles.arView}
       />
+      {mode === 'booking' && (
+        <TouchableOpacity
+          style={{ position: 'absolute', bottom: 50, alignSelf: 'center', backgroundColor: 'white', padding: 15, borderRadius: 10 }}
+          onPress={() => handleCardFound(null)}
+        >
+          <Text style={{ fontWeight: 'bold' }}>Simulate Scan (Debug)</Text>
+        </TouchableOpacity>
+      )}
 
       <View style={styles.overlay}>
         <Text style={styles.instructionText}>Point camera at the Business Card</Text>

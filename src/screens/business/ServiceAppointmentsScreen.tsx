@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, Image, TouchableOpacity, Alert } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import { DataService } from '../../services/DataService';
 import Svg, { Path, Circle } from 'react-native-svg';
+import AnimatedSearchHeader from '../../components/AnimatedSearchHeader';
 
 const ServiceAppointmentsScreen = ({ navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
     const [appointments, setAppointments] = useState<any[]>([]);
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
 
     const theme = {
         bg: isDarkMode ? '#1A202C' : '#F7FAFC',
@@ -16,12 +20,19 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
         cardBg: isDarkMode ? '#2D3748' : '#fff',
         inputBg: isDarkMode ? '#2D3748' : '#F7FAFC',
         borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
-        headerBg: isDarkMode ? '#2D3748' : '#fff',
     };
 
     useEffect(() => {
         fetchAppointments();
     }, []);
+
+    useEffect(() => {
+        if (searchQuery.length > 2) {
+            handleSearch(searchQuery);
+        } else {
+            setSearchResults([]);
+        }
+    }, [searchQuery]);
 
     const fetchAppointments = async () => {
         setLoading(true);
@@ -39,6 +50,25 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
         }
     };
 
+    const handleSearch = async (text: string) => {
+        setIsSearching(true);
+        try {
+            const res = await DataService.discoverServices(text);
+            const results = res.services || res.data || (Array.isArray(res) ? res : []);
+            if (Array.isArray(results)) {
+                setSearchResults(results);
+            } else if (res.success && Array.isArray(res.services)) {
+                setSearchResults(res.services);
+            } else {
+                setSearchResults([]);
+            }
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
     const handleStatusUpdate = async (id: number, status: string) => {
         try {
             await DataService.updateAppointmentStatus(id, status);
@@ -48,7 +78,11 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
         }
     };
 
-    const renderItem = ({ item }: any) => {
+    const handleScan = () => {
+        navigation.navigate('ARCardScanner', { mode: 'booking' });
+    };
+
+    const renderAppointment = ({ item }: any) => {
         const isProvider = item.provider_id === userInfo.id;
         const otherName = isProvider ? item.customer_name : item.provider_name;
         const roleText = isProvider ? 'Customer' : 'Provider';
@@ -104,37 +138,65 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
         );
     };
 
+    const renderSearchResult = ({ item }: any) => {
+        return (
+            <TouchableOpacity
+                style={[styles.card, { backgroundColor: theme.cardBg, flexDirection: 'row', padding: 10 }]}
+                onPress={() => navigation.navigate('ServiceDetails', { service: item })}
+            >
+                <View style={{ flex: 1 }}>
+                    <Text style={[styles.serviceName, { color: theme.text }]}>{item.name}</Text>
+                    <Text style={{ color: theme.subText }}>${item.price} • {item.duration_mins} mins</Text>
+                    <Text style={{ color: theme.text, fontSize: 12, marginTop: 4 }}>Usually by: {item.provider_name || 'Business'}</Text>
+                </View>
+                <View style={{ justifyContent: 'center' }}>
+                    <View style={{ backgroundColor: '#EDF2F7', padding: 8, borderRadius: 20 }}>
+                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+                            <Path d="M5 12h14M12 5l7 7-7 7" />
+                        </Svg>
+                    </View>
+                </View>
+            </TouchableOpacity>
+        );
+    };
+
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 }}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 5 }}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M19 12H5M12 19l-7-7 7-7" /></Svg>
-                </TouchableOpacity>
-                <Text style={{ fontSize: 20, fontWeight: '600', color: theme.text }}>Appointments</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('Shop', { screen: 'Services' })} style={{ padding: 5 }}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
-                        <Path d="M12 5v14M5 12h14" />
-                    </Svg>
-                </TouchableOpacity>
-            </View>
-
-            <FlatList
-                data={appointments}
-                renderItem={renderItem}
-                keyExtractor={item => item.id.toString()}
-                contentContainerStyle={styles.listContent}
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchAppointments} tintColor={theme.text} />}
-                ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>No appointments found.</Text>}
+            <AnimatedSearchHeader
+                title="Appointments"
+                onBack={() => navigation.goBack()}
+                onSearch={() => { }}
+                onChangeText={setSearchQuery}
+                placeholder="Search Services..."
+                initialValue={searchQuery}
+                onScan={handleScan}
             />
+
+            {searchQuery.length > 0 ? (
+                <FlatList
+                    data={searchResults}
+                    renderItem={renderSearchResult}
+                    keyExtractor={(item: any) => item.id.toString()}
+                    contentContainerStyle={styles.listContent}
+                    ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>{isSearching ? 'Searching...' : 'No services found.'}</Text>}
+                />
+            ) : (
+                <FlatList
+                    data={appointments}
+                    renderItem={renderAppointment}
+                    keyExtractor={item => item.id.toString()}
+                    contentContainerStyle={styles.listContent}
+                    refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchAppointments} tintColor={theme.text} />}
+                    ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>No appointments found.</Text>}
+                />
+            )}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F7FAFC' },
-    header: { padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderColor: '#E2E8F0' },
-    headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#2D3748' },
-    listContent: { padding: 20 },
+    listContent: { padding: 20, paddingTop: 60 }, // Add padding top for header overlap
     card: { backgroundColor: 'white', borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
     serviceName: { fontSize: 18, fontWeight: 'bold', color: '#2D3748' },

@@ -13,9 +13,10 @@ interface AnimatedSearchHeaderProps {
     onChangeText?: (text: string) => void;
     placeholder?: string;
     initialValue?: string;
+    onScan?: () => void;
 }
 
-const AnimatedSearchHeader: React.FC<AnimatedSearchHeaderProps> = ({ title, onBack, onSearch, onChangeText, placeholder = "Search...", initialValue = "" }) => {
+const AnimatedSearchHeader: React.FC<AnimatedSearchHeaderProps> = ({ title, onBack, onSearch, onChangeText, placeholder = "Search...", initialValue = "", onScan }) => {
     const theme = useTheme();
     const [isFocused, setIsFocused] = useState(false);
     const [searchText, setSearchText] = useState(initialValue);
@@ -33,12 +34,12 @@ const AnimatedSearchHeader: React.FC<AnimatedSearchHeaderProps> = ({ title, onBa
         // Handle keyboard hide to reset if needed?
         // User said: "jb search krlo ya keyboard band kro tou wapis apni jaga pr ajaye"
         const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-             // Optional: Auto collapse when keyboard hides?
-             // Maybe better to let user manually close or collapse on submit.
-             // But user requirement implies auto-return.
-             if (isFocused) {
-                 handleCancel();
-             }
+            // Optional: Auto collapse when keyboard hides?
+            // Maybe better to let user manually close or collapse on submit.
+            // But user requirement implies auto-return.
+            if (isFocused) {
+                handleCancel();
+            }
         });
         return () => {
             keyboardDidHideListener.remove();
@@ -132,12 +133,23 @@ const AnimatedSearchHeader: React.FC<AnimatedSearchHeaderProps> = ({ title, onBa
                         onFocus={handleFocus}
                         onSubmitEditing={handleSubmit}
                     />
-                    {isFocused && (
-                         <TouchableOpacity onPress={() => { handleChangeText(''); }} style={{ marginRight: 5 }}>
-                             <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
+                    {isFocused ? (
+                        <TouchableOpacity onPress={() => { handleChangeText(''); }} style={{ marginRight: 5 }}>
+                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
                                 <Path d="M18 6L6 18M6 6l12 12" />
-                             </Svg>
-                         </TouchableOpacity>
+                            </Svg>
+                        </TouchableOpacity>
+                    ) : (
+                        onScan && (
+                            <TouchableOpacity onPress={onScan} style={{ marginRight: 5 }}>
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
+                                    <Path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                                    <Path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                                    <Path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                                    <Path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                                </Svg>
+                            </TouchableOpacity>
+                        )
                     )}
                 </Animated.View>
             </Animated.View>

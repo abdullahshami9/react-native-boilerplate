@@ -20,6 +20,19 @@ const ShopScreen = ({ navigation }: any) => {
     const theme = useTheme();
 
     useEffect(() => {
+        // Handle navigation params
+        const params = (navigation.getParent()?.getState()?.routes?.find((r: any) => r.name === 'Shop')?.params) || (navigation.getState().routes.find((r: any) => r.name === 'Shop')?.params) || ((navigation as any).getState?.()?.params) || ((navigation as any).getParam ? (navigation as any).getParam('screen') : undefined);
+
+        // Simpler check: accessing route.params directly if available
+        // Note: In Tab navigators, params are often on the route object passed to component
+        const routeParams = (navigation as any).route?.params;
+        // Check if we have a screen param like 'Services' or params.screen
+        if (routeParams?.screen === 'Services' || routeParams?.tab === 'Services') {
+            setActiveTab('Services');
+        }
+    }, [(navigation as any).route?.params]);
+
+    useEffect(() => {
         fetchData();
     }, [activeTab, search]);
 

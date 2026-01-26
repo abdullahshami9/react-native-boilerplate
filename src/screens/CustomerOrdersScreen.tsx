@@ -91,8 +91,14 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
-            <View style={[styles.header, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
+            <View style={[styles.header, { backgroundColor: theme.bg }]}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
+                        <Path d="M19 12H5M12 19l-7-7 7-7" />
+                    </Svg>
+                </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>My Orders</Text>
+                <View style={{ width: 24 }} />
             </View>
 
             <FlatList
@@ -119,8 +125,9 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F7FAFC' },
-    header: { padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderColor: '#E2E8F0' },
-    headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#2D3748' },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 },
+    backButton: { padding: 5, borderRadius: 20 },
+    headerTitle: { fontSize: 20, fontWeight: '600' },
     listContent: { padding: 20 },
     card: { backgroundColor: 'white', borderRadius: 12, marginBottom: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, elevation: 2, overflow: 'hidden' },
     cardHeader: { flexDirection: 'row', padding: 16, justifyContent: 'space-between' },

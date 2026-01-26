@@ -81,7 +81,7 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
                     <View style={[styles.divider, { backgroundColor: theme.borderColor }]} />
                     <View style={styles.timeBlock}>
                         <Text style={[styles.timeLabel, { color: theme.subText }]}>Time</Text>
-                        <Text style={[styles.timeValue, { color: theme.text }]}>{dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+                        <Text style={[styles.timeValue, { color: theme.text }]}>{dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                     </View>
                     <View style={[styles.divider, { backgroundColor: theme.borderColor }]} />
                     <View style={styles.timeBlock}>
@@ -106,8 +106,16 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
-            <View style={[styles.header, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Appointments</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 }}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 5 }}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M19 12H5M12 19l-7-7 7-7" /></Svg>
+                </TouchableOpacity>
+                <Text style={{ fontSize: 20, fontWeight: '600', color: theme.text }}>Appointments</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Shop', { screen: 'Services' })} style={{ padding: 5 }}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
+                        <Path d="M12 5v14M5 12h14" />
+                    </Svg>
+                </TouchableOpacity>
             </View>
 
             <FlatList

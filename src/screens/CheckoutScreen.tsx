@@ -79,13 +79,12 @@ const CheckoutScreen = ({ navigation }: any) => {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
-            <View style={[styles.header, { backgroundColor: theme.headerBg }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
-                        <Path d="M15 18l-6-6 6-6" />
-                    </Svg>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 }}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 5 }}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M19 12H5M12 19l-7-7 7-7" /></Svg>
                 </TouchableOpacity>
-                <Text style={[styles.title, { color: theme.text }]}>Checkout</Text>
+                <Text style={{ fontSize: 20, fontWeight: '600', color: theme.text }}>My Cart</Text>
+                <View style={{ width: 24 }} />
             </View>
 
             <FlatList

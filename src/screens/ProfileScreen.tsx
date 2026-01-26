@@ -451,9 +451,12 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
     const getResumeUrl = () => {
         if (!displayedUser?.resume_url) return '';
-        return displayedUser.resume_url.startsWith('http')
-            ? displayedUser.resume_url
-            : `${CONFIG.API_URL}/${displayedUser.resume_url.replace(/^\//, '')}`;
+        if (displayedUser.resume_url.startsWith('http')) return displayedUser.resume_url;
+
+        // Sanitize URL construction
+        const baseUrl = CONFIG.API_URL.replace(/\/$/, '');
+        const path = displayedUser.resume_url.replace(/^\//, '');
+        return `${baseUrl}/${path}`;
     };
 
     /* -------------------------------------------------------------------------- */
@@ -952,7 +955,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                 <TouchableOpacity
                                     style={{
                                         width: '100%',
-                                        height: 180,
+                                        height: 130,
                                         borderWidth: 2,
                                         borderColor: '#4A9EFF',
                                         borderRadius: 15,

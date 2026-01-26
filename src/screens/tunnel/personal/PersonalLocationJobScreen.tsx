@@ -1,9 +1,10 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Linking } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
 import AddressSelector from '../../../components/AddressSelector';
+import CustomAlert from '../../../components/CustomAlert';
 import Svg, { Path, Circle as SvgCircle } from 'react-native-svg';
 
 const PersonalLocationJobScreen = ({ navigation }: any) => {
@@ -11,6 +12,7 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
     const [location, setLocation] = useState('');
     const [jobTitle, setJobTitle] = useState('');
     const [loading, setLoading] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
     const handleNext = async () => {
         setLoading(true);
@@ -20,7 +22,7 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
             navigation.navigate('IdentityGate');
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'Failed to save details');
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -66,6 +68,14 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </View>
             </View>
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+            />
         </TunnelWrapper>
     );
 };

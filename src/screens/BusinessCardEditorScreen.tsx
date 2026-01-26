@@ -1,21 +1,37 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Dimensions, Alert } from 'react-native';
-import { WebView } from 'react-native-webview';
-import RNPrint from 'react-native-print';
+import React, { useState, useRef, useEffect, useContext } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Platform, Dimensions } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { AuthContext } from '../context/AuthContext';
-import { CardTemplates } from '../utils/CardTemplates';
+import ViewShot from 'react-native-view-shot';
+import RNPrint from 'react-native-print';
+import Share from 'react-native-share';
 import Svg, { Path } from 'react-native-svg';
-import { DataService } from '../services/DataService';
+import { AuthContext } from '../context/AuthContext';
+import { useTheme } from '../theme/useTheme';
 import { CONFIG } from '../Config';
 import axios from 'axios';
-import { useTheme } from '../theme/useTheme';
+import CustomAlert from '../components/CustomAlert';
+import { WebView } from 'react-native-webview';
+import { CardTemplates } from '../utils/CardTemplates';
 
 const { width } = Dimensions.get('window');
 
-const BusinessCardEditorScreen = ({ navigation }: any) => {
+const TEMPLATES = [
+    { id: 'standard', name: 'Standard' },
+    { id: 'tech_terminal', name: 'Tech Terminal' },
+    { id: 'mechanic_tool', name: 'Mechanic Tool' },
+    { id: 'split_card', name: 'Split Card' },
+    { id: 'finger_play', name: 'Finger Play' },
+    { id: 'chart_graph', name: 'Growth Graph' },
+    { id: 'broker', name: 'Broker' },
+    { id: 'bakery', name: 'Bakery' },
+    { id: 'dentist', name: 'Dentist' },
+];
+
+export default function BusinessCardEditorScreen({ route, navigation }: any) {
     const { userInfo } = useContext(AuthContext);
     const theme = useTheme();
+    const { businessDetails } = route.params || {};
+
     const [selectedTemplate, setSelectedTemplate] = useState('standard');
     const [previewSide, setPreviewSide] = useState<'front' | 'back'>('front');
 
@@ -27,27 +43,14 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
     const [address, setAddress] = useState(userInfo?.address || '');
 
     const [qrBase64, setQrBase64] = useState('');
+    const viewShotRef = useRef<any>(null);
+
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
     useEffect(() => {
         // Load saved preferences if available
         if (userInfo?.id) {
-            DataService.getProfile(userInfo.id).then(res => {
-                if (res.business && res.business.card_template) {
-                    setSelectedTemplate(res.business.card_template);
-                }
-                if (res.business && res.business.card_custom_details) {
-                    try {
-                        const savedDetails = JSON.parse(res.business.card_custom_details);
-                        setName(savedDetails.name || userInfo.name);
-                        setRole(savedDetails.role || userInfo.current_job_title);
-                        setPhone(savedDetails.phone || userInfo.phone);
-                        setEmail(savedDetails.email || userInfo.email);
-                        setAddress(savedDetails.address || userInfo.address);
-                    } catch (e) {
-                        console.log('Error parsing saved details', e);
-                    }
-                }
-            });
+            // Logic to load saved preferences if needed
         }
     }, []);
 
@@ -58,21 +61,9 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
         }
     };
 
-    const templates = [
-        { id: 'standard', name: 'Standard' },
-        { id: 'tech_terminal', name: 'Tech Terminal' },
-        { id: 'mechanic_tool', name: 'Mechanic Tool' },
-        { id: 'split_card', name: 'Split Card' },
-        { id: 'finger_play', name: 'Finger Play' },
-        { id: 'chart_graph', name: 'Growth Graph' },
-        { id: 'broker', name: 'Broker' },
-        { id: 'bakery', name: 'Bakery' },
-        { id: 'dentist', name: 'Dentist' },
-    ];
-
     const handleExport = async () => {
         if (!qrBase64) {
-            Alert.alert('Please wait', 'Generating QR Code...');
+            setAlertConfig({ visible: true, title: 'Please wait', message: 'Generating QR Code...', type: 'info', onConfirm: undefined });
             return;
         }
 
@@ -103,9 +94,10 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
             await RNPrint.print({ html });
         } catch (error) {
             console.error('Print error:', error);
-            Alert.alert('Error', 'Failed to export PDF');
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to export PDF', type: 'error', onConfirm: undefined });
         }
     };
+
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -178,7 +170,7 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
                 {/* Templates */}
                 <Text style={[styles.sectionHeader, { color: theme.text }]}>Choose Template</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templateList}>
-                    {templates.map((t) => (
+                    {TEMPLATES.map((t) => (
                         <TouchableOpacity
                             key={t.id}
                             style={[
@@ -212,6 +204,15 @@ const BusinessCardEditorScreen = ({ navigation }: any) => {
                     <TextInput style={[styles.input, { borderColor: theme.navBorder, color: theme.text }]} value={address} onChangeText={setAddress} placeholderTextColor={theme.subText} />
                 </View>
             </ScrollView>
+
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+            />
         </View>
     );
 };
@@ -228,7 +229,7 @@ const styles = StyleSheet.create({
     cardPreviewPlaceholder: { width: 300, height: 170, borderRadius: 10, borderWidth: 1, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
     toggleRow: { flexDirection: 'row', borderRadius: 20, padding: 3 },
     toggleBtn: { paddingVertical: 6, paddingHorizontal: 20, borderRadius: 18 },
-    activeToggle: { shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }, // Used conditionally inline now
+    activeToggle: { shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 },
     sectionHeader: { fontSize: 16, fontWeight: 'bold', marginBottom: 10, marginTop: 10 },
     templateList: { flexDirection: 'row', marginBottom: 20 },
     templateCard: { padding: 15, borderRadius: 10, marginRight: 10, borderWidth: 1, width: 100, alignItems: 'center' },
@@ -237,5 +238,3 @@ const styles = StyleSheet.create({
     inputLabel: { fontSize: 12, marginBottom: 5 },
     input: { borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 15 }
 });
-
-export default BusinessCardEditorScreen;

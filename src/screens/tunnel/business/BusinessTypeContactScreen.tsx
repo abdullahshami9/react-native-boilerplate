@@ -1,8 +1,9 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
+import CustomAlert from '../../../components/CustomAlert';
 import Svg, { Path, Circle } from 'react-native-svg';
 
 const BusinessTypeContactScreen = ({ navigation }: any) => {
@@ -12,6 +13,7 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
     const [bizEmail, setBizEmail] = useState('');
     const [phone, setPhone] = useState(''); // Default to user phone maybe?
     const [loading, setLoading] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
     const handleNext = async () => {
         setLoading(true);
@@ -25,7 +27,7 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
             navigation.navigate('BusinessIndustry');
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'Failed to save details');
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -70,7 +72,7 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
 
                 <View style={styles.inputGroup}>
                     <View style={styles.inputIcon}>
-                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
+                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
                             <Path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                             <Path d="M22 6l-10 7L2 6" />
                         </Svg>
@@ -86,7 +88,7 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
                     />
                 </View>
 
-                 <View style={styles.inputGroup}>
+                <View style={styles.inputGroup}>
                     <View style={styles.inputIcon}>
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
                             <Path d="M12 18h.01" />
@@ -118,6 +120,14 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </View>
             </View>
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+            />
         </TunnelWrapper>
     );
 };

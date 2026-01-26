@@ -1,11 +1,12 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import { DataService } from '../services/DataService';
 import { CONFIG } from '../Config';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useTheme } from '../theme/useTheme';
+import CustomAlert from '../components/CustomAlert';
 
 const CheckoutScreen = ({ navigation }: any) => {
     const { cartItems, clearCart, removeFromCart } = useContext(CartContext);
@@ -13,6 +14,7 @@ const CheckoutScreen = ({ navigation }: any) => {
     const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
     const [loading, setLoading] = useState(false);
     const theme = useTheme();
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
     const total = cartItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
 
@@ -42,17 +44,19 @@ const CheckoutScreen = ({ navigation }: any) => {
 
             await Promise.all(orderPromises);
 
-            Alert.alert('Success', 'Your order has been placed!', [
-                {
-                    text: 'OK', onPress: () => {
-                        clearCart();
-                        navigation.navigate('CustomerOrders');
-                    }
+            setAlertConfig({
+                visible: true,
+                title: 'Success',
+                message: 'Your order has been placed!',
+                type: 'success',
+                onConfirm: () => {
+                    clearCart();
+                    navigation.navigate('CustomerOrders');
                 }
-            ]);
+            });
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'Failed to place order. Please try again.');
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to place order. Please try again.', type: 'error', onConfirm: undefined });
         } finally {
             setLoading(false);
         }
@@ -126,6 +130,15 @@ const CheckoutScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </View>
             )}
+
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+            />
         </View>
     );
 };

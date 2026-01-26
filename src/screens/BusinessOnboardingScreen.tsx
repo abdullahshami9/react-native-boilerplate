@@ -1,9 +1,10 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { CONFIG } from '../Config';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import CustomAlert from '../components/CustomAlert';
 
 const { width } = Dimensions.get('window');
 
@@ -17,8 +18,8 @@ export default function BusinessOnboardingScreen({ navigation }: any) {
   const [description, setDescription] = useState('');
   const [industry, setIndustry] = useState('');
   const [category, setCategory] = useState('');
-  const [socials, setSocials] = useState<{platform: string, url: string}[]>([]);
-  const [payments, setPayments] = useState<{provider: string, account_number: string, account_title: string}[]>([]);
+  const [socials, setSocials] = useState<{ platform: string, url: string }[]>([]);
+  const [payments, setPayments] = useState<{ provider: string, account_number: string, account_title: string }[]>([]);
   const [location, setLocation] = useState({ lat: 0, lng: 0, address: '' });
 
   // Temporary state for inputs
@@ -27,6 +28,9 @@ export default function BusinessOnboardingScreen({ navigation }: any) {
   const [tempPaymentProvider, setTempPaymentProvider] = useState('NayaPay');
   const [tempAccountNum, setTempAccountNum] = useState('');
   const [tempAccountTitle, setTempAccountTitle] = useState('');
+
+  const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
+
 
   const nextStep = () => {
     if (currentStep < STEPS.length - 1) {
@@ -72,12 +76,16 @@ export default function BusinessOnboardingScreen({ navigation }: any) {
       };
 
       await axios.post(`${CONFIG.API_URL}/api/business/onboarding`, payload);
-      Alert.alert("Success", "Business Profile Setup Complete!", [
-          { text: "OK", onPress: () => navigation.replace('Home') }
-      ]);
+      setAlertConfig({
+        visible: true,
+        title: "Success",
+        message: "Business Profile Setup Complete!",
+        type: 'success',
+        onConfirm: () => navigation.replace('Home')
+      });
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "Failed to save details. Please try again.");
+      setAlertConfig({ visible: true, title: "Error", message: "Failed to save details. Please try again.", type: 'error', onConfirm: undefined });
     }
   };
 
@@ -86,8 +94,8 @@ export default function BusinessOnboardingScreen({ navigation }: any) {
       <View style={styles.progressContainer}>
         {STEPS.map((step, index) => (
           <View key={index} style={styles.stepWrapper}>
-             <View style={[styles.stepDot, index <= currentStep && styles.activeDot]} />
-             {index < STEPS.length - 1 && <View style={[styles.stepLine, index < currentStep && styles.activeLine]} />}
+            <View style={[styles.stepDot, index <= currentStep && styles.activeDot]} />
+            {index < STEPS.length - 1 && <View style={[styles.stepLine, index < currentStep && styles.activeLine]} />}
           </View>
         ))}
       </View>
@@ -113,78 +121,78 @@ export default function BusinessOnboardingScreen({ navigation }: any) {
       case 1: // Industry
         return (
           <View>
-             <Text style={styles.title}>Industry & Category</Text>
-             <Text style={styles.label}>Parent Industry</Text>
-             <TextInput style={styles.input} placeholder="e.g. Retail, Services, Food" value={industry} onChangeText={setIndustry} />
-             <Text style={styles.label}>Category</Text>
-             <TextInput style={styles.input} placeholder="e.g. Clothing, Clinic, Restaurant" value={category} onChangeText={setCategory} />
+            <Text style={styles.title}>Industry & Category</Text>
+            <Text style={styles.label}>Parent Industry</Text>
+            <TextInput style={styles.input} placeholder="e.g. Retail, Services, Food" value={industry} onChangeText={setIndustry} />
+            <Text style={styles.label}>Category</Text>
+            <TextInput style={styles.input} placeholder="e.g. Clothing, Clinic, Restaurant" value={category} onChangeText={setCategory} />
           </View>
         );
       case 2: // Socials
         return (
-           <View>
-             <Text style={styles.title}>Social Media Links</Text>
-             <Text style={styles.subtitle}>Connect your social presence.</Text>
+          <View>
+            <Text style={styles.title}>Social Media Links</Text>
+            <Text style={styles.subtitle}>Connect your social presence.</Text>
 
-             <View style={styles.row}>
-                <TextInput style={[styles.input, {flex: 1}]} placeholder="Platform (e.g. Instagram)" value={tempPlatform} onChangeText={setTempPlatform} />
-             </View>
-             <View style={styles.row}>
-                <TextInput style={[styles.input, {flex: 1}]} placeholder="URL" value={tempLink} onChangeText={setTempLink} />
-                <TouchableOpacity style={styles.addButton} onPress={addSocial}>
-                   <Text style={styles.addButtonText}>Add</Text>
-                </TouchableOpacity>
-             </View>
+            <View style={styles.row}>
+              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Platform (e.g. Instagram)" value={tempPlatform} onChangeText={setTempPlatform} />
+            </View>
+            <View style={styles.row}>
+              <TextInput style={[styles.input, { flex: 1 }]} placeholder="URL" value={tempLink} onChangeText={setTempLink} />
+              <TouchableOpacity style={styles.addButton} onPress={addSocial}>
+                <Text style={styles.addButtonText}>Add</Text>
+              </TouchableOpacity>
+            </View>
 
-             <View style={styles.listContainer}>
-                {socials.map((s, i) => (
-                   <View key={i} style={styles.listItem}>
-                      <Text style={styles.listItemText}>{s.platform}: {s.url}</Text>
-                   </View>
-                ))}
-             </View>
-           </View>
+            <View style={styles.listContainer}>
+              {socials.map((s, i) => (
+                <View key={i} style={styles.listItem}>
+                  <Text style={styles.listItemText}>{s.platform}: {s.url}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
         );
       case 3: // Payments
-         return (
-            <View>
-              <Text style={styles.title}>Payment Methods</Text>
-              <Text style={styles.subtitle}>How do you want to receive payments?</Text>
+        return (
+          <View>
+            <Text style={styles.title}>Payment Methods</Text>
+            <Text style={styles.subtitle}>How do you want to receive payments?</Text>
 
-              <TextInput style={styles.input} placeholder="Provider (NayaPay, EasyPaisa, Bank)" value={tempPaymentProvider} onChangeText={setTempPaymentProvider} />
-              <TextInput style={styles.input} placeholder="Account Number / IBAN" value={tempAccountNum} onChangeText={setTempAccountNum} keyboardType="numeric" />
-              <TextInput style={styles.input} placeholder="Account Title" value={tempAccountTitle} onChangeText={setTempAccountTitle} />
+            <TextInput style={styles.input} placeholder="Provider (NayaPay, EasyPaisa, Bank)" value={tempPaymentProvider} onChangeText={setTempPaymentProvider} />
+            <TextInput style={styles.input} placeholder="Account Number / IBAN" value={tempAccountNum} onChangeText={setTempAccountNum} keyboardType="numeric" />
+            <TextInput style={styles.input} placeholder="Account Title" value={tempAccountTitle} onChangeText={setTempAccountTitle} />
 
-              <TouchableOpacity style={styles.actionButton} onPress={addPayment}>
-                  <Text style={styles.actionButtonText}>Add Payment Method</Text>
-              </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={addPayment}>
+              <Text style={styles.actionButtonText}>Add Payment Method</Text>
+            </TouchableOpacity>
 
-              <View style={styles.listContainer}>
-                  {payments.map((p, i) => (
-                      <View key={i} style={styles.listItem}>
-                          <Text style={styles.listItemText}>{p.provider} - {p.account_number} ({p.account_title})</Text>
-                      </View>
-                  ))}
-              </View>
+            <View style={styles.listContainer}>
+              {payments.map((p, i) => (
+                <View key={i} style={styles.listItem}>
+                  <Text style={styles.listItemText}>{p.provider} - {p.account_number} ({p.account_title})</Text>
+                </View>
+              ))}
             </View>
-         );
+          </View>
+        );
       case 4: // Location
-          return (
-             <View>
-                 <Text style={styles.title}>Physical Location</Text>
-                 <Text style={styles.subtitle}>Where is your business located?</Text>
-                 <TextInput
-                    style={styles.input}
-                    placeholder="Full Address"
-                    value={location.address}
-                    onChangeText={(t) => setLocation({...location, address: t})}
-                 />
-                 <Text style={styles.note}>
-                    * Google Maps integration will allow pinning location in future updates.
-                    For now, please provide a detailed address.
-                 </Text>
-             </View>
-          );
+        return (
+          <View>
+            <Text style={styles.title}>Physical Location</Text>
+            <Text style={styles.subtitle}>Where is your business located?</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Full Address"
+              value={location.address}
+              onChangeText={(t) => setLocation({ ...location, address: t })}
+            />
+            <Text style={styles.note}>
+              * Google Maps integration will allow pinning location in future updates.
+              For now, please provide a detailed address.
+            </Text>
+          </View>
+        );
       default:
         return null;
     }
@@ -192,28 +200,37 @@ export default function BusinessOnboardingScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
-       <View style={styles.header}>
-          <Text style={styles.headerTitle}>Setup Business Profile</Text>
-       </View>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Setup Business Profile</Text>
+      </View>
 
-       {renderProgressBar()}
+      {renderProgressBar()}
 
-       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-            {renderContent()}
+          {renderContent()}
         </ScrollView>
-       </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
 
-       <View style={styles.footer}>
-          {currentStep > 0 && (
-             <TouchableOpacity style={[styles.navButton, styles.backButton]} onPress={prevStep}>
-                 <Text style={styles.backButtonText}>Back</Text>
-             </TouchableOpacity>
-          )}
-          <TouchableOpacity style={[styles.navButton, styles.nextButton]} onPress={nextStep}>
-              <Text style={styles.nextButtonText}>{currentStep === STEPS.length - 1 ? 'Finish' : 'Next'}</Text>
+      <View style={styles.footer}>
+        {currentStep > 0 && (
+          <TouchableOpacity style={[styles.navButton, styles.backButton]} onPress={prevStep}>
+            <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
-       </View>
+        )}
+        <TouchableOpacity style={[styles.navButton, styles.nextButton]} onPress={nextStep}>
+          <Text style={styles.nextButtonText}>{currentStep === STEPS.length - 1 ? 'Finish' : 'Next'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onDismiss={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+        onConfirm={alertConfig.onConfirm}
+      />
     </SafeAreaView>
   );
 }
@@ -242,8 +259,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   stepWrapper: {
-     flexDirection: 'row',
-     alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   stepDot: {
     width: 12,
@@ -278,11 +295,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-     fontSize: 14,
-     fontWeight: '600',
-     color: '#333',
-     marginTop: 10,
-     marginBottom: 5,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 10,
+    marginBottom: 5,
   },
   input: {
     backgroundColor: '#f1f3f4',
@@ -300,11 +317,11 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   addButton: {
-     backgroundColor: '#007BFF',
-     paddingHorizontal: 15,
-     paddingVertical: 12,
-     borderRadius: 8,
-     marginBottom: 15,
+    backgroundColor: '#007BFF',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 15,
   },
   addButtonText: {
     color: '#fff',

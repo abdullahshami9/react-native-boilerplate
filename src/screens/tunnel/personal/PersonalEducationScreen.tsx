@@ -1,8 +1,9 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
+import CustomAlert from '../../../components/CustomAlert';
 import DocumentPicker, { DocumentPickerResponse } from 'react-native-document-picker';
 import Svg, { Path } from 'react-native-svg';
 
@@ -13,6 +14,7 @@ const PersonalEducationScreen = ({ navigation }: any) => {
     const [year, setYear] = useState('');
     const [resumeFile, setResumeFile] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
     const handleUploadResume = async () => {
         try {
@@ -45,7 +47,7 @@ const PersonalEducationScreen = ({ navigation }: any) => {
             navigation.navigate('PersonalLocationJob');
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'Failed to save details');
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -111,6 +113,14 @@ const PersonalEducationScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </View>
             </View>
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+            />
         </TunnelWrapper>
     );
 };

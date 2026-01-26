@@ -1,13 +1,15 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import { TunnelService } from '../../services/TunnelService';
 import TunnelWrapper from '../../components/TunnelWrapper';
+import CustomAlert from '../../components/CustomAlert';
 import Svg, { Path, Circle } from 'react-native-svg';
 
 const PaymentIntegrationScreen = ({ navigation }: any) => {
     const { userInfo, updateProfileLocal } = useContext(AuthContext); // updateProfileLocal needs implementation
     const [loading, setLoading] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
     const handleFinish = async () => {
         setLoading(true);
@@ -28,7 +30,7 @@ const PaymentIntegrationScreen = ({ navigation }: any) => {
 
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'Failed to complete tunnel');
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to complete tunnel', type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -67,7 +69,7 @@ const PaymentIntegrationScreen = ({ navigation }: any) => {
                 <View style={styles.illustrationContainer}>
                     <Svg width="150" height="100" viewBox="0 0 200 150">
                         <Circle cx="100" cy="75" r="50" fill="#E2E8F0" opacity="0.5" />
-                         <Path d="M80 75h40M100 55v40" stroke="#CBD5E0" strokeWidth="4" />
+                        <Path d="M80 75h40M100 55v40" stroke="#CBD5E0" strokeWidth="4" />
                     </Svg>
                 </View>
 
@@ -84,6 +86,14 @@ const PaymentIntegrationScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </View>
             </View>
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+            />
         </TunnelWrapper>
     );
 };

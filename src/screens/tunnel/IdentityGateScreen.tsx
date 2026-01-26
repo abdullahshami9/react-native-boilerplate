@@ -48,7 +48,7 @@ const IdentityGateScreen = ({ navigation }: any) => {
                 },
                 onRecordingError: (error) => {
                     console.error(error);
-                    Alert.alert("Error", "Recording failed.");
+                    setAlertConfig({ visible: true, title: "Error", message: "Recording failed.", type: 'error', onConfirm: undefined });
                     setIsRecording(false);
                 }
             });
@@ -63,7 +63,7 @@ const IdentityGateScreen = ({ navigation }: any) => {
 
         } catch (e) {
             console.error(e);
-            Alert.alert("Error", "Could not start camera.");
+            setAlertConfig({ visible: true, title: "Error", message: "Could not start camera.", type: 'error', onConfirm: undefined });
         }
     };
 
@@ -102,7 +102,7 @@ const IdentityGateScreen = ({ navigation }: any) => {
             }
         } catch (error) {
             console.error(error);
-            Alert.alert("Error", "Upload failed.");
+            setAlertConfig({ visible: true, title: "Error", message: "Upload failed.", type: 'error', onConfirm: undefined });
         } finally {
             setLoading(false);
         }

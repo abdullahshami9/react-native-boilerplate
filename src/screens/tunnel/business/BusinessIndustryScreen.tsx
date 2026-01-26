@@ -1,8 +1,9 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Modal, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, FlatList } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
+import CustomAlert from '../../../components/CustomAlert';
 import Svg, { Path } from 'react-native-svg';
 
 const BusinessIndustryScreen = ({ navigation }: any) => {
@@ -13,6 +14,7 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
     const [customCategory, setCustomCategory] = useState('');
     const [showIndustryModal, setShowIndustryModal] = useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
     const INDUSTRIES = [
         { name: 'Technology', children: ['Software', 'Hardware', 'IT Services'] },
@@ -35,12 +37,12 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
         }
 
         if (!finalIndustry || !finalIndustry.trim()) {
-            Alert.alert('Missing Details', 'Please select or enter your Industry.');
+            setAlertConfig({ visible: true, title: 'Missing Details', message: 'Please select or enter your Industry.', type: 'error' });
             return;
         }
 
         if (!finalCategory || !finalCategory.trim()) {
-            Alert.alert('Missing Details', 'Please select or enter your Category.');
+            setAlertConfig({ visible: true, title: 'Missing Details', message: 'Please select or enter your Category.', type: 'error' });
             return;
         }
 
@@ -53,7 +55,7 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
             navigation.navigate('IdentityGate');
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'Failed to save details');
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -185,6 +187,14 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </View>
             </View>
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+            />
         </TunnelWrapper>
     );
 };

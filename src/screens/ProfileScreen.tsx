@@ -175,7 +175,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
             if (profileRes.success) {
                 setBusinessDetails(profileRes.business);
                 if (profileRes.user) {
-                     setLocalUser(profileRes.user);
+                    setLocalUser(profileRes.user);
                 }
             }
 
@@ -422,11 +422,11 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 const asset = result.assets[0];
                 const res = await DataService.uploadProfilePic(userInfo.id, asset);
                 if (res.success) {
-                     setAlertTitle('Success');
-                     setAlertMessage('Profile picture updated!');
-                     setAlertType('success');
-                     setAlertVisible(true);
-                     fetchData(); // Refresh profile to see new pic
+                    setAlertTitle('Success');
+                    setAlertMessage('Profile picture updated!');
+                    setAlertType('success');
+                    setAlertVisible(true);
+                    fetchData(); // Refresh profile to see new pic
                 }
             }
         } catch (e: any) {
@@ -440,11 +440,20 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
     const getProfilePicUrl = () => {
         if (displayedUser?.profile_pic_url) {
-            return `${CONFIG.API_URL}/${displayedUser.profile_pic_url}?t=${new Date().getTime()}`;
+            return displayedUser.profile_pic_url.startsWith('http')
+                ? displayedUser.profile_pic_url
+                : `${CONFIG.API_URL}/${displayedUser.profile_pic_url}?t=${new Date().getTime()}`;
         }
         return isBusinessUser
             ? 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?fit=crop&w=200&h=200'
             : 'https://randomuser.me/api/portraits/men/32.jpg';
+    };
+
+    const getResumeUrl = () => {
+        if (!displayedUser?.resume_url) return '';
+        return displayedUser.resume_url.startsWith('http')
+            ? displayedUser.resume_url
+            : `${CONFIG.API_URL}/${displayedUser.resume_url.replace(/^\//, '')}`;
     };
 
     /* -------------------------------------------------------------------------- */
@@ -845,14 +854,14 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                     <Text style={{ color: theme.text, fontWeight: '600' }}>Uploaded Resume</Text>
                                 </View>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
-                                    <TouchableOpacity onPress={() => Linking.openURL(`${CONFIG.API_URL}/${displayedUser.resume_url}`)} style={{ alignItems: 'center' }}>
+                                    <TouchableOpacity onPress={() => Linking.openURL(getResumeUrl())} style={{ alignItems: 'center' }}>
                                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A9EFF" strokeWidth="2">
                                             <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                             <Circle cx="12" cy="12" r="3" />
                                         </Svg>
                                         <Text style={{ color: '#4A9EFF', fontSize: 10, marginTop: 2 }}>View</Text>
                                     </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => Linking.openURL(`${CONFIG.API_URL}/${displayedUser.resume_url}`)} style={{ alignItems: 'center' }}>
+                                    <TouchableOpacity onPress={() => Linking.openURL(getResumeUrl())} style={{ alignItems: 'center' }}>
                                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38A169" strokeWidth="2">
                                             <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                             <Path d="M7 10l5 5 5-5" />
@@ -895,78 +904,77 @@ const ProfileScreen = ({ navigation, route }: any) => {
                         blurAmount={5}
                         reducedTransparencyFallbackColor="white"
                     />
-                    <View style={styles.businessCardContainer}>
+                    <View style={[styles.businessCardContainer, { backgroundColor: theme.cardBg }]}>
                         <TouchableOpacity style={styles.closeCardButton} onPress={() => setBusinessCardVisible(false)}>
                             <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
                         </TouchableOpacity>
 
-                        {/* Modern Pill Tabs */}
-                        <View style={{ flexDirection: 'row', marginBottom: 25, backgroundColor: isDarkMode ? '#2D3748' : '#F7FAFC', borderRadius: 30, padding: 5, borderWidth: 1, borderColor: isDarkMode ? '#4A5568' : '#EDF2F7' }}>
+                        {/* Tabs */}
+                        <View style={{ flexDirection: 'row', marginBottom: 15, backgroundColor: isDarkMode ? '#2D3748' : '#F7FAFC', borderRadius: 30, padding: 4, borderWidth: 1, borderColor: theme.borderColor, alignSelf: 'center' }}>
                             <TouchableOpacity
-                                style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 25, backgroundColor: qrTab === 'my' ? (isDarkMode ? '#4A5568' : '#FFFFFF') : 'transparent', elevation: qrTab === 'my' ? 3 : 0, shadowColor: '#000', shadowOpacity: qrTab === 'my' ? 0.1 : 0, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4 }}
+                                style={{ paddingVertical: 6, paddingHorizontal: 20, borderRadius: 25, backgroundColor: qrTab === 'my' ? (isDarkMode ? '#4A5568' : '#FFFFFF') : 'transparent', elevation: qrTab === 'my' ? 2 : 0 }}
                                 onPress={() => setQrTab('my')}
                             >
-                                <Text style={{ fontWeight: '700', fontSize: 14, color: qrTab === 'my' ? (isDarkMode ? '#fff' : '#2D3748') : (isDarkMode ? '#A0AEC0' : '#718096') }}>My QR</Text>
+                                <Text style={{ fontWeight: '700', fontSize: 12, color: qrTab === 'my' ? theme.text : theme.subText }}>My QR</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 25, backgroundColor: qrTab === 'scan' ? (isDarkMode ? '#4A5568' : '#FFFFFF') : 'transparent', elevation: qrTab === 'scan' ? 3 : 0, shadowColor: '#000', shadowOpacity: qrTab === 'scan' ? 0.1 : 0, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4 }}
+                                style={{ paddingVertical: 6, paddingHorizontal: 20, borderRadius: 25, backgroundColor: qrTab === 'scan' ? (isDarkMode ? '#4A5568' : '#FFFFFF') : 'transparent', elevation: qrTab === 'scan' ? 2 : 0 }}
                                 onPress={() => setQrTab('scan')}
                             >
-                                <Text style={{ fontWeight: '700', fontSize: 14, color: qrTab === 'scan' ? (isDarkMode ? '#fff' : '#2D3748') : (isDarkMode ? '#A0AEC0' : '#718096') }}>Scan QR</Text>
+                                <Text style={{ fontWeight: '700', fontSize: 12, color: qrTab === 'scan' ? theme.text : theme.subText }}>Scan QR</Text>
                             </TouchableOpacity>
                         </View>
 
                         {qrTab === 'my' ? (
-                            <>
-                                <View style={styles.cardHeader}>
-                                    <Image source={{ uri: getProfilePicUrl() }} style={styles.cardAvatar} />
-                                    <View style={{ marginLeft: 15, flex: 1 }}>
-                                        <Text style={styles.cardName}>{displayedUser?.name}</Text>
-                                        <Text style={styles.cardRole} numberOfLines={1} ellipsizeMode="tail">{displayedUser?.email}</Text>
-                                    </View>
+                            <View style={styles.landscapeCard}>
+                                {/* Left Side: QR */}
+                                <View style={[styles.landscapeQrSection, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', borderColor: theme.borderColor }]}>
+                                    <QRCode
+                                        value={`raabtaa://user/${displayedUser?.id}`}
+                                        size={110}
+                                        backgroundColor={isDarkMode ? '#2D3748' : 'white'}
+                                        color={isDarkMode ? 'white' : 'black'}
+                                    />
                                 </View>
 
-                                <View style={styles.cardQrBody}>
-                                    <View style={[styles.cardQrWrapper, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', borderColor: theme.borderColor }]}>
-                                        <QRCode
-                                            value={`raabtaa://user/${displayedUser?.id}`}
-                                            size={180}
-                                            backgroundColor={isDarkMode ? '#2D3748' : 'white'}
-                                            color={isDarkMode ? 'white' : 'black'}
-                                        />
+                                {/* Right Side: Info */}
+                                <View style={styles.landscapeInfoSection}>
+                                    <Image source={{ uri: getProfilePicUrl() }} style={styles.landscapeAvatar} />
+                                    <View>
+                                        <Text style={[styles.cardName, { color: theme.text, fontSize: 18 }]}>{displayedUser?.name}</Text>
+                                        <Text style={[styles.cardRole, { color: theme.subText, fontSize: 12 }]} numberOfLines={1}>{displayedUser?.email}</Text>
+                                        <Text style={{ color: theme.primary, fontSize: 10, marginTop: 5, fontWeight: '600' }}>Scan to connect</Text>
                                     </View>
-                                    <Text style={styles.scanText}>Scan to connect</Text>
                                 </View>
-                            </>
+                            </View>
                         ) : (
-                            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 20, width: '100%' }}>
+                            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 10, width: '100%' }}>
                                 <TouchableOpacity
                                     style={{
-                                        width: 220,
-                                        height: 220,
+                                        width: '100%',
+                                        height: 180,
                                         borderWidth: 2,
                                         borderColor: '#4A9EFF',
-                                        borderRadius: 20,
+                                        borderRadius: 15,
                                         borderStyle: 'dashed',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        backgroundColor: isDarkMode ? '#2D3748' : '#EBF8FF'
+                                        backgroundColor: isDarkMode ? '#2D3748' : '#EBF8FF',
+                                        flexDirection: 'row',
+                                        gap: 15
                                     }}
                                     onPress={() => {
                                         setBusinessCardVisible(false);
                                         navigation.navigate('ARCardScanner');
                                     }}
                                 >
-                                    <Svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#4A9EFF" strokeWidth="2">
+                                    <Svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4A9EFF" strokeWidth="2">
                                         <Path d="M2 12V7a5 5 0 0 1 5-5h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5h-5" />
                                         <Path d="M2 12l5 5 5-5" />
                                         <Path d="M2 12v5" />
                                     </Svg>
-                                    <Text style={{ marginTop: 15, color: '#4A9EFF', fontWeight: 'bold', fontSize: 16 }}>Launch AR Scanner</Text>
+                                    <Text style={{ color: '#4A9EFF', fontWeight: 'bold', fontSize: 16 }}>Launch Scanner</Text>
                                 </TouchableOpacity>
-                                <Text style={{ marginTop: 20, textAlign: 'center', color: isDarkMode ? '#A0AEC0' : '#718096' }}>
-                                    Point your camera at a Raabtaa Business Card{'\n'}to see the magic unfold.
-                                </Text>
                             </View>
                         )}
                     </View>
@@ -1027,7 +1035,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                         </View>
                     </View>
                 </View>
-            </Modal>
+            </Modal >
             <Modal
                 visible={isEditing}
                 transparent
@@ -1084,7 +1092,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 10, marginBottom: 20, backgroundColor: theme.inputBg, borderRadius: 10 }}
                             onPress={handleUploadProfilePic}
                         >
-                             <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 10 }}>
+                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 10 }}>
                                 <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                                 <Circle cx="12" cy="13" r="4" />
                             </Svg>
@@ -1221,7 +1229,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
             </Modal>
 
             <StandardLoader visible={showLoader} />
-        </View>
+        </View >
     );
 };
 
@@ -1302,7 +1310,11 @@ const styles = StyleSheet.create({
     closeCardButton: { position: 'absolute', top: 15, right: 15, padding: 5, zIndex: 10 },
     cardHeader: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginBottom: 20 },
     cardAvatar: { width: 60, height: 60, borderRadius: 30 },
-    businessCardContainer: { width: '85%', backgroundColor: '#fff', borderRadius: 20, padding: 25, alignItems: 'center', elevation: 10 },
+    landscapeCard: { flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10 },
+    landscapeQrSection: { padding: 8, borderRadius: 10, borderWidth: 1, elevation: 1 },
+    landscapeInfoSection: { flex: 1, marginLeft: 15, justifyContent: 'center' },
+    landscapeAvatar: { width: 40, height: 40, borderRadius: 20, marginBottom: 5 },
+    businessCardContainer: { width: '90%', borderRadius: 20, padding: 20, alignItems: 'center', elevation: 10, maxHeight: 400 }, // limited height for landscape feel
 });
 
 export default ProfileScreen;

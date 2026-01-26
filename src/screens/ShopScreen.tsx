@@ -38,12 +38,14 @@ const ShopScreen = ({ navigation }: any) => {
                 console.log('Services API Response:', JSON.stringify(res));
 
                 const results = res.services || res.data || (Array.isArray(res) ? res : []);
-                console.log('Parsed Services Results:', results.length, results[0]);
 
                 if (Array.isArray(results)) {
                     setServices(results);
+                } else if (res.success && Array.isArray(res.services)) {
+                    setServices(res.services);
                 } else {
-                    console.log('Services Results is NOT an array');
+                    // Fallback if data structure is nested differently
+                    console.log('Services Results parsing fallback', res);
                     setServices([]);
                 }
             }
@@ -60,7 +62,7 @@ const ShopScreen = ({ navigation }: any) => {
             <AnimatedSearchHeader
                 title="Shop"
                 onBack={() => navigation.goBack()}
-                onSearch={() => {}} // Live search via onChangeText
+                onSearch={() => { }} // Live search via onChangeText
                 onChangeText={setSearch}
                 placeholder={`Search ${activeTab}...`}
                 initialValue={search}

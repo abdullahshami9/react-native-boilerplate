@@ -13,6 +13,7 @@ import Animated, { useSharedValue, useAnimatedStyle, interpolate, interpolateCol
 import CustomAlert from '../components/CustomAlert';
 import StandardLoader from '../components/StandardLoader';
 import { useTheme } from '../theme/useTheme';
+import { resolveImage, getDefaultImageForType } from '../utils/ImageHelper';
 
 const { width, height } = Dimensions.get('window');
 
@@ -438,15 +439,8 @@ const ProfileScreen = ({ navigation, route }: any) => {
         }
     };
 
-    const getProfilePicUrl = () => {
-        if (displayedUser?.profile_pic_url) {
-            return displayedUser.profile_pic_url.startsWith('http')
-                ? displayedUser.profile_pic_url
-                : `${CONFIG.API_URL}/${displayedUser.profile_pic_url}?t=${new Date().getTime()}`;
-        }
-        return isBusinessUser
-            ? 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?fit=crop&w=200&h=200'
-            : 'https://randomuser.me/api/portraits/men/32.jpg';
+    const getProfileSource = () => {
+        return resolveImage(displayedUser?.profile_pic_url, getDefaultImageForType(isBusinessUser ? 'business' : 'customer'));
     };
 
     const getResumeUrl = () => {
@@ -597,7 +591,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 <Animated.View style={[styles.avatarContainerAbsolute, avatarStyle]}>
                     <TouchableOpacity onPress={isOwnProfile ? handleUploadProfilePic : undefined} activeOpacity={isOwnProfile ? 0.8 : 1}>
                         <View style={[styles.avatarWrapper, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', borderColor: isDarkMode ? 'transparent' : '#F7FAFC', elevation: isDarkMode ? 0 : 5 }]}>
-                            <Image source={{ uri: getProfilePicUrl() }} style={styles.avatar} />
+                            <Image source={getProfileSource()} style={styles.avatar} />
                             {isOwnProfile && (
                                 <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#4A9EFF', borderRadius: 12, padding: 4 }}>
                                     <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
@@ -942,7 +936,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
                                 {/* Right Side: Info */}
                                 <View style={styles.landscapeInfoSection}>
-                                    <Image source={{ uri: getProfilePicUrl() }} style={styles.landscapeAvatar} />
+                                    <Image source={getProfileSource()} style={styles.landscapeAvatar} />
                                     <View>
                                         <Text style={[styles.cardName, { color: theme.text, fontSize: 18 }]}>{displayedUser?.name}</Text>
                                         <Text style={[styles.cardRole, { color: theme.subText, fontSize: 12 }]} numberOfLines={1}>{displayedUser?.email}</Text>

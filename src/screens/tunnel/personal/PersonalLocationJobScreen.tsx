@@ -19,7 +19,16 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
         try {
             // Save details
             await TunnelService.updatePersonalDetails(userInfo.id, { address: location, jobTitle });
-            navigation.navigate('IdentityGate');
+
+            // Complete Tunnel for Personal User (Skip Identity Gate)
+            await TunnelService.completeTunnel(userInfo.id);
+
+            // Navigate to Home
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+            });
+
         } catch (error) {
             console.error(error);
             setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error' });
@@ -64,7 +73,7 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
                         onPress={handleNext}
                         disabled={loading}
                     >
-                        <Text style={styles.nextButtonText}>{loading ? 'Saving...' : 'Next'}</Text>
+                        <Text style={styles.nextButtonText}>{loading ? 'Finish' : 'Finish'}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

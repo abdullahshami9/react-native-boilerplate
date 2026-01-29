@@ -9,20 +9,42 @@ import Svg, { Path, Circle } from 'react-native-svg';
 const BusinessTypeContactScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);
     const [bizType, setBizType] = useState<'Service Based' | 'Product Based'>('Service Based');
-    const [altPhone, setAltPhone] = useState('');
-    const [bizEmail, setBizEmail] = useState('');
-    const [phone, setPhone] = useState(''); // Default to user phone maybe?
+
+    // Service Fields
+    const [experience, setExperience] = useState('');
+    const [serviceCategory, setServiceCategory] = useState('');
+
+    // Product Fields
+    const [warehouseCapacity, setWarehouseCapacity] = useState('');
+    const [deliveryRange, setDeliveryRange] = useState('');
+
     const [loading, setLoading] = useState(false);
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
     const handleNext = async () => {
         setLoading(true);
         try {
+            let description = '';
+            if (bizType === 'Service Based') {
+                if (!experience || !serviceCategory) {
+                    setAlertConfig({ visible: true, title: 'Missing Info', message: 'Please fill all service details.', type: 'error' });
+                    setLoading(false);
+                    return;
+                }
+                description = `Experience: ${experience} years. Specialization: ${serviceCategory}.`;
+            } else {
+                 if (!warehouseCapacity || !deliveryRange) {
+                    setAlertConfig({ visible: true, title: 'Missing Info', message: 'Please fill all product details.', type: 'error' });
+                    setLoading(false);
+                    return;
+                }
+                description = `Warehouse: ${warehouseCapacity}. Delivery: ${deliveryRange}.`;
+            }
+
             await TunnelService.updateBusinessType(userInfo.id, {
                 business_type: bizType,
-                description: `Alt Phone: ${altPhone}`, // Storing alt phone in description for now
-                phone: phone,
-                email: bizEmail
+                description: description,
+                // Removed redundant phone/email as per request
             });
             navigation.navigate('BusinessIndustry');
         } catch (error) {
@@ -34,8 +56,8 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
     };
 
     return (
-        <TunnelWrapper title="Business Profile - Type & Contact" onBack={() => navigation.goBack()}>
-            <View style={styles.container}>
+        <TunnelWrapper title="Business Profile - Type & Details" onBack={() => navigation.goBack()}>
+            <ScrollView contentContainerStyle={styles.container}>
 
                 {/* Radio Buttons */}
                 <View style={styles.radioGroup}>
@@ -53,56 +75,54 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Inputs */}
-                <View style={styles.inputGroup}>
-                    <View style={styles.inputIcon}>
-                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
-                            <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                        </Svg>
-                    </View>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Alternative Number"
-                        placeholderTextColor="#A0AEC0"
-                        value={altPhone}
-                        onChangeText={setAltPhone}
-                        keyboardType="phone-pad"
-                    />
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <View style={styles.inputIcon}>
-                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
-                            <Path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                            <Path d="M22 6l-10 7L2 6" />
-                        </Svg>
-                    </View>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Business Email"
-                        placeholderTextColor="#A0AEC0"
-                        value={bizEmail}
-                        onChangeText={setBizEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                    />
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <View style={styles.inputIcon}>
-                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
-                            <Path d="M12 18h.01" />
-                            <Path d="M8 21h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z" />
-                        </Svg>
-                    </View>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Phone no"
-                        placeholderTextColor="#A0AEC0"
-                        value={phone}
-                        onChangeText={setPhone}
-                        keyboardType="phone-pad"
-                    />
+                {/* Conditional Fields */}
+                <View style={styles.dynamicFields}>
+                    {bizType === 'Service Based' ? (
+                        <>
+                            <Text style={styles.sectionLabel}>Service Details</Text>
+                            <View style={styles.inputGroup}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Years of Experience (e.g. 5)"
+                                    placeholderTextColor="#A0AEC0"
+                                    value={experience}
+                                    onChangeText={setExperience}
+                                    keyboardType="numeric"
+                                />
+                            </View>
+                            <View style={styles.inputGroup}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Specialization (e.g. Residential, Industrial)"
+                                    placeholderTextColor="#A0AEC0"
+                                    value={serviceCategory}
+                                    onChangeText={setServiceCategory}
+                                />
+                            </View>
+                        </>
+                    ) : (
+                        <>
+                            <Text style={styles.sectionLabel}>Product Operations</Text>
+                            <View style={styles.inputGroup}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Warehouse Capacity (e.g. 1000 units)"
+                                    placeholderTextColor="#A0AEC0"
+                                    value={warehouseCapacity}
+                                    onChangeText={setWarehouseCapacity}
+                                />
+                            </View>
+                            <View style={styles.inputGroup}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Delivery Range (e.g. Nationwide, Local)"
+                                    placeholderTextColor="#A0AEC0"
+                                    value={deliveryRange}
+                                    onChangeText={setDeliveryRange}
+                                />
+                            </View>
+                        </>
+                    )}
                 </View>
 
                 <View style={styles.spacer} />
@@ -119,7 +139,7 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
                         <Text style={styles.nextButtonText}>{loading ? 'Saving...' : 'Next'}</Text>
                     </TouchableOpacity>
                 </View>
-            </View>
+            </ScrollView>
             <CustomAlert
                 visible={alertConfig.visible}
                 title={alertConfig.title}
@@ -134,8 +154,9 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        flexGrow: 1,
         gap: 16,
+        paddingBottom: 20,
     },
     radioGroup: {
         flexDirection: 'column',
@@ -169,18 +190,25 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#4A5568',
     },
+    dynamicFields: {
+        gap: 15,
+        marginTop: 10,
+    },
+    sectionLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#4A5568',
+        marginBottom: 5,
+    },
     inputGroup: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#FFFFFF',
-        borderRadius: 30,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: '#E2E8F0',
         paddingHorizontal: 20,
         height: 56,
-    },
-    inputIcon: {
-        marginRight: 12,
     },
     input: {
         flex: 1,
@@ -189,6 +217,7 @@ const styles = StyleSheet.create({
     },
     spacer: {
         flex: 1,
+        minHeight: 20,
     },
     buttonContainer: {
         flexDirection: 'row',

@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Platform, Dimensions, Image, Modal, FlatList } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import ViewShot from 'react-native-view-shot';
 import RNPrint from 'react-native-print';
-import Share from 'react-native-share';
 import Svg, { Path } from 'react-native-svg';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../theme/useTheme';
@@ -12,6 +10,8 @@ import axios from 'axios';
 import CustomAlert from '../components/CustomAlert';
 import { WebView } from 'react-native-webview';
 import { CardTemplates } from '../utils/CardTemplates';
+import LocalAssets, { AssetCategories } from '../utils/LocalAssets';
+import { resolveImage } from '../utils/ImageHelper';
 
 const { width } = Dimensions.get('window');
 
@@ -27,13 +27,15 @@ const TEMPLATES = [
     { id: 'dentist', name: 'Dentist' },
 ];
 
+const COLORS = ['#1A202C', '#2D3748', '#E53E3E', '#DD6B20', '#D69E2E', '#38A169', '#3182CE', '#00B5D8', '#805AD5', '#D53F8C'];
+
 export default function BusinessCardEditorScreen({ route, navigation }: any) {
     const { userInfo } = useContext(AuthContext);
     const theme = useTheme();
-    const { businessDetails } = route.params || {};
 
     const [selectedTemplate, setSelectedTemplate] = useState('standard');
     const [previewSide, setPreviewSide] = useState<'front' | 'back'>('front');
+    const [selectedColor, setSelectedColor] = useState('#1A202C');
 
     // Editable Fields
     const [name, setName] = useState(userInfo?.name || '');
@@ -42,23 +44,30 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
     const [email, setEmail] = useState(userInfo?.email || '');
     const [address, setAddress] = useState(userInfo?.address || '');
 
-    const [qrBase64, setQrBase64] = useState('');
-    const viewShotRef = useRef<any>(null);
+    // Logo State
+    const [logoUrl, setLogoUrl] = useState(userInfo?.profile_pic_url ? `${CONFIG.API_URL}/${userInfo.profile_pic_url}` : null);
+    const [selectedAssetKey, setSelectedAssetKey] = useState<string | null>(null);
+    const [showLogoPicker, setShowLogoPicker] = useState(false);
 
+    const [qrBase64, setQrBase64] = useState('');
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
-    useEffect(() => {
-        // Load saved preferences if available
-        if (userInfo?.id) {
-            // Logic to load saved preferences if needed
-        }
-    }, []);
+    // Flatten assets for picker
+    const allAssets = Object.keys(LocalAssets);
 
     // Generate QR Base64 helper
     const handleQrRef = (c: any) => {
         if (c) {
             c.toDataURL((data: string) => setQrBase64(`<img src="data:image/png;base64,${data}" width="100" height="100"/>`));
         }
+    };
+
+    const getLogoUri = () => {
+        if (selectedAssetKey) {
+            const source = Image.resolveAssetSource(LocalAssets[selectedAssetKey]);
+            return source.uri;
+        }
+        return logoUrl || 'https://via.placeholder.com/50';
     };
 
     const handleExport = async () => {
@@ -73,8 +82,9 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
             phone,
             email,
             address,
-            logo: userInfo?.profile_pic_url ? `${CONFIG.API_URL}/${userInfo.profile_pic_url}` : 'https://via.placeholder.com/50',
-            qrCode: qrBase64
+            logo: getLogoUri(),
+            qrCode: qrBase64,
+            color: selectedColor
         };
 
         // Save preferences
@@ -82,7 +92,7 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
             await axios.post(`${CONFIG.API_URL}/api/business/card-settings`, {
                 user_id: userInfo?.id,
                 card_template: selectedTemplate,
-                card_custom_details: { name, role, phone, email, address }
+                card_custom_details: { name, role, phone, email, address, color: selectedColor, logoKey: selectedAssetKey }
             });
         } catch (e) {
             console.log('Failed to save preferences');
@@ -94,7 +104,7 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
             await RNPrint.print({ html });
         } catch (error) {
             console.error('Print error:', error);
-            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to export PDF', type: 'error', onConfirm: undefined });
+            // setAlertConfig({ visible: true, title: 'Error', message: 'Failed to export PDF', type: 'error', onConfirm: undefined });
         }
     };
 
@@ -123,10 +133,9 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
             <ScrollView contentContainerStyle={styles.content}>
                 {/* Preview Area */}
                 <View style={styles.previewContainer}>
-                    <Text style={[styles.label, { color: theme.subText }]}>Preview ({previewSide === 'front' ? 'Front' : 'Back'})</Text>
                     <View style={[styles.cardPreviewPlaceholder, { backgroundColor: '#EDF2F7', borderColor: theme.navBorder }]}>
                         <WebView
-                            key={`${selectedTemplate}-${previewSide}`} // Force remount on change
+                            key={`${selectedTemplate}-${previewSide}-${selectedColor}-${selectedAssetKey}`}
                             originWhitelist={['*']}
                             source={{
                                 html: (() => {
@@ -136,8 +145,9 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
                                         phone,
                                         email,
                                         address,
-                                        logo: userInfo?.profile_pic_url ? `${CONFIG.API_URL}/${userInfo.profile_pic_url}` : 'https://via.placeholder.com/50',
-                                        qrCode: qrBase64
+                                        logo: getLogoUri(),
+                                        qrCode: qrBase64,
+                                        color: selectedColor
                                     };
                                     let html = (CardTemplates as any)[selectedTemplate](data);
                                     const hideStyle = previewSide === 'front'
@@ -157,24 +167,19 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
                                             </style>`;
 
                                     let finalHtml = html;
-                                    // Inject styles
                                     if (finalHtml.includes('</head>')) {
                                         finalHtml = finalHtml.replace('</head>', hideStyle + '</head>');
                                     } else {
                                         finalHtml = hideStyle + finalHtml;
                                     }
-
-                                    // Ensure DOCTYPE
                                     if (!finalHtml.trim().startsWith('<!DOCTYPE html>')) {
                                         finalHtml = '<!DOCTYPE html>' + finalHtml;
                                     }
-
                                     return finalHtml;
                                 })(),
-                                baseUrl: '' // CRITICAL: Required for Android rendering
+                                baseUrl: ''
                             }}
-                            originWhitelist={['*']}
-                            scalesPageToFit={true} // Default behavior needed for width=420 on mobile
+                            scalesPageToFit={true}
                             javaScriptEnabled={true}
                             domStorageEnabled={true}
                             style={{ width: '100%', height: '100%', backgroundColor: 'transparent', opacity: 0.99 }}
@@ -188,7 +193,7 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
                 </View>
 
                 {/* Templates */}
-                <Text style={[styles.sectionHeader, { color: theme.text }]}>Choose Template</Text>
+                <Text style={[styles.sectionHeader, { color: theme.text }]}>Template</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templateList}>
                     {TEMPLATES.map((t) => (
                         <TouchableOpacity
@@ -205,8 +210,30 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
                     ))}
                 </ScrollView>
 
+                {/* Color Picker */}
+                <Text style={[styles.sectionHeader, { color: theme.text }]}>Accent Color</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorList}>
+                    {COLORS.map((c) => (
+                        <TouchableOpacity
+                            key={c}
+                            style={[
+                                styles.colorCircle,
+                                { backgroundColor: c },
+                                selectedColor === c && styles.colorSelected
+                            ]}
+                            onPress={() => setSelectedColor(c)}
+                        />
+                    ))}
+                </ScrollView>
+
                 {/* Edit Details */}
-                <Text style={[styles.sectionHeader, { color: theme.text }]}>Customize Details</Text>
+                <View style={styles.rowHeader}>
+                    <Text style={[styles.sectionHeader, { color: theme.text }]}>Details</Text>
+                    <TouchableOpacity onPress={() => setShowLogoPicker(true)}>
+                        <Text style={{color: theme.primary, fontWeight: '600'}}>Change Logo</Text>
+                    </TouchableOpacity>
+                </View>
+
                 <View style={[styles.form, { backgroundColor: theme.cardBg }]}>
                     <Text style={[styles.inputLabel, { color: theme.subText }]}>Name</Text>
                     <TextInput style={[styles.input, { borderColor: theme.navBorder, color: theme.text }]} value={name} onChangeText={setName} placeholderTextColor={theme.subText} />
@@ -224,6 +251,35 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
                     <TextInput style={[styles.input, { borderColor: theme.navBorder, color: theme.text }]} value={address} onChangeText={setAddress} placeholderTextColor={theme.subText} />
                 </View>
             </ScrollView>
+
+            <Modal visible={showLogoPicker} animationType="slide" transparent>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Choose Illustration</Text>
+                            <TouchableOpacity onPress={() => setShowLogoPicker(false)}>
+                                <Text style={styles.closeText}>Close</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <FlatList
+                            data={allAssets}
+                            keyExtractor={(item) => item}
+                            numColumns={3}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={styles.logoItem}
+                                    onPress={() => {
+                                        setSelectedAssetKey(item);
+                                        setShowLogoPicker(false);
+                                    }}
+                                >
+                                    <Image source={LocalAssets[item]} style={styles.logoImage} resizeMode="contain" />
+                                </TouchableOpacity>
+                            )}
+                        />
+                    </View>
+                </View>
+            </Modal>
 
             <CustomAlert
                 visible={alertConfig.visible}
@@ -245,16 +301,25 @@ const styles = StyleSheet.create({
     saveText: { fontWeight: 'bold', fontSize: 16 },
     content: { padding: 20, paddingBottom: 50 },
     previewContainer: { alignItems: 'center', marginBottom: 20 },
-    label: { marginBottom: 10, fontWeight: '600' },
     cardPreviewPlaceholder: { width: width * 0.9, aspectRatio: 1.75, borderRadius: 15, borderWidth: 1, borderColor: '#cad5e0', marginBottom: 15, overflow: 'hidden', backgroundColor: '#EDF2F7' },
     toggleRow: { flexDirection: 'row', borderRadius: 20, padding: 3 },
     toggleBtn: { paddingVertical: 6, paddingHorizontal: 20, borderRadius: 18 },
-    activeToggle: { shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 },
     sectionHeader: { fontSize: 16, fontWeight: 'bold', marginBottom: 10, marginTop: 10 },
     templateList: { flexDirection: 'row', marginBottom: 20 },
     templateCard: { padding: 15, borderRadius: 10, marginRight: 10, borderWidth: 1, width: 100, alignItems: 'center' },
-    templateName: { fontWeight: '600' },
+    templateName: { fontWeight: '600', fontSize: 12, textAlign: 'center' },
+    colorList: { flexDirection: 'row', marginBottom: 20 },
+    colorCircle: { width: 30, height: 30, borderRadius: 15, marginRight: 15, borderWidth: 2, borderColor: 'transparent' },
+    colorSelected: { borderColor: 'white', shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 3, elevation: 5 },
     form: { padding: 15, borderRadius: 10 },
     inputLabel: { fontSize: 12, marginBottom: 5 },
-    input: { borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 15 }
+    input: { borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 15 },
+    rowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 10 },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: 'white', height: '60%', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
+    modalTitle: { fontSize: 18, fontWeight: 'bold' },
+    closeText: { color: 'red', fontWeight: '600' },
+    logoItem: { flex: 1/3, height: 80, padding: 5, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#eee', margin: 2, borderRadius: 8 },
+    logoImage: { width: '100%', height: '100%' }
 });

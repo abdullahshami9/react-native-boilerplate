@@ -1,11 +1,13 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, Dimensions, ActivityIndicator, Modal, FlatList } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { DataService } from '../services/DataService';
 import { AuthContext } from '../context/AuthContext';
 import CustomAlert from '../components/CustomAlert';
 import { useTheme } from '../theme/useTheme';
+import LocalAssets from '../utils/LocalAssets';
+import { resolveImage } from '../utils/ImageHelper';
 
 const { width } = Dimensions.get('window');
 
@@ -21,12 +23,15 @@ const AddProductScreen = ({ navigation, route }: any) => {
     const [price, setPrice] = useState(editingProduct?.price ? String(editingProduct.price) : '');
     const [description, setDescription] = useState(editingProduct?.description || '');
     const [stock, setStock] = useState(editingProduct?.stock_quantity ? String(editingProduct.stock_quantity) : '');
-    const [image, setImage] = useState<any>(null);
+
+    // Image State
+    const [image, setImage] = useState<any>(null); // File object for upload
     const [currentImageUrl, setCurrentImageUrl] = useState(editingProduct?.image_url ? `${CONFIG.API_URL}/${editingProduct.image_url}` : null);
 
     const [loading, setLoading] = useState(false);
     const [logs, setLogs] = useState<any[]>([]);
     const [showLogs, setShowLogs] = useState(false);
+    const [showImageOptions, setShowImageOptions] = useState(false);
 
     // Alert State
     const [alertVisible, setAlertVisible] = useState(false);
@@ -34,12 +39,21 @@ const AddProductScreen = ({ navigation, route }: any) => {
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState<'error' | 'success'>('error');
 
-    const handleChooseImage = async () => {
+    const allAssets = Object.keys(LocalAssets);
+
+    const handleGalleryPick = async () => {
         const result = await launchImageLibrary({ mediaType: 'photo' });
         if (result.assets && result.assets.length > 0) {
             setImage(result.assets[0]);
-            setCurrentImageUrl(null); // Prioritize new image
+            setCurrentImageUrl(null); // Prioritize new upload
+            setShowImageOptions(false);
         }
+    };
+
+    const handleAssetPick = (key: string) => {
+        setImage(null);
+        setCurrentImageUrl(`asset:${key}`);
+        setShowImageOptions(false);
     };
 
     const handleFetchLogs = async () => {
@@ -64,13 +78,22 @@ const AddProductScreen = ({ navigation, route }: any) => {
 
         setLoading(true);
         try {
+            // Determine image URL to save
+            // If uploaded (image exists), backend returns new path.
+            // If asset selected (currentImageUrl starts with asset:), save that string.
+            // If nothing changed, keep old one.
+
+            let finalImageUrl = editingProduct?.image_url || '';
+            if (currentImageUrl && currentImageUrl.startsWith('asset:')) {
+                finalImageUrl = currentImageUrl;
+            }
+
             const payload = {
                 name,
                 price: parseFloat(price),
                 description,
                 stock_quantity: parseInt(stock),
-                image_url: editingProduct?.image_url || '' // Keep old URL if not updated, but standard update might clear it if we don't handle carefully.
-                // Our backend update checks if image_url is provided. If we send it, it updates.
+                image_url: finalImageUrl
             };
 
             let success = false;
@@ -88,6 +111,7 @@ const AddProductScreen = ({ navigation, route }: any) => {
             }
 
             if (success) {
+                // Only upload if a file was selected from gallery
                 if (image && productId) {
                     await DataService.uploadProductImage(productId, 0, image);
                 }
@@ -113,6 +137,12 @@ const AddProductScreen = ({ navigation, route }: any) => {
         }
     };
 
+    const getPreviewSource = () => {
+        if (image) return { uri: image.uri };
+        if (currentImageUrl) return resolveImage(currentImageUrl);
+        return null;
+    };
+
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             <View style={[styles.header, { backgroundColor: theme.headerBg, shadowColor: theme.text }]}>
@@ -126,11 +156,9 @@ const AddProductScreen = ({ navigation, route }: any) => {
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
-                <TouchableOpacity style={styles.imagePicker} onPress={handleChooseImage}>
-                    {image ? (
-                        <Image source={{ uri: image.uri }} style={styles.previewImage} />
-                    ) : currentImageUrl ? (
-                        <Image source={{ uri: currentImageUrl }} style={styles.previewImage} />
+                <TouchableOpacity style={styles.imagePicker} onPress={() => setShowImageOptions(true)}>
+                    {getPreviewSource() ? (
+                        <Image source={getPreviewSource()} style={styles.previewImage} resizeMode="cover" />
                     ) : (
                         <View style={[styles.placeholder, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
                             <Svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
@@ -213,6 +241,41 @@ const AddProductScreen = ({ navigation, route }: any) => {
                 </View>
             </ScrollView>
 
+            {/* Image Source Modal */}
+            <Modal visible={showImageOptions} transparent animationType="slide" onRequestClose={() => setShowImageOptions(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
+                        <Text style={[styles.modalTitle, { color: theme.text }]}>Choose Image</Text>
+
+                        <TouchableOpacity style={[styles.modalOption, { backgroundColor: theme.inputBg }]} onPress={handleGalleryPick}>
+                            <Text style={{ color: theme.text, fontWeight: '600' }}>Upload from Gallery</Text>
+                        </TouchableOpacity>
+
+                        <Text style={{ color: theme.subText, marginTop: 15, marginBottom: 10, textAlign: 'center' }}>Or choose from our collection:</Text>
+
+                        <View style={{ height: 300 }}>
+                            <FlatList
+                                data={allAssets}
+                                keyExtractor={(item) => item}
+                                numColumns={3}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={styles.assetItem}
+                                        onPress={() => handleAssetPick(item)}
+                                    >
+                                        <Image source={LocalAssets[item]} style={styles.assetImage} resizeMode="contain" />
+                                    </TouchableOpacity>
+                                )}
+                            />
+                        </View>
+
+                        <TouchableOpacity style={{ marginTop: 15, padding: 10, alignItems: 'center' }} onPress={() => setShowImageOptions(false)}>
+                            <Text style={{ color: theme.subText }}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             <CustomAlert
                 visible={alertVisible}
                 title={alertTitle}
@@ -247,6 +310,7 @@ const styles = StyleSheet.create({
     },
     content: {
         padding: 20,
+        paddingBottom: 50
     },
     imagePicker: {
         alignItems: 'center',
@@ -307,6 +371,44 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '600',
     },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        padding: 20,
+        maxHeight: '80%'
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        textAlign: 'center'
+    },
+    modalOption: {
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginBottom: 10
+    },
+    assetItem: {
+        flex: 1/3,
+        height: 80,
+        padding: 5,
+        margin: 2,
+        borderWidth: 1,
+        borderColor: '#eee',
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    assetImage: {
+        width: '100%',
+        height: '100%'
+    }
 });
 
 export default AddProductScreen;

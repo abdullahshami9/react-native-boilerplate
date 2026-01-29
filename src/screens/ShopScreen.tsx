@@ -6,6 +6,7 @@ import { CONFIG } from '../Config';
 import PageWrapper from '../components/PageWrapper';
 import AnimatedSearchHeader from '../components/AnimatedSearchHeader';
 import { useTheme } from '../theme/useTheme';
+import { resolveImage, getDefaultImageForType } from '../utils/ImageHelper';
 
 const { width } = Dimensions.get('window');
 
@@ -48,7 +49,6 @@ const ShopScreen = ({ navigation }: any) => {
                 }
             } else {
                 const res = await DataService.discoverServices(search);
-                console.log('Services API Response:', JSON.stringify(res));
 
                 const results = res.services || res.data || (Array.isArray(res) ? res : []);
 
@@ -57,8 +57,6 @@ const ShopScreen = ({ navigation }: any) => {
                 } else if (res.success && Array.isArray(res.services)) {
                     setServices(res.services);
                 } else {
-                    // Fallback if data structure is nested differently
-                    console.log('Services Results parsing fallback', res);
                     setServices([]);
                 }
             }
@@ -102,7 +100,10 @@ const ShopScreen = ({ navigation }: any) => {
                             products.map((item) => (
                                 <TouchableOpacity key={item.id} style={[styles.productCard, { backgroundColor: theme.cardBg }]} onPress={() => (navigation as any).navigate('ProductDetails', { product: item })}>
                                     <View style={[styles.imageContainer, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
-                                        <Image source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/150' }} style={styles.productImage} />
+                                        <Image
+                                            source={resolveImage(item.image_url || getDefaultImageForType('product', item.name))}
+                                            style={styles.productImage}
+                                        />
                                     </View>
                                     <View style={styles.productInfo}>
                                         <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
@@ -114,7 +115,10 @@ const ShopScreen = ({ navigation }: any) => {
                             services.map((item) => (
                                 <TouchableOpacity key={item.id} style={[styles.productCard, { backgroundColor: theme.cardBg }]} onPress={() => (navigation as any).navigate('ServiceDetails', { service: item })}>
                                     <View style={[styles.imageContainer, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
-                                        <Image source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/150' }} style={styles.productImage} />
+                                        <Image
+                                            source={resolveImage(item.image_url || getDefaultImageForType('service', item.name))}
+                                            style={styles.productImage}
+                                        />
                                     </View>
                                     <View style={styles.productInfo}>
                                         <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>

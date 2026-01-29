@@ -7,6 +7,7 @@ import { DataService } from '../services/DataService';
 import { CONFIG } from '../Config';
 import PageWrapper from '../components/PageWrapper';
 import { useTheme } from '../theme/useTheme';
+import { resolveImage, getDefaultImageForType } from '../utils/ImageHelper';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,6 +22,7 @@ const HomeScreen = ({ navigation, route }: any) => {
     // Dynamic Data State
     const [dashboardData, setDashboardData] = useState<any[]>([]);
     const [discoverProducts, setDiscoverProducts] = useState<any[]>([]);
+    const [discoverServices, setDiscoverServices] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [reports, setReports] = useState<any>({ daily: [], monthlyTotal: 0 });
 
@@ -58,6 +60,16 @@ const HomeScreen = ({ navigation, route }: any) => {
                 const prodRes = await DataService.discoverProducts('');
                 if (prodRes.success) {
                     setDiscoverProducts(prodRes.products);
+                }
+
+                // Fetch Discover Services for Customers
+                const servRes = await DataService.discoverServices('');
+
+                const results = servRes.services || servRes.data || (Array.isArray(servRes) ? servRes : []);
+                if (Array.isArray(results)) {
+                    setDiscoverServices(results);
+                } else if (servRes.success && Array.isArray(servRes.services)) {
+                     setDiscoverServices(servRes.services);
                 }
             }
         } catch (error) {
@@ -126,18 +138,10 @@ const HomeScreen = ({ navigation, route }: any) => {
                     {dashboardData.map((prod: any, index: number) => (
                         <View key={index} style={[styles.productCard, { backgroundColor: theme.cardBg }]}>
                             <View style={styles.productIconPlaceholder}>
-                                {prod.image_url ? (
-                                    <Image
-                                        source={{ uri: `${CONFIG.API_URL}/${prod.image_url}?t=${new Date().getTime()}` }}
-                                        style={{ width: '100%', height: '100%', borderRadius: 8 }}
-                                    />
-                                ) : (
-                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
-                                        <Path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></Path>
-                                        <Path d="M3.27 6.96L12 12.01l8.73-5.05"></Path>
-                                        <Line x1="12" y1="22.08" x2="12" y2="12"></Line>
-                                    </Svg>
-                                )}
+                                <Image
+                                    source={resolveImage(prod.image_url || getDefaultImageForType('product', prod.name))}
+                                    style={{ width: '100%', height: '100%', borderRadius: 8 }}
+                                />
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={[styles.productName, { color: theme.text }]}>{prod.name}</Text>
@@ -165,9 +169,10 @@ const HomeScreen = ({ navigation, route }: any) => {
                         onPress={() => navigation.navigate('ProductDetails', { product: item })}
                     >
                         <View style={{ width: '100%', height: 120, backgroundColor: '#EDF2F7', borderRadius: 8, overflow: 'hidden', marginBottom: 10 }}>
-                            {item.image_url ? (
-                                <Image source={{ uri: `${CONFIG.API_URL}/${item.image_url}` }} style={{ width: '100%', height: '100%' }} />
-                            ) : null}
+                             <Image
+                                source={resolveImage(item.image_url || getDefaultImageForType('product', item.name))}
+                                style={{ width: '100%', height: '100%' }}
+                             />
                         </View>
                         <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: 'bold', color: theme.text, marginBottom: 5 }}>{item.name}</Text>
                         <Text style={{ fontSize: 12, color: theme.subText }}>{item.price} PKR</Text>
@@ -175,6 +180,32 @@ const HomeScreen = ({ navigation, route }: any) => {
                 ))}
                 {discoverProducts.length === 0 && (
                     <Text style={{ color: theme.subText }}>No products found.</Text>
+                )}
+            </ScrollView>
+
+            <View style={[styles.sectionHeader, { marginTop: 20 }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Discover Services</Text>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+                {discoverServices.map((item, index) => (
+                    <TouchableOpacity
+                        key={index}
+                        style={[styles.card, { backgroundColor: theme.cardBg, width: 150, height: 200, marginRight: 15, alignItems: 'flex-start', padding: 10, justifyContent: 'flex-start' }]}
+                        onPress={() => navigation.navigate('ServiceDetails', { service: item })}
+                    >
+                        <View style={{ width: '100%', height: 120, backgroundColor: '#EDF2F7', borderRadius: 8, overflow: 'hidden', marginBottom: 10 }}>
+                             <Image
+                                source={resolveImage(item.image_url || getDefaultImageForType('service', item.name))}
+                                style={{ width: '100%', height: '100%' }}
+                             />
+                        </View>
+                        <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: 'bold', color: theme.text, marginBottom: 5 }}>{item.name}</Text>
+                        <Text style={{ fontSize: 12, color: theme.subText }}>{item.price} PKR</Text>
+                    </TouchableOpacity>
+                ))}
+                {discoverServices.length === 0 && (
+                    <Text style={{ color: theme.subText }}>No services found.</Text>
                 )}
             </ScrollView>
 
@@ -201,16 +232,6 @@ const HomeScreen = ({ navigation, route }: any) => {
         </View>
     );
 
-    const getProfilePicUrl = () => {
-        if (user?.profile_pic_url) {
-            return `${CONFIG.API_URL}/${user.profile_pic_url}?t=${new Date().getTime()}`;
-        }
-        // Fallback or Random
-        return user.user_type === 'business'
-            ? 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?fit=crop&w=100&h=100'
-            : 'https://randomuser.me/api/portraits/men/32.jpg';
-    };
-
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {isFocused && <RNStatusBar backgroundColor={theme.headerBg} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />}
@@ -228,7 +249,10 @@ const HomeScreen = ({ navigation, route }: any) => {
                 <Text style={[styles.headerTitle, { color: theme.text }]}>{user.user_type === 'business' ? 'Business Hub' : 'My Dashboard'}</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Profile', { user })}>
                     <View style={styles.profileIconContainer}>
-                        <Image source={{ uri: getProfilePicUrl() }} style={{ width: 35, height: 35, borderRadius: 17.5 }} />
+                        <Image
+                            source={resolveImage(user.profile_pic_url || getDefaultImageForType(user.user_type === 'business' ? 'business' : 'customer'))}
+                            style={{ width: 35, height: 35, borderRadius: 17.5 }}
+                        />
                     </View>
                 </TouchableOpacity>
             </View>
@@ -300,7 +324,10 @@ const HomeScreen = ({ navigation, route }: any) => {
             <Animated.View style={[styles.sidebar, { transform: [{ translateX: sidebarAnim }], backgroundColor: theme.headerBg }]}>
                 <View style={styles.sidebarHeader}>
                     <View style={[styles.profileIconContainer, { width: 60, height: 60, borderRadius: 30, marginBottom: 10, backgroundColor: 'transparent' }]}>
-                        <Image source={{ uri: getProfilePicUrl() }} style={{ width: 60, height: 60, borderRadius: 30 }} />
+                         <Image
+                            source={resolveImage(user.profile_pic_url || getDefaultImageForType(user.user_type === 'business' ? 'business' : 'customer'))}
+                            style={{ width: 60, height: 60, borderRadius: 30 }}
+                         />
                     </View>
                     <Text style={[styles.sidebarName, { color: theme.text }]}>{user.name}</Text>
                     <Text style={[styles.sidebarEmail, { color: theme.subText }]}>{user.email}</Text>

@@ -73,14 +73,14 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
             phone,
             email,
             address,
-            logo: userInfo.profile_pic_url ? `${CONFIG.API_URL}/${userInfo.profile_pic_url}` : 'https://via.placeholder.com/50',
+            logo: userInfo?.profile_pic_url ? `${CONFIG.API_URL}/${userInfo.profile_pic_url}` : 'https://via.placeholder.com/50',
             qrCode: qrBase64
         };
 
         // Save preferences
         try {
             await axios.post(`${CONFIG.API_URL}/api/business/card-settings`, {
-                user_id: userInfo.id,
+                user_id: userInfo?.id,
                 card_template: selectedTemplate,
                 card_custom_details: { name, role, phone, email, address }
             });
@@ -126,6 +126,7 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
                     <Text style={[styles.label, { color: theme.subText }]}>Preview ({previewSide === 'front' ? 'Front' : 'Back'})</Text>
                     <View style={[styles.cardPreviewPlaceholder, { backgroundColor: '#EDF2F7', borderColor: theme.navBorder }]}>
                         <WebView
+                            key={`${selectedTemplate}-${previewSide}`} // Force remount on change
                             originWhitelist={['*']}
                             source={{
                                 html: (() => {
@@ -135,7 +136,7 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
                                         phone,
                                         email,
                                         address,
-                                        logo: userInfo.profile_pic_url ? `${CONFIG.API_URL}/${userInfo.profile_pic_url}` : 'https://via.placeholder.com/50',
+                                        logo: userInfo?.profile_pic_url ? `${CONFIG.API_URL}/${userInfo.profile_pic_url}` : 'https://via.placeholder.com/50',
                                         qrCode: qrBase64
                                     };
                                     let html = (CardTemplates as any)[selectedTemplate](data);
@@ -154,11 +155,30 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
                                                 body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: transparent; }
                                                 .page { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; } 
                                             </style>`;
-                                    return html + hideStyle;
-                                })()
+
+                                    let finalHtml = html;
+                                    // Inject styles
+                                    if (finalHtml.includes('</head>')) {
+                                        finalHtml = finalHtml.replace('</head>', hideStyle + '</head>');
+                                    } else {
+                                        finalHtml = hideStyle + finalHtml;
+                                    }
+
+                                    // Ensure DOCTYPE
+                                    if (!finalHtml.trim().startsWith('<!DOCTYPE html>')) {
+                                        finalHtml = '<!DOCTYPE html>' + finalHtml;
+                                    }
+
+                                    return finalHtml;
+                                })(),
+                                baseUrl: '' // CRITICAL: Required for Android rendering
                             }}
-                            style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }}
-                            scrollEnabled={false}
+                            originWhitelist={['*']}
+                            scalesPageToFit={true} // Default behavior needed for width=420 on mobile
+                            javaScriptEnabled={true}
+                            domStorageEnabled={true}
+                            style={{ width: '100%', height: '100%', backgroundColor: 'transparent', opacity: 0.99 }}
+                            automaticallyAdjustContentInsets={false}
                         />
                     </View>
                     <View style={[styles.toggleRow, { backgroundColor: theme.inputBg }]}>
@@ -226,7 +246,7 @@ const styles = StyleSheet.create({
     content: { padding: 20, paddingBottom: 50 },
     previewContainer: { alignItems: 'center', marginBottom: 20 },
     label: { marginBottom: 10, fontWeight: '600' },
-    cardPreviewPlaceholder: { width: width * 0.85, aspectRatio: 1.586, borderRadius: 15, borderWidth: 1, justifyContent: 'center', alignItems: 'center', marginBottom: 15, overflow: 'hidden' },
+    cardPreviewPlaceholder: { width: width * 0.9, aspectRatio: 1.75, borderRadius: 15, borderWidth: 1, borderColor: '#cad5e0', marginBottom: 15, overflow: 'hidden', backgroundColor: '#EDF2F7' },
     toggleRow: { flexDirection: 'row', borderRadius: 20, padding: 3 },
     toggleBtn: { paddingVertical: 6, paddingHorizontal: 20, borderRadius: 18 },
     activeToggle: { shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 },

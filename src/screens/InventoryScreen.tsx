@@ -118,9 +118,12 @@ const InventoryScreen = ({ navigation }: any) => {
                                     <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
                                     <Text style={[styles.price, { color: theme.subText }]}>{item.price} PKR</Text>
 
-                                    <Text style={[styles.stock, item.stock_quantity < 5 ? { color: '#E53E3E' } : { color: theme.subText }]}>
-                                        Stock: {item.stock_quantity || 0}
+                                    <Text style={[styles.stock, item.stock_quantity < 5 ? { color: '#E53E3E', fontWeight: 'bold' } : { color: theme.subText }]}>
+                                        Stock: {item.stock_quantity || 0} {item.stock_quantity < 5 ? '(Low)' : ''}
                                     </Text>
+                                    {item.wholesale_tiers && JSON.parse(item.wholesale_tiers).length > 0 && (
+                                        <Text style={{ color: theme.primary, fontSize: 10, marginTop: 2 }}>Wholesale Available</Text>
+                                    )}
                                 </View>
 
                                 <TouchableOpacity style={[styles.editButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => handleEditStock(item)}>

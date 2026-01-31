@@ -396,6 +396,26 @@ db.connect(async (err) => {
                     db.query("ALTER TABLE products ADD COLUMN stock_quantity INT DEFAULT 0", () => console.log("Added stock_quantity column"));
                 }
             });
+            db.query("SHOW COLUMNS FROM products LIKE 'variants'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE products ADD COLUMN variants JSON", () => console.log("Added variants column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM products LIKE 'delivery_fee'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE products ADD COLUMN delivery_fee DECIMAL(10, 2) DEFAULT 0", () => console.log("Added delivery_fee column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM products LIKE 'is_returnable'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE products ADD COLUMN is_returnable BOOLEAN DEFAULT 1", () => console.log("Added is_returnable column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM products LIKE 'wholesale_tiers'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE products ADD COLUMN wholesale_tiers JSON", () => console.log("Added wholesale_tiers column"));
+                }
+            });
             db.query("SHOW COLUMNS FROM users LIKE 'profile_pic_url'", (e, r) => {
                 if (r && r.length === 0) {
                     db.query("ALTER TABLE users ADD COLUMN profile_pic_url VARCHAR(255)", () => console.log("Added profile_pic_url column"));
@@ -1281,11 +1301,22 @@ app.get('/api/products/discover', (req, res) => {
 // --- PRODUCTS & INVENTORY ---
 
 app.post('/api/products', verifyToken, (req, res) => {
-    const { user_id, name, price, description, image_url, stock_quantity } = req.body;
+    const { user_id, name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers } = req.body;
     if (req.user.id != user_id) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
-    const query = 'INSERT INTO products (user_id, name, price, description, image_url, stock_quantity) VALUES (?, ?, ?, ?, ?, ?)';
-    dbQuery(query, [user_id, name, price, description || '', image_url || '', stock_quantity || 0], req, (err, result) => {
+    const query = 'INSERT INTO products (user_id, name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    dbQuery(query, [
+        user_id,
+        name,
+        price,
+        description || '',
+        image_url || '',
+        stock_quantity || 0,
+        variants ? JSON.stringify(variants) : null,
+        delivery_fee || 0,
+        is_returnable !== undefined ? is_returnable : 1,
+        wholesale_tiers ? JSON.stringify(wholesale_tiers) : null
+    ], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, message: 'Product added', id: result.insertId });
     });
@@ -1814,7 +1845,7 @@ app.get('/api/streets/:sublocationId', (req, res) => {
 // --- PRODUCT LOGS & FULL UPDATE ---
 
 app.put('/api/products/:id', verifyToken, (req, res) => {
-    const { name, price, description, image_url, stock_quantity } = req.body;
+    const { name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers } = req.body;
     const productId = req.params.id;
 
     // First get old values for logging
@@ -1828,11 +1859,20 @@ app.put('/api/products/:id', verifyToken, (req, res) => {
             dbQuery('INSERT INTO product_logs (product_id, old_price, new_price, action) VALUES (?, ?, ?, "price_update")',
                 [productId, oldProduct.price, price], req, () => { });
         }
-        // Log stock change if significant? Or just price. User mentioned "Yesterday price 10... today 15".
-        // Let's log updates generally if we want, but price is key.
 
-        const query = 'UPDATE products SET name = ?, price = ?, description = ?, image_url = ?, stock_quantity = ? WHERE id = ?';
-        dbQuery(query, [name, price, description, image_url, stock_quantity, productId], req, (updateErr) => {
+        const query = 'UPDATE products SET name = ?, price = ?, description = ?, image_url = ?, stock_quantity = ?, variants = ?, delivery_fee = ?, is_returnable = ?, wholesale_tiers = ? WHERE id = ?';
+        dbQuery(query, [
+            name,
+            price,
+            description,
+            image_url,
+            stock_quantity,
+            variants ? JSON.stringify(variants) : null,
+            delivery_fee || 0,
+            is_returnable !== undefined ? is_returnable : 1,
+            wholesale_tiers ? JSON.stringify(wholesale_tiers) : null,
+            productId
+        ], req, (updateErr) => {
             if (updateErr) return res.status(500).json({ success: false });
             res.json({ success: true, message: 'Product updated' });
         });

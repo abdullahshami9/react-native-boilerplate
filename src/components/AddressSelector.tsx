@@ -108,21 +108,27 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({ onAddressChange, init
     };
 
     const handleSelect = (item: any) => {
-        setModalVisible(false);
+        setSearchText(''); // Clear search for next step
+
         if (currentStep === 'Province') {
             setProvince(item); setCity(null); setLocation(null); setSublocation(null); setStreet(null);
             fetchCities(item.provinceId);
+            setCurrentStep('City'); // Auto-transition
         } else if (currentStep === 'City') {
             setCity(item); setLocation(null); setSublocation(null); setStreet(null);
             fetchLocations(item.cityId);
+            setCurrentStep('Location'); // Auto-transition
         } else if (currentStep === 'Location') {
             setLocation(item); setSublocation(null); setStreet(null);
             fetchSublocations(item.locationId);
+            setCurrentStep('Sublocation'); // Auto-transition
         } else if (currentStep === 'Sublocation') {
             setSublocation(item); setStreet(null);
             fetchStreets(item.sublocationId);
+            setCurrentStep('Street'); // Auto-transition
         } else if (currentStep === 'Street') {
             setStreet(item);
+            setModalVisible(false); // Close on final selection
         }
     };
 

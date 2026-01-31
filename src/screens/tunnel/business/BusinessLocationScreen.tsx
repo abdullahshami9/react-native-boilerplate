@@ -265,17 +265,21 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
     },
     locateButton: {
-        backgroundColor: '#2D3748',
-        paddingVertical: 12,
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderColor: '#CBD5E0',
+        paddingVertical: 10,
         paddingHorizontal: 24,
         borderRadius: 25,
-        width: '100%',
+        alignSelf: 'center', // Center and reduce width
+        minWidth: '50%', // Ensure it's not too small but not full width
         alignItems: 'center',
+        marginTop: 10,
     },
     locateButtonText: {
-        color: 'white',
+        color: '#718096',
         fontWeight: '600',
-        fontSize: 16,
+        fontSize: 14,
     },
     mapLinkButton: {
         marginTop: 15,

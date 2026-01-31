@@ -40,6 +40,15 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
+    updatePrivacySettings: async (isPrivate: boolean) => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/settings/privacy`, { is_private: isPrivate });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Update Privacy Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
 
     // --- SKILLS ---
     addSkill: async (userId: number, skillName: string) => {

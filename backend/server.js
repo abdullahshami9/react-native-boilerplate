@@ -421,6 +421,11 @@ db.connect(async (err) => {
                     db.query("ALTER TABLE users ADD COLUMN resume_url VARCHAR(255)", () => console.log("Added resume_url column"));
                 }
             });
+            db.query("SHOW COLUMNS FROM users LIKE 'is_private'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE users ADD COLUMN is_private BOOLEAN DEFAULT 0", () => console.log("Added is_private column"));
+                }
+            });
             db.query("SHOW COLUMNS FROM business_details LIKE 'card_template'", (e, r) => {
                 if (r && r.length === 0) {
                     db.query("ALTER TABLE business_details ADD COLUMN card_template VARCHAR(50) DEFAULT 'standard'", () => console.log("Added card_template column"));
@@ -714,35 +719,84 @@ app.post('/api/business/card-settings', verifyToken, (req, res) => {
 // --- NEW API ENDPOINTS FOR PROFILE ENHANCEMENTS ---
 
 // Get User Full Profile (including education, skills, socials)
-app.get('/api/profile/:userId', (req, res) => {
+app.get('/api/profile/:userId', verifyToken, (req, res) => {
     const userId = req.params.userId;
-    const queries = `
-        SELECT * FROM education WHERE user_id = ?;
-        SELECT * FROM social_links WHERE user_id = ?;
-        SELECT * FROM certificates WHERE user_id = ?;
-        SELECT * FROM business_details WHERE user_id = ?;
-        SELECT * FROM payment_methods WHERE user_id = ?;
-        SELECT id, name, email, phone, user_type, profile_pic_url, resume_url, address, current_job_title FROM users WHERE id = ?;
+    const viewerId = req.user.id;
+
+    // Check relationship (Self, Connected, or Stranger)
+    const relQuery = `
+        SELECT * FROM connections
+        WHERE (follower_id = ? AND following_id = ? AND status = 'accepted')
+           OR (follower_id = ? AND following_id = ? AND status = 'accepted')
     `;
 
-    dbQuery(queries, [userId, userId, userId, userId, userId, userId], req, (err, results) => {
+    db.query(relQuery, [viewerId, userId, userId, viewerId], (relErr, relResults) => {
+        const isSelf = (parseInt(userId) === parseInt(viewerId));
+        const isConnected = (relResults && relResults.length > 0);
+
+        const queries = `
+            SELECT * FROM education WHERE user_id = ?;
+            SELECT * FROM social_links WHERE user_id = ?;
+            SELECT * FROM certificates WHERE user_id = ?;
+            SELECT * FROM business_details WHERE user_id = ?;
+            SELECT * FROM payment_methods WHERE user_id = ?;
+            SELECT id, name, email, phone, user_type, profile_pic_url, resume_url, address, current_job_title, is_private FROM users WHERE id = ?;
+        `;
+
+        dbQuery(queries, [userId, userId, userId, userId, userId, userId], req, (err, results) => {
+            if (err) return res.status(500).json({ success: false });
+
+            let user = results[5][0];
+            if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+            // Log Profile View
+            if (!isSelf) {
+                db.query('INSERT INTO profile_views (profile_id, source) VALUES (?, ?)', [userId, 'app_api'], (e) => {});
+            }
+
+            // Privacy Check
+            if (user.is_private && !isSelf && !isConnected) {
+                // Return Restricted Profile
+                return res.json({
+                    success: true,
+                    is_restricted: true,
+                    user: {
+                        id: user.id,
+                        name: user.name,
+                        user_type: user.user_type,
+                        profile_pic_url: user.profile_pic_url,
+                        current_job_title: user.current_job_title,
+                        is_private: 1
+                    },
+                    education: [],
+                    socials: [],
+                    certificates: [],
+                    business: null,
+                    payments: []
+                });
+            }
+
+            // Return Full Profile
+            res.json({
+                success: true,
+                is_restricted: false,
+                education: results[0],
+                socials: results[1],
+                certificates: results[2],
+                business: results[3][0] || null,
+                payments: results[4],
+                user: user
+            });
+        });
+    });
+});
+
+app.post('/api/settings/privacy', verifyToken, (req, res) => {
+    const { is_private } = req.body;
+    const query = 'UPDATE users SET is_private = ? WHERE id = ?';
+    dbQuery(query, [is_private ? 1 : 0, req.user.id], req, (err) => {
         if (err) return res.status(500).json({ success: false });
-
-        // Log Profile View
-        db.query('INSERT INTO profile_views (profile_id, source) VALUES (?, ?)', [userId, 'app_api'], (e) => {
-            if (e) console.error("Failed to log profile view", e);
-        });
-
-        // results is array of arrays because of multipleStatements: true
-        res.json({
-            success: true,
-            education: results[0],
-            socials: results[1],
-            certificates: results[2],
-            business: results[3][0] || null,
-            payments: results[4],
-            user: results[5][0]
-        });
+        res.json({ success: true, message: 'Privacy settings updated' });
     });
 });
 

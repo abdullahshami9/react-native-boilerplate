@@ -438,6 +438,11 @@ db.connect(async (err) => {
                     db.query("ALTER TABLE services ADD COLUMN cancellation_policy TEXT", () => console.log("Added cancellation_policy column"));
                 }
             });
+            db.query("SHOW COLUMNS FROM services LIKE 'auto_approve'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE services ADD COLUMN auto_approve BOOLEAN DEFAULT 0", () => console.log("Added auto_approve column"));
+                }
+            });
             db.query("SHOW TABLES LIKE 'staff'", (e, r) => {
                 if (r && r.length === 0) {
                     const createStaff = `CREATE TABLE IF NOT EXISTS staff (
@@ -1383,10 +1388,10 @@ app.post('/api/products/:id/stock', (req, res) => {
 // --- SERVICES ---
 
 app.post('/api/services', verifyToken, (req, res) => {
-    const { user_id, name, description, price, duration_mins, image_url, service_type, service_location, pricing_structure, cancellation_policy } = req.body;
+    const { user_id, name, description, price, duration_mins, image_url, service_type, service_location, pricing_structure, cancellation_policy, auto_approve } = req.body;
     if (req.user.id != user_id) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
-    const query = 'INSERT INTO services (user_id, name, description, price, duration_mins, image_url, service_type, service_location, pricing_structure, cancellation_policy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO services (user_id, name, description, price, duration_mins, image_url, service_type, service_location, pricing_structure, cancellation_policy, auto_approve) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
     dbQuery(query, [
         user_id,
         name,
@@ -1397,7 +1402,8 @@ app.post('/api/services', verifyToken, (req, res) => {
         service_type || 'Hourly',
         service_location || 'OnSite',
         pricing_structure ? JSON.stringify(pricing_structure) : null,
-        cancellation_policy || ''
+        cancellation_policy || '',
+        auto_approve ? 1 : 0
     ], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, message: 'Service added', id: result.insertId });
@@ -1450,8 +1456,8 @@ app.get('/api/services/:userId', (req, res) => {
 });
 
 app.put('/api/services/:id', verifyToken, (req, res) => {
-    const { name, description, price, duration_mins, service_type, service_location, pricing_structure, cancellation_policy } = req.body;
-    const query = 'UPDATE services SET name = ?, description = ?, price = ?, duration_mins = ?, service_type = ?, service_location = ?, pricing_structure = ?, cancellation_policy = ? WHERE id = ?';
+    const { name, description, price, duration_mins, service_type, service_location, pricing_structure, cancellation_policy, auto_approve } = req.body;
+    const query = 'UPDATE services SET name = ?, description = ?, price = ?, duration_mins = ?, service_type = ?, service_location = ?, pricing_structure = ?, cancellation_policy = ?, auto_approve = ? WHERE id = ?';
     dbQuery(query, [
         name,
         description,
@@ -1461,6 +1467,7 @@ app.put('/api/services/:id', verifyToken, (req, res) => {
         service_location,
         pricing_structure ? JSON.stringify(pricing_structure) : null,
         cancellation_policy,
+        auto_approve ? 1 : 0,
         req.params.id
     ], req, (err) => {
         if (err) return res.status(500).json({ success: false });
@@ -1695,11 +1702,30 @@ app.get('/api/reports/sales/:userId', (req, res) => {
 
 app.post('/api/appointments', (req, res) => {
     const { provider_id, customer_id, service_id, appointment_date, duration_mins, staff_id } = req.body;
-    // status default pending
-    const query = 'INSERT INTO appointments (provider_id, customer_id, service_id, appointment_date, duration_mins, status, staff_id) VALUES (?, ?, ?, ?, ?, "pending", ?)';
-    dbQuery(query, [provider_id, customer_id, service_id || null, appointment_date, duration_mins || 30, staff_id || null], req, (err, result) => {
-        if (err) return res.status(500).json({ success: false });
-        res.json({ success: true, message: 'Appointment booked', id: result.insertId });
+
+    // Check Availability (Blocked Days)
+    // Extract YYYY-MM-DD from appointment_date (Assuming 'YYYY-MM-DD HH:mm:ss' or ISO)
+    const datePart = appointment_date.split(' ')[0].split('T')[0];
+
+    dbQuery('SELECT status FROM availability WHERE user_id = ? AND date = ?', [provider_id, datePart], req, (availErr, availRes) => {
+        if (!availErr && availRes.length > 0 && availRes[0].status === 'busy') {
+            return res.status(409).json({ success: false, message: 'Provider is unavailable on this date.' });
+        }
+
+        // Check for auto-approve if service_id is provided
+        const checkServiceQuery = 'SELECT auto_approve FROM services WHERE id = ?';
+        dbQuery(checkServiceQuery, [service_id], req, (err, results) => {
+            let status = 'pending';
+            if (!err && results.length > 0 && results[0].auto_approve) {
+                status = 'confirmed';
+            }
+
+            const query = 'INSERT INTO appointments (provider_id, customer_id, service_id, appointment_date, duration_mins, status, staff_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
+            dbQuery(query, [provider_id, customer_id, service_id || null, appointment_date, duration_mins || 30, status, staff_id || null], req, (err, result) => {
+                if (err) return res.status(500).json({ success: false });
+                res.json({ success: true, message: status === 'confirmed' ? 'Appointment confirmed!' : 'Request sent', id: result.insertId, status });
+            });
+        });
     });
 });
 

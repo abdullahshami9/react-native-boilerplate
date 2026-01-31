@@ -25,6 +25,7 @@ const ManageServicesScreen = ({ navigation }: any) => {
     const [serviceType, setServiceType] = useState('Hourly'); // Hourly, Shift, MultiDay
     const [location, setLocation] = useState('OnSite'); // OnSite, Home, Both
     const [cancellation, setCancellation] = useState('');
+    const [autoApprove, setAutoApprove] = useState(false);
 
     // Shift Pricing
     const [dayPrice, setDayPrice] = useState('');
@@ -87,6 +88,7 @@ const ManageServicesScreen = ({ navigation }: any) => {
             setServiceType(service.service_type || 'Hourly');
             setLocation(service.service_location || 'OnSite');
             setCancellation(service.cancellation_policy || '');
+            setAutoApprove(service.auto_approve === 1 || service.auto_approve === true);
 
             if (service.service_type === 'Shift' && service.pricing_structure) {
                 const pricing = JSON.parse(service.pricing_structure);
@@ -104,6 +106,7 @@ const ManageServicesScreen = ({ navigation }: any) => {
             setServiceType('Hourly');
             setLocation('OnSite');
             setCancellation('');
+            setAutoApprove(false);
             setDayPrice('');
             setNightPrice('');
         }
@@ -123,7 +126,8 @@ const ManageServicesScreen = ({ navigation }: any) => {
             duration_mins: parseInt(duration),
             service_type: serviceType,
             service_location: location,
-            cancellation_policy: cancellation
+            cancellation_policy: cancellation,
+            auto_approve: autoApprove
         };
 
         if (serviceType === 'Shift') {
@@ -267,6 +271,13 @@ const ManageServicesScreen = ({ navigation }: any) => {
                             </View>
 
                             <TextInput style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Cancellation Policy (e.g. 24h notice)" placeholderTextColor={theme.subText} multiline value={cancellation} onChangeText={setCancellation} />
+
+                            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }} onPress={() => setAutoApprove(!autoApprove)}>
+                                <Text style={{ color: theme.text, fontWeight: '600' }}>Auto-Approve Appointments</Text>
+                                <View style={{ width: 40, height: 20, borderRadius: 10, backgroundColor: autoApprove ? theme.primary : theme.inputBorder, justifyContent: 'center', paddingHorizontal: 2 }}>
+                                    <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: 'white', alignSelf: autoApprove ? 'flex-end' : 'flex-start' }} />
+                                </View>
+                            </TouchableOpacity>
 
                             <TouchableOpacity style={[styles.saveButton, { backgroundColor: theme.primary }]} onPress={handleSaveService}>
                                 <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Save Service</Text>

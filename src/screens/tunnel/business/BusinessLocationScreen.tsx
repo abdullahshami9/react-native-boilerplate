@@ -112,7 +112,7 @@ const BusinessLocationScreen = ({ navigation }: any) => {
     };
 
     return (
-        <TunnelWrapper title="Business Profile - Location" onBack={() => navigation.goBack()}>
+        <TunnelWrapper title="Business Headquarters" onBack={() => navigation.goBack()}>
             <View style={styles.container}>
 
                 {/* Username Section */}
@@ -134,25 +134,37 @@ const BusinessLocationScreen = ({ navigation }: any) => {
                     </View>
                 </View>
 
-                {/* Location Display Area */}
-                <View style={styles.locationContainer}>
-                    <View style={styles.locationHeader}>
-                        <View style={styles.iconCircle}>
-                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A5568" strokeWidth="2">
+                {/* Location Display Area - Premium Redesign */}
+                <View style={styles.locationCard}>
+                    <View style={styles.cardHeader}>
+                        <View style={styles.iconContainer}>
+                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5568" strokeWidth="2.5">
                                 <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                                 <Circle cx="12" cy="10" r="3" />
                             </Svg>
                         </View>
-                        <Text style={styles.locationTitle}>Business Coordinates</Text>
+                        <View>
+                            <Text style={styles.cardTitle}>Business Coordinates</Text>
+                            <Text style={styles.cardSubtitle}>Precise Geolocation</Text>
+                        </View>
                     </View>
 
                     {coords ? (
-                        <View style={styles.coordsBox}>
-                            <Text style={styles.coordText}>Lat: {coords.lat.toFixed(6)}</Text>
-                            <Text style={styles.coordText}>Lng: {coords.lng.toFixed(6)}</Text>
+                        <View style={styles.statsContainer}>
+                            <View style={styles.statItem}>
+                                <Text style={styles.statLabel}>LATITUDE</Text>
+                                <Text style={styles.statValue}>{coords.lat.toFixed(6)}</Text>
+                            </View>
+                            <View style={styles.statDivider} />
+                            <View style={styles.statItem}>
+                                <Text style={styles.statLabel}>LONGITUDE</Text>
+                                <Text style={styles.statValue}>{coords.lng.toFixed(6)}</Text>
+                            </View>
                         </View>
                     ) : (
-                        <Text style={styles.noCoordsText}>No location selected</Text>
+                        <View style={styles.emptyStateContainer}>
+                            <Text style={styles.noCoordsText}>Location not set</Text>
+                        </View>
                     )}
 
                     <TouchableOpacity
@@ -207,74 +219,105 @@ const styles = StyleSheet.create({
         flex: 1,
         gap: 16,
     },
-    locationContainer: {
-        backgroundColor: '#F7FAFC', // Was #EBF8FF
-        borderRadius: 20,
-        padding: 20,
-        alignItems: 'center',
+    locationCard: {
+        backgroundColor: 'white',
+        borderRadius: 24,
+        padding: 24,
         marginBottom: 10,
-        borderWidth: 1,
-        borderColor: '#E2E8F0', // Was #BEE3F8
-        // Added shadow for "Card" feel without being blue
+        // Premium Shadow
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: '#EDF2F7',
     },
-    locationHeader: {
+    cardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 20,
     },
-    iconCircle: {
-        width: 44, // Slightly larger
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: '#EDF2F7', // Was #BEE3F8
+    iconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#F7FAFC',
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 10,
+        marginRight: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
     },
-    locationTitle: {
+    cardTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#2D3748', // Was #2C5282
+        color: '#2D3748',
+        marginBottom: 2,
     },
-    coordsBox: {
+    cardSubtitle: {
+        fontSize: 13,
+        color: '#718096',
+        fontWeight: '500',
+    },
+    statsContainer: {
         flexDirection: 'row',
-        gap: 20,
-        marginBottom: 15,
-        backgroundColor: 'white',
-        padding: 12, // Increased padding slightly
-        borderRadius: 12,
-        width: '100%',
-        justifyContent: 'center',
+        backgroundColor: '#F7FAFC',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 20,
         borderWidth: 1,
-        borderColor: '#EDF2F7', // Added subtle border
+        borderColor: '#EDF2F7',
+        alignItems: 'center',
     },
-    coordText: {
-        fontSize: 15,
-        color: '#4A5568',
-        fontWeight: '600',
+    statItem: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    statLabel: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#A0AEC0',
+        marginBottom: 4,
+        letterSpacing: 0.5,
+    },
+    statValue: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#2D3748',
         fontVariant: ['tabular-nums'],
+    },
+    statDivider: {
+        width: 1,
+        height: 30,
+        backgroundColor: '#E2E8F0',
+    },
+    emptyStateContainer: {
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#F7FAFC',
+        borderRadius: 16,
+        marginBottom: 20,
+        borderStyle: 'dashed',
+        borderWidth: 1,
+        borderColor: '#CBD5E0',
     },
     noCoordsText: {
         color: '#718096',
-        marginBottom: 15,
         fontStyle: 'italic',
+        fontSize: 14,
     },
     locateButton: {
         backgroundColor: 'transparent',
         borderWidth: 1,
         borderColor: '#CBD5E0',
-        paddingVertical: 10,
-        paddingHorizontal: 24,
-        borderRadius: 25,
-        alignSelf: 'center', // Center and reduce width
-        minWidth: '50%', // Ensure it's not too small but not full width
+        paddingVertical: 12,
+        paddingHorizontal: 32,
+        borderRadius: 50,
+        alignSelf: 'center',
+        minWidth: '60%',
         alignItems: 'center',
-        marginTop: 10,
     },
     locateButtonText: {
         color: '#718096',
@@ -282,12 +325,14 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     mapLinkButton: {
-        marginTop: 15,
+        marginTop: 16,
+        alignSelf: 'center',
     },
     mapLinkText: {
-        color: '#2D3748',
+        color: '#4A5568',
         textDecorationLine: 'underline',
-        fontWeight: '600',
+        fontWeight: '500',
+        fontSize: 13,
     },
     inputGroup: {
         flexDirection: 'row',

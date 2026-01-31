@@ -2028,88 +2028,86 @@ app.post('/api/tunnel/personal/additional', (req, res) => {
             res.json({ success: true });
         });
     });
-    // --- LOGGING & RAAST API ---
+});
+// --- LOGGING & RAAST API ---
 
-    const logApiCall = (endpoint, reqData, resData, status, source = 'Backend') => {
-        const query = "INSERT INTO api_logs (endpoint, request_data, response_data, http_status, source) VALUES (?, ?, ?, ?, ?)";
-        const reqStr = typeof reqData === 'string' ? reqData : JSON.stringify(reqData);
-        const resStr = typeof resData === 'string' ? resData : JSON.stringify(resData);
+const logApiCall = (endpoint, reqData, resData, status, source = 'Backend') => {
+    const query = "INSERT INTO api_logs (endpoint, request_data, response_data, http_status, source) VALUES (?, ?, ?, ?, ?)";
+    const reqStr = typeof reqData === 'string' ? reqData : JSON.stringify(reqData);
+    const resStr = typeof resData === 'string' ? resData : JSON.stringify(resData);
 
-        // Fire and forget
-        db.query(query, [endpoint, reqStr, resStr, status, source], (err) => {
-            if (err) console.error("Failed to write to api_logs:", err.message);
-        });
-    };
-
-    app.post('/api/logs', (req, res) => {
-        const { level, message, details, source } = req.body;
-        const httpStatus = level === 'ERROR' ? 500 : 200;
-
-        // Save to api_logs
-        logApiCall(`CLIENT_LOG: ${source || 'App'}`, message, details, httpStatus, 'Client');
-
-        // Also save to error_logs if error
-        if (level === 'ERROR') {
-            dbQuery('INSERT INTO error_logs (level, message, details, source) VALUES (?, ?, ?, ?)',
-                [level, message, JSON.stringify(details), source], req, () => { });
-        }
-
-        res.json({ success: true });
+    // Fire and forget
+    db.query(query, [endpoint, reqStr, resStr, status, source], (err) => {
+        if (err) console.error("Failed to write to api_logs:", err.message);
     });
+};
 
-    app.post('/api/raast', async (req, res) => {
-        const requestData = req.body;
-        const endpoint = 'api/raast';
+app.post('/api/logs', (req, res) => {
+    const { level, message, details, source } = req.body;
+    const httpStatus = level === 'ERROR' ? 500 : 200;
 
-        // RAAST CONFIGURATION
-        const RAAST_API_URL = process.env.RAAST_API_URL;
-        const RAAST_API_KEY = process.env.RAAST_API_KEY;
+    // Save to api_logs
+    logApiCall(`CLIENT_LOG: ${source || 'App'}`, message, details, httpStatus, 'Client');
 
-        try {
-            if (requestData.action === 'merchantInquiry') {
-                const ref = requestData.referenceNumber;
+    // Also save to error_logs if error
+    if (level === 'ERROR') {
+        dbQuery('INSERT INTO error_logs (level, message, details, source) VALUES (?, ?, ?, ?)',
+            [level, message, JSON.stringify(details), source], req, () => { });
+    }
 
-                // Basic Format Validation
-                if (!/^03[0-9]{9}$/.test(ref)) {
-                    throw new Error("Invalid Reference Number Format");
-                }
+    res.json({ success: true });
+});
 
-                // DIRECT REAL CALL (No Dummy Fallback)
-                try {
-                    const axiosResponse = await axios.post(RAAST_API_URL, {
-                        referenceNumber: ref,
-                        merchantId: process.env.MERCHANT_ID || 'DEMO_MERCHANT'
-                    }, {
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${RAAST_API_KEY}`,
-                            'X-Reference-Id': `${Date.now()}`
-                        }
-                    });
+app.post('/api/raast', async (req, res) => {
+    const requestData = req.body;
+    const endpoint = 'api/raast';
 
-                    logApiCall(endpoint, requestData, axiosResponse.data, axiosResponse.status);
-                    return res.json(axiosResponse.data);
+    // RAAST CONFIGURATION
+    const RAAST_API_URL = process.env.RAAST_API_URL;
+    const RAAST_API_KEY = process.env.RAAST_API_KEY;
 
-                } catch (upstreamError) {
-                    const errorMessage = upstreamError.response?.data?.message || upstreamError.message;
-                    logApiCall(endpoint, requestData, { message: errorMessage }, 500);
-                    // Return the actual error to the user for verification
-                    return res.status(500).json({ status: "error", message: `Upstream Error: ${errorMessage}`, details: upstreamError.response?.data });
-                }
+    try {
+        if (requestData.action === 'merchantInquiry') {
+            const ref = requestData.referenceNumber;
 
-            } else {
-                throw new Error("Invalid Action");
+            // Basic Format Validation
+            if (!/^03[0-9]{9}$/.test(ref)) {
+                throw new Error("Invalid Reference Number Format");
             }
-        } catch (error) {
-            const errorResponse = { status: "error", message: error.message };
-            logApiCall(endpoint, requestData, errorResponse, 500);
-            return res.status(500).json(errorResponse);
+
+            // DIRECT REAL CALL (No Dummy Fallback)
+            try {
+                const axiosResponse = await axios.post(RAAST_API_URL, {
+                    referenceNumber: ref,
+                    merchantId: process.env.MERCHANT_ID || 'DEMO_MERCHANT'
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${RAAST_API_KEY}`,
+                        'X-Reference-Id': `${Date.now()}`
+                    }
+                });
+
+                logApiCall(endpoint, requestData, axiosResponse.data, axiosResponse.status);
+                return res.json(axiosResponse.data);
+
+            } catch (upstreamError) {
+                const errorMessage = upstreamError.response?.data?.message || upstreamError.message;
+                logApiCall(endpoint, requestData, { message: errorMessage }, 500);
+                // Return the actual error to the user for verification
+                return res.status(500).json({ status: "error", message: `Upstream Error: ${errorMessage}`, details: upstreamError.response?.data });
+            }
+
+        } else {
+            throw new Error("Invalid Action");
         }
-    });
-}
-    });
-}
-    });
+    } catch (error) {
+        const errorResponse = { status: "error", message: error.message };
+        logApiCall(endpoint, requestData, errorResponse, 500);
+        return res.status(500).json(errorResponse);
+    }
+});
+
 
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

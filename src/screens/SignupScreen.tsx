@@ -7,12 +7,15 @@ import { useTheme } from '../theme/useTheme';
 const { width, height } = Dimensions.get('window');
 
 import CustomAlert from '../components/CustomAlert';
+import TermsModal from '../components/TermsModal';
 
 const SignupScreen = ({ navigation }: any) => {
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
+    const [termsVisible, setTermsVisible] = useState(false);
     const { register, login } = useContext(AuthContext);
     const theme = useTheme('light'); // Force Light Mode
 
@@ -55,6 +58,11 @@ const SignupScreen = ({ navigation }: any) => {
         }
         if (password.length < 6) {
             showAlert('Error', 'Password must be at least 6 characters long', 'error');
+            return;
+        }
+
+        if (!termsAccepted) {
+            showAlert('Error', 'Please agree to the Terms and Conditions to proceed', 'error');
             return;
         }
 
@@ -164,6 +172,36 @@ const SignupScreen = ({ navigation }: any) => {
                             </TouchableOpacity>
                         </View>
 
+                        {/* Terms and Conditions Checkbox */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
+                            <TouchableOpacity
+                                onPress={() => setTermsAccepted(!termsAccepted)}
+                                style={{
+                                    width: 20,
+                                    height: 20,
+                                    borderWidth: 2,
+                                    borderColor: theme.secondary,
+                                    borderRadius: 4,
+                                    marginRight: 10,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    backgroundColor: termsAccepted ? theme.secondary : 'transparent'
+                                }}
+                            >
+                                {termsAccepted && (
+                                    <Svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                        <Path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                    </Svg>
+                                )}
+                            </TouchableOpacity>
+                            <Text style={{ fontSize: 13, color: theme.subText }}>I agree to the </Text>
+                            <TouchableOpacity onPress={() => setTermsVisible(true)}>
+                                <Text style={{ fontSize: 13, color: theme.secondary, fontWeight: '600', textDecorationLine: 'underline' }}>
+                                    Terms and Conditions
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
                         {/* Sign Up Button */}
                         <TouchableOpacity style={[styles.signupButton, { backgroundColor: theme.secondary }]} onPress={handleSignUp}>
                             <Text style={styles.signupButtonText}>Sign up</Text>
@@ -204,6 +242,11 @@ const SignupScreen = ({ navigation }: any) => {
                 message={alertConfig.message}
                 type={alertConfig.type}
                 onDismiss={hideAlert}
+            />
+
+            <TermsModal
+                visible={termsVisible}
+                onClose={() => setTermsVisible(false)}
             />
         </View>
     );

@@ -13,24 +13,54 @@ const PaymentIntegrationScreen = ({ navigation }: any) => {
     // Payment State
     const [selectedMethod, setSelectedMethod] = useState<'Nayapay' | 'Easypaisa' | null>(null);
     const [accountNumber, setAccountNumber] = useState('');
+    const [accountTitle, setAccountTitle] = useState<string | null>(null);
     const [verifying, setVerifying] = useState(false);
     const [isVerified, setIsVerified] = useState(false);
 
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
-    const handleVerify = () => {
-        if (!accountNumber || accountNumber.length < 10) {
-            setAlertConfig({ visible: true, title: 'Invalid Account', message: 'Please enter a valid account number.', type: 'error', onConfirm: undefined });
+    const handleFetchTitle = async () => {
+        // Strict Validation
+        const phoneRegex = /^03[0-9]{9}$/;
+        if (!phoneRegex.test(accountNumber)) {
+            setAlertConfig({ visible: true, title: 'Invalid Number', message: 'Please enter a valid 11-digit mobile number (03XXXXXXXXX).', type: 'error', onConfirm: undefined });
             return;
         }
-        setVerifying(true);
 
-        // Simulate API Call
-        setTimeout(() => {
+        setVerifying(true);
+        try {
+            // Real API Call
+            const response = await TunnelService.verifyRaastAccount(accountNumber);
+
+            // Assume response contains consumerName based on Raast standards/history
+            if (response && (response.consumerName || response.title)) {
+                setAccountTitle(response.consumerName || response.title);
+            } else {
+                setAlertConfig({ visible: true, title: 'Verification Failed', message: 'Could not fetch account details. Please check the number.', type: 'error', onConfirm: undefined });
+            }
+        } catch (error: any) {
+            console.error(error);
+            setAlertConfig({
+                visible: true,
+                title: 'Verification Failed',
+                message: error.message || 'Could not verify account. Please try again.',
+                type: 'error',
+                onConfirm: undefined
+            });
+        } finally {
             setVerifying(false);
-            setIsVerified(true);
-            setAlertConfig({ visible: true, title: 'Verified', message: `Your ${selectedMethod} account has been verified successfully.`, type: 'success', onConfirm: undefined });
-        }, 2000);
+        }
+    };
+
+    const handleConfirmVerify = () => {
+        setIsVerified(true);
+        setAlertConfig({ visible: true, title: 'Verified', message: 'Account verified successfully.', type: 'success', onConfirm: undefined });
+    };
+
+    const resetState = () => {
+        setIsVerified(false);
+        setAccountTitle(null);
+        setAccountNumber('');
     };
 
     const handleFinish = async () => {
@@ -59,15 +89,13 @@ const PaymentIntegrationScreen = ({ navigation }: any) => {
                 onPress={() => {
                     if (selectedMethod !== method) {
                         setSelectedMethod(method);
-                        setIsVerified(false);
-                        setAccountNumber('');
+                        resetState();
                     }
                 }}
                 activeOpacity={0.9}
             >
                 <View style={styles.cardHeader}>
                     <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
-                        {/* Simple Initial Icons */}
                         <Text style={{ fontSize: 20, fontWeight: 'bold', color: color }}>{method[0]}</Text>
                     </View>
                     <Text style={[styles.cardTitle, isSelected && { color: color }]}>{method}</Text>
@@ -84,24 +112,53 @@ const PaymentIntegrationScreen = ({ navigation }: any) => {
                                 placeholder="03XXXXXXXXX"
                                 placeholderTextColor="#A0AEC0"
                                 value={accountNumber}
-                                onChangeText={(t) => { setAccountNumber(t); setIsVerified(false); }}
+                                onChangeText={(t) => {
+                                    setAccountNumber(t);
+                                    if (isVerified || accountTitle) {
+                                        setIsVerified(false);
+                                        setAccountTitle(null);
+                                    }
+                                }}
                                 keyboardType="phone-pad"
+                                maxLength={11}
                             />
-                            {isVerified ? (
+                        </View>
+
+                        {/* Verification Flow */}
+                        {!isVerified && !accountTitle && (
+                            <TouchableOpacity
+                                style={[styles.actionButton, { backgroundColor: color, marginTop: 10 }]}
+                                onPress={handleFetchTitle}
+                                disabled={verifying}
+                            >
+                                {verifying ? <ActivityIndicator color="white" size="small" /> : <Text style={styles.actionButtonText}>Fetch Title</Text>}
+                            </TouchableOpacity>
+                        )}
+
+                        {accountTitle && !isVerified && (
+                            <View style={styles.confirmationBox}>
+                                <Text style={styles.accountTitleLabel}>Account Title:</Text>
+                                <Text style={styles.accountTitleValue}>{accountTitle}</Text>
+                                <TouchableOpacity
+                                    style={[styles.actionButton, { backgroundColor: color, marginTop: 10 }]}
+                                    onPress={handleConfirmVerify}
+                                >
+                                    <Text style={styles.actionButtonText}>Confirm & Verify</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {isVerified && (
+                            <View style={styles.verifiedContainer}>
                                 <View style={styles.verifiedBadge}>
                                     <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><Path d="M20 6L9 17l-5-5" /></Svg>
                                 </View>
-                            ) : (
-                                <TouchableOpacity
-                                    style={[styles.verifyButton, { backgroundColor: color }]}
-                                    onPress={handleVerify}
-                                    disabled={verifying}
-                                >
-                                    {verifying ? <ActivityIndicator color="white" size="small" /> : <Text style={styles.verifyText}>Check</Text>}
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                        {isVerified && <Text style={styles.successText}>Account Verified ✓</Text>}
+                                <View>
+                                    <Text style={styles.accountTitleValue}>{accountTitle}</Text>
+                                    <Text style={styles.successText}>Verified ✓</Text>
+                                </View>
+                            </View>
+                        )}
                     </View>
                 )}
             </TouchableOpacity>
@@ -268,16 +325,56 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
     },
-    verifiedBadge: {
-        height: 48,
-        width: 48,
+    actionButton: {
+        paddingVertical: 12,
         borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+    },
+    actionButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    confirmationBox: {
+        marginTop: 15,
+        backgroundColor: '#F7FAFC',
+        padding: 12,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    accountTitleLabel: {
+        fontSize: 13,
+        color: '#718096',
+        marginBottom: 4,
+    },
+    accountTitleValue: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#2D3748',
+    },
+    verifiedContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 15,
+        backgroundColor: '#F0FFF4',
+        padding: 12,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#C6F6D5',
+    },
+    verifiedBadge: {
+        height: 36,
+        width: 36,
+        borderRadius: 18,
         backgroundColor: '#38A169',
         alignItems: 'center',
         justifyContent: 'center',
+        marginRight: 10,
     },
     successText: {
-        marginTop: 8,
         color: '#38A169',
         fontWeight: '600',
         fontSize: 13,

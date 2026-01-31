@@ -23,8 +23,8 @@ const LoggerService = {
                 source: source || 'App'
             });
         } catch (error) {
-            // Fallback if logging fails - just print to console
-            console.error('Failed to send log to server:', error);
+            // Fallback if logging fails - silent fail to avoid noise
+            // console.warn('Failed to send log to server');
         }
     },
 

@@ -33,8 +33,8 @@ export const TunnelService = {
             const response = await axios.post(`${CONFIG.API_URL}/api/tunnel/personal/skills`, { user_id: userId, skills });
             return response.data;
         } catch (error: any) {
-             LoggerService.error('Update Skills Error:', error, 'TunnelService');
-             throw error.response?.data || { message: 'Network Error' };
+            LoggerService.error('Update Skills Error:', error, 'TunnelService');
+            throw error.response?.data || { message: 'Network Error' };
         }
     },
 
@@ -42,16 +42,16 @@ export const TunnelService = {
         // education: { degree, institution, year, resumeFile? }
         // Note: For file upload we need FormData.
         try {
-             const response = await axios.post(`${CONFIG.API_URL}/api/education`, {
-                 user_id: userId,
-                 degree: education.degree,
-                 institution: education.institution,
-                 year: education.year
-             });
-             return response.data;
+            const response = await axios.post(`${CONFIG.API_URL}/api/education`, {
+                user_id: userId,
+                degree: education.degree,
+                institution: education.institution,
+                year: education.year
+            });
+            return response.data;
         } catch (error: any) {
-             LoggerService.error('Update Education Error:', error, 'TunnelService');
-             throw error.response?.data || { message: 'Network Error' };
+            LoggerService.error('Update Education Error:', error, 'TunnelService');
+            throw error.response?.data || { message: 'Network Error' };
         }
     },
 
@@ -111,14 +111,14 @@ export const TunnelService = {
             });
             return response.data;
         } catch (error: any) {
-             LoggerService.error('Update Business Industry Error:', error, 'TunnelService');
-             throw error.response?.data || { message: 'Network Error' };
+            LoggerService.error('Update Business Industry Error:', error, 'TunnelService');
+            throw error.response?.data || { message: 'Network Error' };
         }
     },
 
     // Legacy or for BusinessOnboardingScreen
     updateBusinessOnboarding: async (data: any) => {
-         try {
+        try {
             const response = await axios.post(`${CONFIG.API_URL}/api/business/onboarding`, data);
             return response.data;
         } catch (error: any) {
@@ -156,6 +156,25 @@ export const TunnelService = {
         } catch (error: any) {
             LoggerService.error('Upload Resume Error:', error, 'TunnelService');
             throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+
+    verifyRaastAccount: async (accountNumber: string) => {
+        try {
+            // Updated to use the PHP endpoint directly as suggested by project history
+            const response = await axios.post(`${CONFIG.API_URL}/api/raast.php`, {
+                action: 'merchantInquiry', // Added action discriminator
+                referenceNumber: accountNumber
+            });
+            return response.data;
+        } catch (error: any) {
+            // Log the error but throw the meaningful part
+            LoggerService.error('Raast Verification Error:', error, 'TunnelService');
+            if (error.response) {
+                // Return the server's error message if available (e.g. 404 text)
+                throw { message: error.response.data?.message || `Server Error: ${error.response.status}` };
+            }
+            throw { message: 'Network Error - Could not connect to Verification API' };
         }
     }
 };

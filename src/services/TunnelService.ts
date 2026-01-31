@@ -160,18 +160,31 @@ export const TunnelService = {
     },
 
     verifyRaastAccount: async (accountNumber: string) => {
+        const payload = {
+            action: 'merchantInquiry',
+            referenceNumber: accountNumber
+        };
+
+        // Log Request Start
+        LoggerService.info('Raast: Sending Verification Request', payload, 'TunnelService');
+
         try {
-            // Updated to use the PHP endpoint directly as suggested by project history
-            const response = await axios.post(`${CONFIG.API_URL}/api/raast.php`, {
-                action: 'merchantInquiry', // Added action discriminator
-                referenceNumber: accountNumber
-            });
+            const response = await axios.post(`${CONFIG.API_URL}/api/raast`, payload);
+
+            // Log Success Response
+            LoggerService.info('Raast: Verification Success', { request: payload, response: response.data }, 'TunnelService');
+
             return response.data;
         } catch (error: any) {
-            // Log the error but throw the meaningful part
-            LoggerService.error('Raast Verification Error:', error, 'TunnelService');
+            // Log Failure
+            const errorDetails = {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message
+            };
+            LoggerService.error('Raast: Verification Failed', { request: payload, error: errorDetails }, 'TunnelService');
+
             if (error.response) {
-                // Return the server's error message if available (e.g. 404 text)
                 throw { message: error.response.data?.message || `Server Error: ${error.response.status}` };
             }
             throw { message: 'Network Error - Could not connect to Verification API' };

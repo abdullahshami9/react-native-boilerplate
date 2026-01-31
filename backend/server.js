@@ -1155,9 +1155,38 @@ app.get('/api/users/discover', (req, res) => {
     // Simple discover: list all users except self
     const excludeId = req.query.excludeId || 0;
     const search = req.query.search ? `%${req.query.search}%` : '%';
+    const type = req.query.type || 'All'; // All, Skills, Location
 
-    const query = 'SELECT id, name, email, user_type, profile_pic_url FROM users WHERE id != ? AND name LIKE ? LIMIT 50';
-    dbQuery(query, [excludeId, search], req, (err, results) => {
+    let query;
+    let params;
+
+    if (type === 'Skills') {
+        // Search by skill name
+        query = `
+            SELECT DISTINCT u.id, u.name, u.email, u.user_type, u.profile_pic_url
+            FROM users u
+            JOIN skills s ON u.id = s.user_id
+            WHERE u.id != ? AND s.skill_name LIKE ?
+            LIMIT 50
+        `;
+        params = [excludeId, search];
+    } else if (type === 'Location') {
+        // Search by user address or business address
+        query = `
+            SELECT DISTINCT u.id, u.name, u.email, u.user_type, u.profile_pic_url
+            FROM users u
+            LEFT JOIN business_details bd ON u.id = bd.user_id
+            WHERE u.id != ? AND (u.address LIKE ? OR bd.address LIKE ?)
+            LIMIT 50
+        `;
+        params = [excludeId, search, search];
+    } else {
+        // Default: Search by Name
+        query = 'SELECT id, name, email, user_type, profile_pic_url FROM users WHERE id != ? AND name LIKE ? LIMIT 50';
+        params = [excludeId, search];
+    }
+
+    dbQuery(query, params, req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, users: results });
     });
@@ -1165,8 +1194,31 @@ app.get('/api/users/discover', (req, res) => {
 
 app.get('/api/products/discover', (req, res) => {
     const search = req.query.search ? `%${req.query.search}%` : '%';
-    const query = 'SELECT * FROM products WHERE name LIKE ? LIMIT 50';
-    dbQuery(query, [search], req, (err, results) => {
+    const type = req.query.type || 'All';
+
+    let query;
+    let params;
+
+    if (type === 'Skills') {
+        // Products don't match skills -> Return empty
+        return res.json({ success: true, products: [] });
+    } else if (type === 'Location') {
+        // Match seller address
+        query = `
+            SELECT p.*
+            FROM products p
+            JOIN users u ON p.user_id = u.id
+            WHERE u.address LIKE ?
+            LIMIT 50
+        `;
+        params = [search];
+    } else {
+        // Default: Search by Product Name
+        query = 'SELECT * FROM products WHERE name LIKE ? LIMIT 50';
+        params = [search];
+    }
+
+    dbQuery(query, params, req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, products: results });
     });
@@ -1217,15 +1269,33 @@ app.post('/api/services', verifyToken, (req, res) => {
 
 app.get('/api/services/discover', (req, res) => {
     const searchTerm = req.query.search;
+    const type = req.query.type || 'All';
+    const searchPattern = searchTerm ? `%${searchTerm}%` : '%';
+
     let query;
     let params;
 
-    if (searchTerm) {
-        query = 'SELECT * FROM services WHERE name LIKE ? OR description LIKE ? LIMIT 50';
-        params = [`%${searchTerm}%`, `%${searchTerm}%`];
+    if (type === 'Skills') {
+        // Services don't match skills -> Return empty
+        return res.json({ success: true, services: [] });
+    } else if (type === 'Location') {
+         query = `
+            SELECT s.*
+            FROM services s
+            JOIN users u ON s.user_id = u.id
+            WHERE u.address LIKE ?
+            LIMIT 50
+        `;
+        params = [searchPattern];
     } else {
-        query = 'SELECT * FROM services LIMIT 50';
-        params = [];
+        // Default: Search by Name/Desc
+        if (searchTerm) {
+            query = 'SELECT * FROM services WHERE name LIKE ? OR description LIKE ? LIMIT 50';
+            params = [searchPattern, searchPattern];
+        } else {
+            query = 'SELECT * FROM services LIMIT 50';
+            params = [];
+        }
     }
 
     dbQuery(query, params, req, (err, results) => {

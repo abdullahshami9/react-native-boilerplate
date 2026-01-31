@@ -184,15 +184,6 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
-    discoverServices: async (search: string) => {
-         try {
-            const response = await axios.get(`${CONFIG.API_URL}/api/services/discover`, { params: { search } });
-            return response.data;
-        } catch (error: any) {
-            LoggerService.error('Discover Services Error:', error, 'DataService');
-            throw error.response?.data || { message: 'Network Error' };
-        }
-    },
 
     // --- AVAILABILITY ---
     setAvailability: async (userId: number, date: string, status: string) => {
@@ -293,21 +284,30 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
-    discoverUsers: async (search: string, excludeId: number) => {
+    discoverUsers: async (search: string, excludeId: number, type: string = 'All') => {
         try {
-            const response = await axios.get(`${CONFIG.API_URL}/api/users/discover`, { params: { search, excludeId } });
+            const response = await axios.get(`${CONFIG.API_URL}/api/users/discover`, { params: { search, excludeId, type } });
             return response.data;
         } catch (error: any) {
             LoggerService.error('Discover Users Error:', error, 'DataService');
             throw error.response?.data || { message: 'Network Error' };
         }
     },
-    discoverProducts: async (search: string) => {
+    discoverProducts: async (search: string, type: string = 'All') => {
         try {
-            const response = await axios.get(`${CONFIG.API_URL}/api/products/discover`, { params: { search } });
+            const response = await axios.get(`${CONFIG.API_URL}/api/products/discover`, { params: { search, type } });
             return response.data;
         } catch (error: any) {
             LoggerService.error('Discover Products Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    discoverServices: async (search: string, type: string = 'All') => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/services/discover`, { params: { search, type } });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Discover Services Error:', error, 'DataService');
             throw error.response?.data || { message: 'Network Error' };
         }
     },

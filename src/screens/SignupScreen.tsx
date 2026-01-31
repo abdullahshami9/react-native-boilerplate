@@ -197,7 +197,7 @@ const SignupScreen = ({ navigation }: any) => {
                             <Text style={{ fontSize: 13, color: theme.subText }}>I agree to the </Text>
                             <TouchableOpacity onPress={() => setTermsVisible(true)}>
                                 <Text style={{ fontSize: 13, color: theme.secondary, fontWeight: '600', textDecorationLine: 'underline' }}>
-                                    Terms and Conditions
+                                    Terms & Conditions
                                 </Text>
                             </TouchableOpacity>
                         </View>

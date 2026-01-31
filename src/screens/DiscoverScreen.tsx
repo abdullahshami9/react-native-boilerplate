@@ -7,6 +7,7 @@ import { CONFIG } from '../Config';
 import PageWrapper from '../components/PageWrapper';
 import AnimatedSearchHeader from '../components/AnimatedSearchHeader';
 import { useTheme } from '../theme/useTheme';
+import { resolveImage, getDefaultImageForType } from '../utils/ImageHelper';
 
 const { width } = Dimensions.get('window');
 
@@ -16,6 +17,7 @@ const DiscoverScreen = ({ navigation }: any) => {
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [users, setUsers] = useState<any[]>([]);
     const [businessProducts, setBusinessProducts] = useState<any[]>([]);
+    const [services, setServices] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const { userInfo, isDarkMode } = React.useContext(AuthContext);
     const theme = useTheme();
@@ -27,9 +29,10 @@ const DiscoverScreen = ({ navigation }: any) => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [usersRes, productsRes] = await Promise.all([
+            const [usersRes, productsRes, servicesRes] = await Promise.all([
                 DataService.discoverUsers(search, userInfo?.id || 0),
-                DataService.discoverProducts(search)
+                DataService.discoverProducts(search),
+                DataService.discoverServices(search)
             ]);
 
             if (usersRes.success) {
@@ -37,6 +40,9 @@ const DiscoverScreen = ({ navigation }: any) => {
             }
             if (productsRes.success) {
                 setBusinessProducts(productsRes.products);
+            }
+            if (servicesRes.success) {
+                setServices(servicesRes.services);
             }
         } catch (error) {
             console.log(error);
@@ -90,7 +96,7 @@ const DiscoverScreen = ({ navigation }: any) => {
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
                             {users.map((item) => (
                                 <View key={item.id} style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}>
-                                    <Image source={{ uri: item.profile_pic_url ? `${CONFIG.API_URL}/${item.profile_pic_url}` : 'https://randomuser.me/api/portraits/men/32.jpg' }} style={styles.cardImage} />
+                                    <Image source={resolveImage(item.profile_pic_url || getDefaultImageForType(item.user_type === 'business' ? 'business' : 'customer'))} style={styles.cardImage} />
                                     <Text style={[styles.cardName, { color: theme.text }]}>{item.name}</Text>
                                     <Text style={[styles.cardRole, { color: theme.subText }]}>{item.user_type}</Text>
                                     <View style={styles.actionButtons}>
@@ -135,13 +141,38 @@ const DiscoverScreen = ({ navigation }: any) => {
                             style={[styles.productCard, { backgroundColor: theme.cardBg }]}
                             onPress={() => navigation.navigate('ProductDetails', { product: item })}
                         >
-                            <Image source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/150' }} style={styles.productImage} />
+                            <Image source={resolveImage(item.image_url || getDefaultImageForType('product', item.name))} style={styles.productImage} />
                             <View style={styles.productInfo}>
                                 <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
-                                <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price}</Text>
+                                <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price} PKR</Text>
                             </View>
                         </TouchableOpacity>
                     ))}
+                </View>
+
+                {/* Services */}
+                <View style={styles.sectionHeader}>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Services</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('Shop', { params: { screen: 'Services' } })}>
+                        <Text style={styles.seeAllText}>See All</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.gridContainer}>
+                    {services.map((item) => (
+                        <TouchableOpacity
+                            key={item.id}
+                            style={[styles.productCard, { backgroundColor: theme.cardBg }]}
+                            onPress={() => navigation.navigate('ServiceDetails', { service: item })}
+                        >
+                            <Image source={resolveImage(item.image_url || getDefaultImageForType('service', item.name))} style={styles.productImage} />
+                            <View style={styles.productInfo}>
+                                <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
+                                <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price} PKR • {item.duration_mins}m</Text>
+                            </View>
+                        </TouchableOpacity>
+                    ))}
+                    {services.length === 0 && <Text style={{ color: theme.subText, marginLeft: 5 }}>No services found.</Text>}
                 </View>
             </PageWrapper>
         </View>

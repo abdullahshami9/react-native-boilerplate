@@ -6,6 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import { CONFIG } from '../Config';
 import { useTheme } from '../theme/useTheme';
 import AnimatedSearchHeader from '../components/AnimatedSearchHeader';
+import { resolveImage, getDefaultImageForType } from '../utils/ImageHelper';
 
 const { width } = Dimensions.get('window');
 
@@ -88,9 +89,6 @@ const ConnectionsScreen = ({ navigation }: any) => {
 
     const renderItem = ({ item }: any) => {
         const isConnected = connections.some(c => c.id === item.id);
-        const imageUrl = item.profile_pic_url
-            ? `${CONFIG.API_URL}/${item.profile_pic_url}`
-            : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=200&h=200&fit=crop';
 
         return (
             <TouchableOpacity
@@ -98,7 +96,7 @@ const ConnectionsScreen = ({ navigation }: any) => {
                 style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}
                 onPress={() => navigation.navigate('UserProfile', { user: item })}
             >
-                <Image source={{ uri: imageUrl }} style={styles.avatar} />
+                <Image source={resolveImage(item.profile_pic_url || getDefaultImageForType(item.user_type === 'business' ? 'business' : 'customer'))} style={styles.avatar} />
                 <View style={styles.info}>
                     <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
                     <Text style={[styles.role, { color: theme.subText }]} numberOfLines={1}>

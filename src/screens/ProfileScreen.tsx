@@ -440,7 +440,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
     };
 
     const getProfileSource = () => {
-        return resolveImage(displayedUser?.profile_pic_url, getDefaultImageForType(isBusinessUser ? 'business' : 'customer'));
+        return resolveImage(displayedUser?.profile_pic_url || getDefaultImageForType(isBusinessUser ? 'business' : 'customer'));
     };
 
     const getResumeUrl = () => {

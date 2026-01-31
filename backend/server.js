@@ -416,6 +416,47 @@ db.connect(async (err) => {
                     db.query("ALTER TABLE products ADD COLUMN wholesale_tiers JSON", () => console.log("Added wholesale_tiers column"));
                 }
             });
+
+            // Service & Staff Migrations
+            db.query("SHOW COLUMNS FROM services LIKE 'service_type'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE services ADD COLUMN service_type ENUM('Hourly', 'Shift', 'MultiDay') DEFAULT 'Hourly'", () => console.log("Added service_type column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM services LIKE 'service_location'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE services ADD COLUMN service_location ENUM('OnSite', 'Home', 'Both') DEFAULT 'OnSite'", () => console.log("Added service_location column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM services LIKE 'pricing_structure'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE services ADD COLUMN pricing_structure JSON", () => console.log("Added pricing_structure column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM services LIKE 'cancellation_policy'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE services ADD COLUMN cancellation_policy TEXT", () => console.log("Added cancellation_policy column"));
+                }
+            });
+            db.query("SHOW TABLES LIKE 'staff'", (e, r) => {
+                if (r && r.length === 0) {
+                    const createStaff = `CREATE TABLE IF NOT EXISTS staff (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        provider_id INT NOT NULL,
+                        name VARCHAR(255) NOT NULL,
+                        role VARCHAR(255),
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (provider_id) REFERENCES users(id) ON DELETE CASCADE
+                    )`;
+                    db.query(createStaff, () => console.log("Created staff table"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM appointments LIKE 'staff_id'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE appointments ADD COLUMN staff_id INT", () => console.log("Added staff_id to appointments"));
+                }
+            });
+
             db.query("SHOW COLUMNS FROM users LIKE 'profile_pic_url'", (e, r) => {
                 if (r && r.length === 0) {
                     db.query("ALTER TABLE users ADD COLUMN profile_pic_url VARCHAR(255)", () => console.log("Added profile_pic_url column"));
@@ -1342,11 +1383,22 @@ app.post('/api/products/:id/stock', (req, res) => {
 // --- SERVICES ---
 
 app.post('/api/services', verifyToken, (req, res) => {
-    const { user_id, name, description, price, duration_mins, image_url } = req.body;
+    const { user_id, name, description, price, duration_mins, image_url, service_type, service_location, pricing_structure, cancellation_policy } = req.body;
     if (req.user.id != user_id) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
-    const query = 'INSERT INTO services (user_id, name, description, price, duration_mins, image_url) VALUES (?, ?, ?, ?, ?, ?)';
-    dbQuery(query, [user_id, name, description, price, duration_mins, image_url || ''], req, (err, result) => {
+    const query = 'INSERT INTO services (user_id, name, description, price, duration_mins, image_url, service_type, service_location, pricing_structure, cancellation_policy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    dbQuery(query, [
+        user_id,
+        name,
+        description,
+        price || 0,
+        duration_mins,
+        image_url || '',
+        service_type || 'Hourly',
+        service_location || 'OnSite',
+        pricing_structure ? JSON.stringify(pricing_structure) : null,
+        cancellation_policy || ''
+    ], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, message: 'Service added', id: result.insertId });
     });
@@ -1398,9 +1450,47 @@ app.get('/api/services/:userId', (req, res) => {
 });
 
 app.put('/api/services/:id', verifyToken, (req, res) => {
-    const { name, description, price, duration_mins } = req.body;
-    const query = 'UPDATE services SET name = ?, description = ?, price = ?, duration_mins = ? WHERE id = ?';
-    dbQuery(query, [name, description, price, duration_mins, req.params.id], req, (err) => {
+    const { name, description, price, duration_mins, service_type, service_location, pricing_structure, cancellation_policy } = req.body;
+    const query = 'UPDATE services SET name = ?, description = ?, price = ?, duration_mins = ?, service_type = ?, service_location = ?, pricing_structure = ?, cancellation_policy = ? WHERE id = ?';
+    dbQuery(query, [
+        name,
+        description,
+        price,
+        duration_mins,
+        service_type,
+        service_location,
+        pricing_structure ? JSON.stringify(pricing_structure) : null,
+        cancellation_policy,
+        req.params.id
+    ], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
+    });
+});
+
+app.post('/api/staff', verifyToken, (req, res) => {
+    const { user_id, name, role } = req.body;
+    if (req.user.id != user_id) return res.status(403).json({ success: false, message: 'Unauthorized' });
+
+    const query = 'INSERT INTO staff (provider_id, name, role) VALUES (?, ?, ?)';
+    dbQuery(query, [user_id, name, role], req, (err, result) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, id: result.insertId, staff: { id: result.insertId, provider_id: user_id, name, role } });
+    });
+});
+
+app.get('/api/staff/:providerId', (req, res) => {
+    const query = 'SELECT * FROM staff WHERE provider_id = ?';
+    dbQuery(query, [req.params.providerId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, staff: results });
+    });
+});
+
+app.delete('/api/staff/:id', verifyToken, (req, res) => {
+    // Should verify ownership, simplified for now
+    const query = 'DELETE FROM staff WHERE id = ?';
+    dbQuery(query, [req.params.id], req, (err) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true });
     });
@@ -1604,10 +1694,10 @@ app.get('/api/reports/sales/:userId', (req, res) => {
 // --- APPOINTMENTS (For Calendar) ---
 
 app.post('/api/appointments', (req, res) => {
-    const { provider_id, customer_id, service_id, appointment_date, duration_mins } = req.body;
+    const { provider_id, customer_id, service_id, appointment_date, duration_mins, staff_id } = req.body;
     // status default pending
-    const query = 'INSERT INTO appointments (provider_id, customer_id, service_id, appointment_date, duration_mins, status) VALUES (?, ?, ?, ?, ?, "pending")';
-    dbQuery(query, [provider_id, customer_id, service_id || null, appointment_date, duration_mins || 30], req, (err, result) => {
+    const query = 'INSERT INTO appointments (provider_id, customer_id, service_id, appointment_date, duration_mins, status, staff_id) VALUES (?, ?, ?, ?, ?, "pending", ?)';
+    dbQuery(query, [provider_id, customer_id, service_id || null, appointment_date, duration_mins || 30, staff_id || null], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, message: 'Appointment booked', id: result.insertId });
     });

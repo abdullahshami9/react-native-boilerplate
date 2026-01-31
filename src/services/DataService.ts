@@ -311,6 +311,34 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
+    // --- STAFF ---
+    addStaff: async (userId: number, name: string, role: string) => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/staff`, { user_id: userId, name, role });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Add Staff Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getStaff: async (userId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/staff/${userId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Staff Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    deleteStaff: async (id: number) => {
+        try {
+            const response = await axios.delete(`${CONFIG.API_URL}/api/staff/${id}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Delete Staff Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
     discoverServices: async (search: string, type: string = 'All') => {
         try {
             const response = await axios.get(`${CONFIG.API_URL}/api/services/discover`, { params: { search, type } });

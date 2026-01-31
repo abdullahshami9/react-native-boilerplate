@@ -1,13 +1,14 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, FlatList, Image } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
 import CustomAlert from '../../../components/CustomAlert';
 import Svg, { Path } from 'react-native-svg';
 
-const BusinessIndustryScreen = ({ navigation }: any) => {
+const BusinessIndustryScreen = ({ navigation, route }: any) => {
     const { userInfo } = useContext(AuthContext);
+    const initialAddress = route.params?.address || '';
     const [industry, setIndustry] = useState('');
     const [category, setCategory] = useState('');
     const [customIndustry, setCustomIndustry] = useState('');
@@ -110,7 +111,7 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
                 industry: finalIndustry,
                 category: finalCategory
             });
-            navigation.navigate('BusinessTypeContact');
+            navigation.navigate('BusinessTypeContact', { address: initialAddress });
         } catch (error) {
             console.error(error);
             setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error', onConfirm: undefined });
@@ -172,6 +173,13 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
                         />
                     </View>
                 )}
+
+                <View style={styles.illustrationContainer}>
+                    <Image
+                        source={require('../../../assets/Blues illustrations/Scenes/2x/Startup, Success, technology, growth _  innovation, idea, thought, woman, statistics.png')}
+                        style={styles.illustration}
+                    />
+                </View>
 
                 {/* Unified Selection Modal */}
                 <Modal visible={modalVisible} transparent animationType="slide">
@@ -337,6 +345,18 @@ const styles = StyleSheet.create({
     nextButtonText: {
         color: 'white',
         fontWeight: '600',
+    },
+    illustrationContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 20,
+        marginBottom: 10,
+    },
+    illustration: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'contain',
     },
 });
 

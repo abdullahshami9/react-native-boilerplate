@@ -1,19 +1,21 @@
-import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, FlatList } from 'react-native';
+import React, { useContext, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
 import CustomAlert from '../../../components/CustomAlert';
-import Svg, { Path, Rect, Circle, Line, Polyline } from 'react-native-svg';
+import Svg, { Path, Polyline, Line } from 'react-native-svg';
 import AddressSelector from '../../../components/AddressSelector';
 
-const BusinessTypeContactScreen = ({ navigation }: any) => {
+const BusinessTypeContactScreen = ({ navigation, route }: any) => {
     const { userInfo } = useContext(AuthContext);
+    const initialAddress = route.params?.address || '';
+
     const [bizType, setBizType] = useState<'Service Based' | 'Product Based'>('Service Based');
 
     // Service Fields
     const [experience, setExperience] = useState('');
-    const [serviceCategory, setServiceCategory] = useState('');
+    const [serviceCategory, setServiceCategory] = useState(''); // Now text based
 
     // Product Fields
     const [warehouseCapacity, setWarehouseCapacity] = useState('');
@@ -21,11 +23,21 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
 
     // Nationwide / Address Logic
     const [isNationwide, setIsNationwide] = useState(true);
-    const [operationalAreas, setOperationalAreas] = useState<any[]>([]); // List of added areas
+    const [operationalAreas, setOperationalAreas] = useState<any[]>([]);
     const [showAddressSelector, setShowAddressSelector] = useState(false);
+
+    // Temp Address State for Selector
+    const [tempAddress, setTempAddress] = useState<string | null>(null);
+    const [tempDetails, setTempDetails] = useState<any>(null);
 
     const [loading, setLoading] = useState(false);
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
+
+    useEffect(() => {
+        if (initialAddress && operationalAreas.length === 0) {
+            setOperationalAreas([{ address: initialAddress, details: {} }]);
+        }
+    }, [initialAddress]);
 
     const handleNext = async () => {
         setLoading(true);
@@ -33,14 +45,14 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
             let description = '';
             if (bizType === 'Service Based') {
                 if (!experience || !serviceCategory) {
-                    setAlertConfig({ visible: true, title: 'Missing Info', message: 'Please fill all service details.', type: 'error' });
+                    setAlertConfig({ visible: true, title: 'Missing Info', message: 'Please fill all service details.', type: 'error', onConfirm: undefined });
                     setLoading(false);
                     return;
                 }
                 description = `Experience: ${experience} years. Specialization: ${serviceCategory}.`;
             } else {
                 if (!warehouseCapacity || !deliveryRange) {
-                    setAlertConfig({ visible: true, title: 'Missing Info', message: 'Please fill all product details.', type: 'error' });
+                    setAlertConfig({ visible: true, title: 'Missing Info', message: 'Please fill all product details.', type: 'error', onConfirm: undefined });
                     setLoading(false);
                     return;
                 }
@@ -49,7 +61,7 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
 
             // Validate Operational Areas
             if (!isNationwide && operationalAreas.length === 0) {
-                setAlertConfig({ visible: true, title: 'Missing Info', message: 'Please add at least one operational area or select Nationwide.', type: 'error' });
+                setAlertConfig({ visible: true, title: 'Missing Info', message: 'Please add at least one operational area or select Nationwide.', type: 'error', onConfirm: undefined });
                 setLoading(false);
                 return;
             }
@@ -65,17 +77,26 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
             navigation.navigate('IdentityGate');
         } catch (error) {
             console.error(error);
-            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error' });
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error', onConfirm: undefined });
         } finally {
             setLoading(false);
         }
     };
 
-    const handleAddAddress = (address: string, details: any) => {
+    const handleAddressChange = (address: string, details: any) => {
+        setTempAddress(address);
+        setTempDetails(details);
+    };
+
+    const confirmAddAddress = () => {
+        if (!tempAddress) return;
+
         // Simple check to avoid duplicates
-        if (!operationalAreas.find(a => a.address === address)) {
-            setOperationalAreas([...operationalAreas, { address, details }]);
+        if (!operationalAreas.find(a => a.address === tempAddress)) {
+            setOperationalAreas([...operationalAreas, { address: tempAddress, details: tempDetails }]);
         }
+        setTempAddress(null);
+        setTempDetails(null);
         setShowAddressSelector(false);
     };
 
@@ -101,28 +122,26 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
                         style={[styles.tile, bizType === 'Service Based' && styles.tileActive]}
                         onPress={() => setBizType('Service Based')}
                     >
-                        <View style={[styles.tileIcon, bizType === 'Service Based' && styles.tileIconActive]}>
-                            {/* Tools / Service Icon */}
-                            <Svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={bizType === 'Service Based' ? "#3182CE" : "#A0AEC0"} strokeWidth="2">
-                                <Path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-                            </Svg>
+                        <Image
+                            source={require('../../../assets/Blues illustrations/Scenes/2x/Business, Support, design, communication _ customer service, laptop, computer, messages, woman.png')}
+                            style={styles.tileImage}
+                        />
+                        <View style={styles.tileOverlay}>
+                            <Text style={styles.tileText}>Service Based</Text>
                         </View>
-                        <Text style={[styles.tileText, bizType === 'Service Based' && styles.tileTextActive]}>Service Based</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={[styles.tile, bizType === 'Product Based' && styles.tileActive]}
                         onPress={() => setBizType('Product Based')}
                     >
-                        <View style={[styles.tileIcon, bizType === 'Product Based' && styles.tileIconActive]}>
-                            {/* Box / Product Icon */}
-                            <Svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={bizType === 'Product Based' ? "#3182CE" : "#A0AEC0"} strokeWidth="2">
-                                <Path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></Path>
-                                <Polyline points="3.27 6.96 12 12.01 20.73 6.96"></Polyline>
-                                <Line x1="12" y1="22.08" x2="12" y2="12"></Line>
-                            </Svg>
+                        <Image
+                            source={require('../../../assets/Blues illustrations/Scenes/2x/Delivery _ order, account, transportation, subway, box, shopping.png')}
+                            style={styles.tileImage}
+                        />
+                        <View style={styles.tileOverlay}>
+                            <Text style={styles.tileText}>Product Based</Text>
                         </View>
-                        <Text style={[styles.tileText, bizType === 'Product Based' && styles.tileTextActive]}>Product Based</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -145,11 +164,10 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
                             <View style={styles.inputGroup}>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Specialization ID (Numeric)"
+                                    placeholder="Service Category (e.g. Design)"
                                     placeholderTextColor="#A0AEC0"
                                     value={serviceCategory}
-                                    onChangeText={(t) => handleNumericChange(t, setServiceCategory)} // Strict numeric as requested
-                                    keyboardType="numeric"
+                                    onChangeText={setServiceCategory}
                                 />
                             </View>
                         </>
@@ -173,7 +191,7 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
                                     placeholder="Delivery Range ID (Numeric)"
                                     placeholderTextColor="#A0AEC0"
                                     value={deliveryRange}
-                                    onChangeText={(t) => handleNumericChange(t, setDeliveryRange)} // Strict numeric as requested
+                                    onChangeText={(t) => handleNumericChange(t, setDeliveryRange)}
                                     keyboardType="numeric"
                                 />
                             </View>
@@ -204,7 +222,7 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
                             ))}
 
                             <TouchableOpacity style={styles.addAreaButton} onPress={() => setShowAddressSelector(true)}>
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3182CE" strokeWidth="2"><Line x1="12" y1="5" x2="12" y2="19"></Line><Line x1="5" y1="12" x2="19" y2="12"></Line></Svg>
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2"><Line x1="12" y1="5" x2="12" y2="19"></Line><Line x1="5" y1="12" x2="19" y2="12"></Line></Svg>
                                 <Text style={styles.addAreaText}>Add Another Area</Text>
                             </TouchableOpacity>
                         </View>
@@ -216,13 +234,23 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
                     <View style={styles.addressSelectorContainer}>
                         <View style={styles.addressHeader}>
                             <Text style={styles.addressTitle}>Select New Area</Text>
-                            <TouchableOpacity onPress={() => setShowAddressSelector(false)}>
+                            <TouchableOpacity onPress={() => { setShowAddressSelector(false); setTempAddress(null); }}>
                                 <Text style={{ color: '#E53E3E', fontWeight: '600' }}>Cancel</Text>
                             </TouchableOpacity>
                         </View>
                         <AddressSelector
-                            onAddressChange={handleAddAddress}
+                            onAddressChange={handleAddressChange}
                         />
+                        <TouchableOpacity
+                            style={[
+                                styles.confirmAreaButton,
+                                !tempAddress && styles.confirmAreaButtonDisabled
+                            ]}
+                            onPress={confirmAddAddress}
+                            disabled={!tempAddress}
+                        >
+                            <Text style={styles.confirmAreaButtonText}>Confirm & Add Area</Text>
+                        </TouchableOpacity>
                     </View>
                 )}
 
@@ -271,36 +299,38 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: 'white',
         borderRadius: 16,
-        padding: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
+        height: 160,
+        overflow: 'hidden',
         borderWidth: 2,
         borderColor: '#E2E8F0',
-        gap: 12,
+        elevation: 2,
     },
     tileActive: {
-        borderColor: '#3182CE',
-        backgroundColor: '#EBF8FF',
+        borderColor: '#2D3748',
+        borderWidth: 3,
     },
-    tileIcon: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        backgroundColor: '#F7FAFC',
+    tileImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    tileOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        paddingVertical: 12,
         alignItems: 'center',
-        justifyContent: 'center',
-    },
-    tileIconActive: {
-        backgroundColor: '#BEE3F8',
     },
     tileText: {
-        fontWeight: '600',
-        color: '#A0AEC0',
-        fontSize: 14,
+        fontWeight: 'bold',
+        color: 'white',
+        fontSize: 15,
+        textAlign: 'center',
     },
     tileTextActive: {
-        color: '#2C5282',
-        fontWeight: 'bold',
+        // No change needed if text is always white, but we keep this empty or remove reference if unneeded.
     },
     sectionContainer: {
         gap: 12,
@@ -352,8 +382,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     checkboxActive: {
-        backgroundColor: '#3182CE',
-        borderColor: '#3182CE',
+        backgroundColor: '#2D3748', // Dark grey
+        borderColor: '#2D3748',
     },
     toggleText: {
         fontSize: 16,
@@ -387,12 +417,12 @@ const styles = StyleSheet.create({
         padding: 14,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#3182CE',
+        borderColor: '#2D3748',
         borderStyle: 'dashed',
-        backgroundColor: '#EBF8FF',
+        backgroundColor: '#F7FAFC',
     },
     addAreaText: {
-        color: '#3182CE',
+        color: '#2D3748',
         fontWeight: '600',
         marginLeft: 8,
     },
@@ -412,6 +442,21 @@ const styles = StyleSheet.create({
     addressTitle: {
         fontWeight: '700',
         color: '#2D3748',
+    },
+    confirmAreaButton: {
+        backgroundColor: '#2D3748',
+        borderRadius: 12,
+        paddingVertical: 12,
+        alignItems: 'center',
+        marginTop: 15,
+    },
+    confirmAreaButtonDisabled: {
+        backgroundColor: '#A0AEC0',
+    },
+    confirmAreaButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
     },
     spacer: {
         flex: 1,

@@ -13,6 +13,7 @@ const BusinessLocationScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);
     const [username, setUsername] = useState('');
     const [address, setAddress] = useState('');
+    const [addressDetails, setAddressDetails] = useState<any>({});
     const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(null);
     const [loading, setLoading] = useState(false);
     const [locating, setLocating] = useState(false);
@@ -102,7 +103,7 @@ const BusinessLocationScreen = ({ navigation }: any) => {
                 lat: coords ? coords.lat : 0,
                 lng: coords ? coords.lng : 0
             });
-            navigation.navigate('BusinessIndustry');
+            navigation.navigate('BusinessIndustry', { address: address });
         } catch (error: any) {
             console.error(error);
             showAlert('Error', error.message || 'Failed to save details');
@@ -185,7 +186,10 @@ const BusinessLocationScreen = ({ navigation }: any) => {
                 </View>
 
                 <AddressSelector
-                    onAddressChange={(addr) => setAddress(addr)}
+                    onAddressChange={(addr, details) => {
+                        setAddress(addr);
+                        setAddressDetails(details);
+                    }}
                 />
 
                 <View style={styles.spacer} />

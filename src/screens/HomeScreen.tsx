@@ -161,10 +161,14 @@ const HomeScreen = ({ navigation, route }: any) => {
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>Discover Products</Text>
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
-                {discoverProducts.map((item, index) => (
+            <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginBottom: 20 }}
+                data={discoverProducts}
+                keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
+                renderItem={({ item }) => (
                     <TouchableOpacity
-                        key={index}
                         style={[styles.card, { backgroundColor: theme.cardBg, width: 150, height: 200, marginRight: 15, alignItems: 'flex-start', padding: 10, justifyContent: 'flex-start' }]}
                         onPress={() => navigation.navigate('ProductDetails', { product: item })}
                     >
@@ -177,20 +181,22 @@ const HomeScreen = ({ navigation, route }: any) => {
                         <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: 'bold', color: theme.text, marginBottom: 5 }}>{item.name}</Text>
                         <Text style={{ fontSize: 12, color: theme.subText }}>{item.price} PKR</Text>
                     </TouchableOpacity>
-                ))}
-                {discoverProducts.length === 0 && (
-                    <Text style={{ color: theme.subText }}>No products found.</Text>
                 )}
-            </ScrollView>
+                ListEmptyComponent={<Text style={{ color: theme.subText }}>No products found.</Text>}
+            />
 
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>Discover Services</Text>
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
-                {discoverServices.map((item, index) => (
+            <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginBottom: 20 }}
+                data={discoverServices}
+                keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
+                renderItem={({ item }) => (
                     <TouchableOpacity
-                        key={index}
                         style={[styles.card, { backgroundColor: theme.cardBg, width: 150, height: 200, marginRight: 15, alignItems: 'flex-start', padding: 10, justifyContent: 'flex-start' }]}
                         onPress={() => navigation.navigate('ServiceDetails', { service: item })}
                     >
@@ -203,11 +209,9 @@ const HomeScreen = ({ navigation, route }: any) => {
                         <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: 'bold', color: theme.text, marginBottom: 5 }}>{item.name}</Text>
                         <Text style={{ fontSize: 12, color: theme.subText }}>{item.price} PKR</Text>
                     </TouchableOpacity>
-                ))}
-                {discoverServices.length === 0 && (
-                    <Text style={{ color: theme.subText }}>No services found.</Text>
                 )}
-            </ScrollView>
+                ListEmptyComponent={<Text style={{ color: theme.subText }}>No services found.</Text>}
+            />
 
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>Unlock Availability</Text>

@@ -21,6 +21,7 @@ import ServiceDetailsScreen from './src/screens/ServiceDetailsScreen';
 import BookingScreen from './src/screens/BookingScreen';
 import CheckoutScreen from './src/screens/CheckoutScreen';
 import BusinessCardEditorScreen from './src/screens/BusinessCardEditorScreen';
+import NotificationsScreen from './src/screens/NotificationsScreen';
 
 // Business Screens
 import ManageServicesScreen from './src/screens/business/ManageServicesScreen';
@@ -77,6 +78,7 @@ const AppNav = () => {
               <Stack.Screen name="Chat" component={ChatScreen} />
               <Stack.Screen name="UserProfile" component={ProfileScreen} />
               <Stack.Screen name="BusinessCardEditor" component={BusinessCardEditorScreen} />
+              <Stack.Screen name="Notifications" component={NotificationsScreen} />
 
               {/* Customer Screens */}
               <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />

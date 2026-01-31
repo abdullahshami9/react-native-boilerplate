@@ -16,15 +16,19 @@ const CheckoutScreen = ({ navigation }: any) => {
     const theme = useTheme();
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
-    const total = cartItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+    const validItems = cartItems.filter((item: any) => item.user_id !== userInfo.id);
+    const total = validItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
 
     const handlePlaceOrder = async () => {
-        if (cartItems.length === 0) return;
+        if (validItems.length === 0) {
+            setAlertConfig({ visible: true, title: 'Cart Empty', message: 'No valid items to checkout.', type: 'info', onConfirm: undefined });
+            return;
+        }
         setLoading(true);
 
         // Group by Seller
         const ordersBySeller: { [key: number]: any[] } = {};
-        cartItems.forEach((item: any) => {
+        validItems.forEach((item: any) => {
             const sellerId = item.user_id;
             if (!ordersBySeller[sellerId]) ordersBySeller[sellerId] = [];
             ordersBySeller[sellerId].push({
@@ -88,14 +92,14 @@ const CheckoutScreen = ({ navigation }: any) => {
             </View>
 
             <FlatList
-                data={cartItems}
+                data={validItems}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>Your cart is empty.</Text>}
             />
 
-            {cartItems.length > 0 && (
+            {validItems.length > 0 && (
                 <View style={[styles.footer, { backgroundColor: theme.cardBg, borderTopColor: theme.borderColor }]}>
                     <View style={styles.paymentSection}>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Payment Method</Text>

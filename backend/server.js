@@ -381,6 +381,18 @@ db.connect(async (err) => {
             change_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            message TEXT NOT NULL,
+            type VARCHAR(50) DEFAULT 'info',
+            read_status BOOLEAN DEFAULT 0,
+            related_id INT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
     `;
 
     db.query(initQuery, (err, result) => {
@@ -392,6 +404,12 @@ db.connect(async (err) => {
             db = mysql.createConnection({ ...dbConfig, database: 'AppStarter' });
 
             // Add column if not exists (Hack for existing db)
+            db.query("SHOW COLUMNS FROM services LIKE 'category'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE services ADD COLUMN category VARCHAR(100)", () => console.log("Added category to services"));
+                }
+            });
+
             db.query("SHOW COLUMNS FROM products LIKE 'stock_quantity'", (e, r) => {
                 if (r && r.length === 0) {
                     db.query("ALTER TABLE products ADD COLUMN stock_quantity INT DEFAULT 0", () => console.log("Added stock_quantity column"));
@@ -726,6 +744,33 @@ io.on('connection', (socket) => {
 
 
 // --- ROUTES ---
+
+// Notifications
+app.get('/api/notifications/:userId', verifyToken, (req, res) => {
+    if (req.user.id != req.params.userId) return res.status(403).json({ success: false, message: 'Unauthorized' });
+
+    const query = 'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC';
+    dbQuery(query, [req.params.userId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, notifications: results });
+    });
+});
+
+app.put('/api/notifications/:id/read', verifyToken, (req, res) => {
+    const query = 'UPDATE notifications SET read_status = 1 WHERE id = ? AND user_id = ?';
+    dbQuery(query, [req.params.id, req.user.id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
+    });
+});
+
+// Helper to create notification
+const createNotification = (userId, title, message, type, relatedId) => {
+    const query = 'INSERT INTO notifications (user_id, title, message, type, related_id) VALUES (?, ?, ?, ?, ?)';
+    db.query(query, [userId, title, message, type, relatedId || null], (err) => {
+        if (err) console.error("Failed to create notification:", err);
+    });
+};
 
 // Register
 app.post('/register', (req, res) => {
@@ -1389,10 +1434,10 @@ app.post('/api/products/:id/stock', (req, res) => {
 // --- SERVICES ---
 
 app.post('/api/services', verifyToken, (req, res) => {
-    const { user_id, name, description, price, duration_mins, image_url, service_type, service_location, pricing_structure, cancellation_policy, auto_approve } = req.body;
+    const { user_id, name, description, price, duration_mins, image_url, service_type, service_location, pricing_structure, cancellation_policy, auto_approve, category } = req.body;
     if (req.user.id != user_id) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
-    const query = 'INSERT INTO services (user_id, name, description, price, duration_mins, image_url, service_type, service_location, pricing_structure, cancellation_policy, auto_approve) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO services (user_id, name, description, price, duration_mins, image_url, service_type, service_location, pricing_structure, cancellation_policy, auto_approve, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
     dbQuery(query, [
         user_id,
         name,
@@ -1404,7 +1449,8 @@ app.post('/api/services', verifyToken, (req, res) => {
         service_location || 'OnSite',
         pricing_structure ? JSON.stringify(pricing_structure) : null,
         cancellation_policy || '',
-        auto_approve ? 1 : 0
+        auto_approve ? 1 : 0,
+        category || ''
     ], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, message: 'Service added', id: result.insertId });
@@ -1457,8 +1503,8 @@ app.get('/api/services/:userId', (req, res) => {
 });
 
 app.put('/api/services/:id', verifyToken, (req, res) => {
-    const { name, description, price, duration_mins, service_type, service_location, pricing_structure, cancellation_policy, auto_approve } = req.body;
-    const query = 'UPDATE services SET name = ?, description = ?, price = ?, duration_mins = ?, service_type = ?, service_location = ?, pricing_structure = ?, cancellation_policy = ?, auto_approve = ? WHERE id = ?';
+    const { name, description, price, duration_mins, service_type, service_location, pricing_structure, cancellation_policy, auto_approve, category } = req.body;
+    const query = 'UPDATE services SET name = ?, description = ?, price = ?, duration_mins = ?, service_type = ?, service_location = ?, pricing_structure = ?, cancellation_policy = ?, auto_approve = ?, category = ? WHERE id = ?';
     dbQuery(query, [
         name,
         description,
@@ -1469,6 +1515,7 @@ app.put('/api/services/:id', verifyToken, (req, res) => {
         pricing_structure ? JSON.stringify(pricing_structure) : null,
         cancellation_policy,
         auto_approve ? 1 : 0,
+        category || '',
         req.params.id
     ], req, (err) => {
         if (err) return res.status(500).json({ success: false });
@@ -1583,6 +1630,9 @@ app.post('/api/orders', verifyToken, (req, res) => {
                 db.query('UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?', [item.quantity, item.product_id]);
             });
 
+            // Notify Seller
+            createNotification(seller_id, 'New Order Received', `You have a new order of ${total} PKR`, 'order', orderId);
+
             res.json({ success: true, message: 'Order created', orderId });
         });
     });
@@ -1609,10 +1659,19 @@ app.get('/api/user/counts/:userId', (req, res) => {
 });
 
 app.put('/api/orders/:orderId/status', (req, res) => {
-    const { status } = req.body; // pending, completed, cancelled
+    const { status } = req.body; // pending, accepted, completed, cancelled
     const query = 'UPDATE orders SET status = ? WHERE id = ?';
     dbQuery(query, [status, req.params.orderId], req, (err) => {
         if (err) return res.status(500).json({ success: false });
+
+        // Notify Buyer if completed
+        if (status === 'completed') {
+            db.query('SELECT buyer_id FROM orders WHERE id = ?', [req.params.orderId], (e, r) => {
+                if (!e && r.length > 0 && r[0].buyer_id) {
+                    createNotification(r[0].buyer_id, 'Order Completed', 'Your order has been marked as completed.', 'order', req.params.orderId);
+                }
+            });
+        }
         res.json({ success: true, message: 'Order status updated' });
     });
 });
@@ -1724,6 +1783,10 @@ app.post('/api/appointments', (req, res) => {
             const query = 'INSERT INTO appointments (provider_id, customer_id, service_id, appointment_date, duration_mins, status, staff_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
             dbQuery(query, [provider_id, customer_id, service_id || null, appointment_date, duration_mins || 30, status, staff_id || null], req, (err, result) => {
                 if (err) return res.status(500).json({ success: false });
+
+                // Notify Provider
+                createNotification(provider_id, 'New Appointment Request', `New appointment request for ${datePart}`, 'appointment', result.insertId);
+
                 res.json({ success: true, message: status === 'confirmed' ? 'Appointment confirmed!' : 'Request sent', id: result.insertId, status });
             });
         });

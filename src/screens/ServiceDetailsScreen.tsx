@@ -10,6 +10,8 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info' });
 
+    const isOwner = userInfo?.id === service.user_id;
+
     const theme = {
         bg: isDarkMode ? '#1A202C' : '#FFFFFF',
         text: isDarkMode ? '#F7FAFC' : '#2D3748',
@@ -21,6 +23,10 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
     const handleBook = () => {
         if (!userInfo) {
             setAlertConfig({ visible: true, title: 'Login Required', message: 'Please login to book a service', type: 'info' });
+            return;
+        }
+        if (isOwner) {
+            setAlertConfig({ visible: true, title: 'Restriction', message: 'You cannot book your own service', type: 'error' });
             return;
         }
         navigation.navigate('Booking', { service });
@@ -80,11 +86,15 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
 
                 <View style={[styles.providerInfo, { backgroundColor: theme.cardBg }]}>
                     <Text style={[styles.providerLabel, { color: theme.subText }]}>Provided by</Text>
-                    <Text style={[styles.providerName, { color: theme.text }]}>Business ID: {service.user_id}</Text>
+                    <Text style={[styles.providerName, { color: theme.text }]}>Business ID: {service.user_id} {isOwner ? '(You)' : ''}</Text>
                 </View>
 
-                <TouchableOpacity style={[styles.bookButton, { backgroundColor: isDarkMode ? '#4A9EFF' : '#2D3748' }]} onPress={handleBook}>
-                    <Text style={styles.bookButtonText}>Book Appointment</Text>
+                <TouchableOpacity
+                    style={[styles.bookButton, { backgroundColor: isOwner ? '#A0AEC0' : (isDarkMode ? '#4A9EFF' : '#2D3748') }]}
+                    onPress={handleBook}
+                    disabled={isOwner}
+                >
+                    <Text style={styles.bookButtonText}>{isOwner ? 'Your Service' : 'Book Appointment'}</Text>
                 </TouchableOpacity>
             </View>
         </ScrollView>

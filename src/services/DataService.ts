@@ -487,5 +487,25 @@ export const DataService = {
             LoggerService.error('Get Streets Error:', error, 'DataService');
             throw error.response?.data || { message: 'Network Error' };
         }
+    },
+
+    // --- NOTIFICATIONS ---
+    getNotifications: async (userId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/notifications/${userId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Notifications Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    markNotificationRead: async (id: number) => {
+        try {
+            const response = await axios.put(`${CONFIG.API_URL}/api/notifications/${id}/read`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Read Notification Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
     }
 };

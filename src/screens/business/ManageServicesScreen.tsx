@@ -17,6 +17,7 @@ const ManageServicesScreen = ({ navigation }: any) => {
 
     // Form State
     const [name, setName] = useState('');
+    const [category, setCategory] = useState('');
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState('');
     const [duration, setDuration] = useState('');
@@ -91,6 +92,7 @@ const ManageServicesScreen = ({ navigation }: any) => {
 
             const serviceData = {
                 name,
+                category,
                 description,
                 price: parseFloat(price),
                 duration_mins: parseInt(duration) || 0,
@@ -132,6 +134,7 @@ const ManageServicesScreen = ({ navigation }: any) => {
     const handleEditService = (item: any) => {
         setEditingId(item.id);
         setName(item.name);
+        setCategory(item.category || '');
         setDescription(item.description || '');
         setPrice(String(item.price));
         setDuration(String(item.duration_mins));
@@ -161,6 +164,7 @@ const ManageServicesScreen = ({ navigation }: any) => {
 
     const resetForm = () => {
         setName('');
+        setCategory('');
         setDescription('');
         setPrice('');
         setDuration('');
@@ -261,6 +265,9 @@ const ManageServicesScreen = ({ navigation }: any) => {
 
                         <Text style={[styles.label, { color: theme.text }]}>Service Name</Text>
                         <TextInput style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]} value={name} onChangeText={setName} placeholder="e.g. Home Cleaning" placeholderTextColor={theme.subText} />
+
+                        <Text style={[styles.label, { color: theme.text }]}>Category</Text>
+                        <TextInput style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]} value={category} onChangeText={setCategory} placeholder="e.g. Plumbing, Education" placeholderTextColor={theme.subText} />
 
                         <Text style={[styles.label, { color: theme.text }]}>Price ($)</Text>
                         <TextInput style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]} value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="50" placeholderTextColor={theme.subText} />

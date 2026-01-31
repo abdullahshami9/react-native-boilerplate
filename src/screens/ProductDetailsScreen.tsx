@@ -8,12 +8,23 @@ import MiniToast, { MiniToastRef } from '../components/MiniToast';
 
 const { width } = Dimensions.get('window');
 
+import { AuthContext } from '../context/AuthContext';
+
+// ...
+
 const ProductDetailsScreen = ({ navigation, route }: any) => {
     const { product } = route.params || {};
     const { addToCart } = React.useContext(CartContext);
+    const { userInfo } = React.useContext(AuthContext);
     const toastRef = useRef<MiniToastRef>(null);
 
+    const isOwner = userInfo?.id === product?.user_id;
+
     const handleAddToCart = () => {
+        if (isOwner) {
+            toastRef.current?.show('You cannot buy your own product');
+            return;
+        }
         addToCart(product);
         toastRef.current?.show('Added to cart');
     };
@@ -82,8 +93,12 @@ const ProductDetailsScreen = ({ navigation, route }: any) => {
                     </Text>
 
                     <View style={styles.actionRow}>
-                        <TouchableOpacity style={styles.buyButton} onPress={handleAddToCart}>
-                            <Text style={styles.buyButtonText}>Add to Cart</Text>
+                        <TouchableOpacity
+                            style={[styles.buyButton, isOwner && { backgroundColor: '#A0AEC0' }]}
+                            onPress={handleAddToCart}
+                            disabled={isOwner}
+                        >
+                            <Text style={styles.buyButtonText}>{isOwner ? 'Your Product' : 'Add to Cart'}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
                             <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">

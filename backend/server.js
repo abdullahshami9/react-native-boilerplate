@@ -1215,18 +1215,28 @@ app.post('/api/services', verifyToken, (req, res) => {
     });
 });
 
-app.get('/api/services/:userId', (req, res) => {
-    const query = 'SELECT * FROM services WHERE user_id = ?';
-    dbQuery(query, [req.params.userId], req, (err, results) => {
+app.get('/api/services/discover', (req, res) => {
+    const searchTerm = req.query.search;
+    let query;
+    let params;
+
+    if (searchTerm) {
+        query = 'SELECT * FROM services WHERE name LIKE ? OR description LIKE ? LIMIT 50';
+        params = [`%${searchTerm}%`, `%${searchTerm}%`];
+    } else {
+        query = 'SELECT * FROM services LIMIT 50';
+        params = [];
+    }
+
+    dbQuery(query, params, req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, services: results });
     });
 });
 
-app.get('/api/services/discover', (req, res) => {
-    const search = req.query.search ? `%${req.query.search}%` : '%';
-    const query = 'SELECT * FROM services WHERE name LIKE ? LIMIT 50';
-    dbQuery(query, [search], req, (err, results) => {
+app.get('/api/services/:userId', (req, res) => {
+    const query = 'SELECT * FROM services WHERE user_id = ?';
+    dbQuery(query, [req.params.userId], req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, services: results });
     });

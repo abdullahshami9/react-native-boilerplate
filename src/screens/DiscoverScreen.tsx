@@ -24,15 +24,15 @@ const DiscoverScreen = ({ navigation }: any) => {
 
     React.useEffect(() => {
         fetchData();
-    }, [search]); // Debounce usually recommended, but keeping simple
+    }, [search, filterType]); // Debounce usually recommended, but keeping simple
 
     const fetchData = async () => {
         setLoading(true);
         try {
             const [usersRes, productsRes, servicesRes] = await Promise.all([
-                DataService.discoverUsers(search, userInfo?.id || 0),
-                DataService.discoverProducts(search),
-                DataService.discoverServices(search)
+                DataService.discoverUsers(search, userInfo?.id || 0, filterType),
+                DataService.discoverProducts(search, filterType),
+                DataService.discoverServices(search, filterType)
             ]);
 
             if (usersRes.success) {

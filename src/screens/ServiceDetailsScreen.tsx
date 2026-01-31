@@ -26,6 +26,16 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
         navigation.navigate('Booking', { service });
     };
 
+    const getPriceDisplay = () => {
+        if (service.service_type === 'Shift' && service.pricing_structure) {
+            try {
+                const pricing = JSON.parse(service.pricing_structure);
+                return `Day: $${pricing.day} / Night: $${pricing.night}`;
+            } catch (e) { return `$${service.price}`; }
+        }
+        return `$${service.price}`;
+    };
+
     return (
         <ScrollView style={[styles.container, { backgroundColor: theme.bg }]}>
             <CustomAlert
@@ -43,8 +53,11 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
 
             <View style={styles.content}>
                 <View style={styles.headerRow}>
-                    <Text style={[styles.title, { color: theme.text }]}>{service.name}</Text>
-                    <Text style={[styles.price, { color: theme.price }]}>${service.price}</Text>
+                    <View style={{flex: 1}}>
+                        <Text style={[styles.title, { color: theme.text }]}>{service.name}</Text>
+                        <Text style={{ color: theme.subText, fontSize: 12 }}>{service.service_type} • {service.service_location}</Text>
+                    </View>
+                    <Text style={[styles.price, { color: theme.price }]}>{getPriceDisplay()}</Text>
                 </View>
 
                 <View style={styles.metaRow}>
@@ -57,6 +70,13 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
 
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>Description</Text>
                 <Text style={[styles.description, { color: theme.subText }]}>{service.description || 'No description provided.'}</Text>
+
+                {service.cancellation_policy && (
+                    <>
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Cancellation Policy</Text>
+                        <Text style={[styles.description, { color: theme.subText }]}>{service.cancellation_policy}</Text>
+                    </>
+                )}
 
                 <View style={[styles.providerInfo, { backgroundColor: theme.cardBg }]}>
                     <Text style={[styles.providerLabel, { color: theme.subText }]}>Provided by</Text>

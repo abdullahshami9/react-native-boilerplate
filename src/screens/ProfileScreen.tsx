@@ -111,6 +111,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
     // Edit State
     const [editName, setEditName] = useState(displayedUser?.name || '');
     const [editPhone, setEditPhone] = useState(displayedUser?.phone || '');
+    const [isPrivateProfile, setIsPrivateProfile] = useState(displayedUser?.is_private === 1 || displayedUser?.is_private === true);
 
     // Data State
     const [skills, setSkills] = useState<any[]>([]);
@@ -159,6 +160,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
     const scrollY = useSharedValue(0);
 
     const theme = useTheme();
+    const [isRestricted, setIsRestricted] = useState(false);
 
     useEffect(() => {
         if (displayedUser?.id) {
@@ -166,6 +168,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
             // Sync edit state when user changes
             setEditName(displayedUser.name);
             setEditPhone(displayedUser.phone);
+            setIsPrivateProfile(displayedUser.is_private === 1 || displayedUser.is_private === true);
         }
     }, [displayedUser?.id]);
 
@@ -177,6 +180,18 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 setBusinessDetails(profileRes.business);
                 if (profileRes.user) {
                     setLocalUser(profileRes.user);
+                }
+
+                // Handle Restricted Profile
+                if (profileRes.is_restricted) {
+                    setIsRestricted(true);
+                    setSkills([]);
+                    setEducation([]);
+                    setProducts([]);
+                    setAppointments([]);
+                    return; // Stop fetching other data
+                } else {
+                    setIsRestricted(false);
                 }
             }
 
@@ -630,6 +645,28 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     </View>
                 </Animated.View>
 
+                {isRestricted ? (
+                    <View style={{ alignItems: 'center', marginTop: 20 }}>
+                        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7', alignItems: 'center', justifyContent: 'center', marginBottom: 15 }}>
+                            <Svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
+                                <Path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                                <Path d="M16 11V7a4 4 0 0 0-8 0v4" />
+                                <Path d="M5 11h14v10H5z" />
+                            </Svg>
+                        </View>
+                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.text }}>This Account is Private</Text>
+                        <Text style={{ color: theme.subText, marginTop: 5, textAlign: 'center', paddingHorizontal: 40 }}>
+                            Follow this user to see their profile details, posts, and activities.
+                        </Text>
+
+                        <View style={styles.actionRow}>
+                             <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.buttonBg || (isDarkMode ? '#37404a' : '#EDF2F7'), marginTop: 20 }]} onPress={handleChatPress}>
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                ) : (
+                    <>
                 <View style={styles.actionRow}>
                     <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.buttonBg || (isDarkMode ? '#37404a' : '#EDF2F7') }]} onPress={() => Linking.openURL(`tel:${displayedUser?.phone}`)}>
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.12 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></Svg>
@@ -833,6 +870,8 @@ const ProfileScreen = ({ navigation, route }: any) => {
                         )}
                     </View>
                 )}
+                </>
+                )}
 
                 {/* Resume Section (Individual) */}
                 {!isBusinessUser && (
@@ -1024,6 +1063,26 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                     value={isDarkMode}
                                     onValueChange={toggleTheme}
                                     trackColor={{ false: "#E2E8F0", true: "#4A9EFF" }}
+                                    thumbColor={"#fff"}
+                                />
+                            </View>
+
+                            <View style={[styles.menuItem, { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 }]}>
+                                <Text style={[styles.menuItemText, { color: theme.text }]}>Private Profile</Text>
+                                <Switch
+                                    value={isPrivateProfile}
+                                    onValueChange={async (val) => {
+                                        setIsPrivateProfile(val);
+                                        try {
+                                            await DataService.updatePrivacySettings(val);
+                                            // Refresh local user state silently or wait for next fetch
+                                            setLocalUser(prev => ({ ...prev, is_private: val ? 1 : 0 }));
+                                        } catch (e) {
+                                            setIsPrivateProfile(!val); // Revert
+                                            console.error("Failed to update privacy");
+                                        }
+                                    }}
+                                    trackColor={{ false: "#E2E8F0", true: "#E53E3E" }} // Red for private/warning
                                     thumbColor={"#fff"}
                                 />
                             </View>

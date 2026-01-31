@@ -24,6 +24,20 @@ const AddProductScreen = ({ navigation, route }: any) => {
     const [description, setDescription] = useState(editingProduct?.description || '');
     const [stock, setStock] = useState(editingProduct?.stock_quantity ? String(editingProduct.stock_quantity) : '');
 
+    // New Product Features
+    const [variants, setVariants] = useState<any[]>(editingProduct?.variants ? (typeof editingProduct.variants === 'string' ? JSON.parse(editingProduct.variants) : editingProduct.variants) : []);
+    const [deliveryFee, setDeliveryFee] = useState(editingProduct?.delivery_fee ? String(editingProduct.delivery_fee) : '');
+    const [isReturnable, setIsReturnable] = useState(editingProduct?.is_returnable !== undefined ? Boolean(editingProduct.is_returnable) : true);
+    const [wholesaleTiers, setWholesaleTiers] = useState<any[]>(editingProduct?.wholesale_tiers ? (typeof editingProduct.wholesale_tiers === 'string' ? JSON.parse(editingProduct.wholesale_tiers) : editingProduct.wholesale_tiers) : []);
+
+    // Helper State for adding variants/tiers
+    const [newVarSize, setNewVarSize] = useState('');
+    const [newVarColor, setNewVarColor] = useState('');
+    const [newVarStock, setNewVarStock] = useState('');
+
+    const [newTierMin, setNewTierMin] = useState('');
+    const [newTierPrice, setNewTierPrice] = useState('');
+
     // Image State
     const [image, setImage] = useState<any>(null); // File object for upload
     const [currentImageUrl, setCurrentImageUrl] = useState(editingProduct?.image_url ? `${CONFIG.API_URL}/${editingProduct.image_url}` : null);
@@ -67,6 +81,29 @@ const AddProductScreen = ({ navigation, route }: any) => {
         } catch (e) { console.error(e); }
     };
 
+    const handleAddVariant = () => {
+        if (!newVarSize && !newVarColor) return;
+        setVariants([...variants, { size: newVarSize, color: newVarColor, stock: newVarStock || '0' }]);
+        setNewVarSize('');
+        setNewVarColor('');
+        setNewVarStock('');
+    };
+
+    const handleRemoveVariant = (index: number) => {
+        setVariants(variants.filter((_, i) => i !== index));
+    };
+
+    const handleAddTier = () => {
+        if (!newTierMin || !newTierPrice) return;
+        setWholesaleTiers([...wholesaleTiers, { min: newTierMin, price: newTierPrice }]);
+        setNewTierMin('');
+        setNewTierPrice('');
+    };
+
+    const handleRemoveTier = (index: number) => {
+        setWholesaleTiers(wholesaleTiers.filter((_, i) => i !== index));
+    };
+
     const handleSave = async () => {
         if (!name || !price || !stock) {
             setAlertTitle("Missing Fields");
@@ -93,7 +130,11 @@ const AddProductScreen = ({ navigation, route }: any) => {
                 price: parseFloat(price),
                 description,
                 stock_quantity: parseInt(stock),
-                image_url: finalImageUrl
+                image_url: finalImageUrl,
+                variants,
+                delivery_fee: deliveryFee ? parseFloat(deliveryFee) : 0,
+                is_returnable: isReturnable,
+                wholesale_tiers: wholesaleTiers
             };
 
             let success = false;
@@ -210,6 +251,69 @@ const AddProductScreen = ({ navigation, route }: any) => {
                         placeholder="Product description..."
                         placeholderTextColor={theme.subText}
                     />
+
+                    {/* Variants Section */}
+                    <Text style={[styles.sectionHeader, { color: theme.text }]}>Product Variants</Text>
+                    <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
+                        {variants.map((v, i) => (
+                            <View key={i} style={styles.listItem}>
+                                <Text style={{ color: theme.text, flex: 1 }}>{v.size} {v.color ? `/ ${v.color}` : ''} (Stock: {v.stock})</Text>
+                                <TouchableOpacity onPress={() => handleRemoveVariant(i)}>
+                                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="red" strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                        <View style={styles.addRow}>
+                            <TextInput style={[styles.smallInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Size" placeholderTextColor={theme.subText} value={newVarSize} onChangeText={setNewVarSize} />
+                            <TextInput style={[styles.smallInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Color" placeholderTextColor={theme.subText} value={newVarColor} onChangeText={setNewVarColor} />
+                            <TextInput style={[styles.smallInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Stock" placeholderTextColor={theme.subText} keyboardType="numeric" value={newVarStock} onChangeText={setNewVarStock} />
+                            <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.primary }]} onPress={handleAddVariant}>
+                                <Text style={{ color: 'white', fontWeight: 'bold' }}>+</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* Delivery & Returns */}
+                    <Text style={[styles.sectionHeader, { color: theme.text }]}>Delivery & Returns</Text>
+                    <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                            <Text style={{ color: theme.text }}>Delivery Fee (Leave empty for Free)</Text>
+                            <TextInput
+                                style={[styles.smallInput, { width: 80, backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]}
+                                placeholder="0"
+                                placeholderTextColor={theme.subText}
+                                keyboardType="numeric"
+                                value={deliveryFee}
+                                onChangeText={setDeliveryFee}
+                            />
+                        </View>
+                        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }} onPress={() => setIsReturnable(!isReturnable)}>
+                            <Text style={{ color: theme.text }}>Accept Returns</Text>
+                            <View style={{ width: 40, height: 20, borderRadius: 10, backgroundColor: isReturnable ? theme.primary : theme.inputBorder, justifyContent: 'center', paddingHorizontal: 2 }}>
+                                <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: 'white', alignSelf: isReturnable ? 'flex-end' : 'flex-start' }} />
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Wholesale Tiers */}
+                    <Text style={[styles.sectionHeader, { color: theme.text }]}>Wholesale Pricing</Text>
+                    <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
+                        {wholesaleTiers.map((t, i) => (
+                            <View key={i} style={styles.listItem}>
+                                <Text style={{ color: theme.text, flex: 1 }}>Buy {t.min}+ for {t.price} PKR/unit</Text>
+                                <TouchableOpacity onPress={() => handleRemoveTier(i)}>
+                                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="red" strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                        <View style={styles.addRow}>
+                            <TextInput style={[styles.smallInput, { flex: 1, backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Min Qty" placeholderTextColor={theme.subText} keyboardType="numeric" value={newTierMin} onChangeText={setNewTierMin} />
+                            <TextInput style={[styles.smallInput, { flex: 1, backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Unit Price" placeholderTextColor={theme.subText} keyboardType="numeric" value={newTierPrice} onChangeText={setNewTierPrice} />
+                            <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.primary }]} onPress={handleAddTier}>
+                                <Text style={{ color: 'white', fontWeight: 'bold' }}>+</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
 
                     <TouchableOpacity style={[styles.submitButton, { backgroundColor: theme.primary }]} onPress={handleSave} disabled={loading}>
                         {loading ? (
@@ -350,6 +454,44 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         fontSize: 16,
         marginBottom: 20,
+    },
+    sectionHeader: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        marginTop: 10,
+    },
+    card: {
+        padding: 15,
+        borderRadius: 12,
+        marginBottom: 20,
+    },
+    listItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+        paddingBottom: 5
+    },
+    addRow: {
+        flexDirection: 'row',
+        gap: 10,
+        alignItems: 'center'
+    },
+    smallInput: {
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 8,
+        fontSize: 14,
+        flex: 1
+    },
+    addBtn: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        alignItems: 'center',
+        justifyContent: 'center'
     },
     textArea: {
         height: 100,

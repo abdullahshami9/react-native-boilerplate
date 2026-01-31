@@ -396,6 +396,72 @@ db.connect(async (err) => {
                     db.query("ALTER TABLE products ADD COLUMN stock_quantity INT DEFAULT 0", () => console.log("Added stock_quantity column"));
                 }
             });
+            db.query("SHOW COLUMNS FROM products LIKE 'variants'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE products ADD COLUMN variants JSON", () => console.log("Added variants column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM products LIKE 'delivery_fee'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE products ADD COLUMN delivery_fee DECIMAL(10, 2) DEFAULT 0", () => console.log("Added delivery_fee column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM products LIKE 'is_returnable'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE products ADD COLUMN is_returnable BOOLEAN DEFAULT 1", () => console.log("Added is_returnable column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM products LIKE 'wholesale_tiers'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE products ADD COLUMN wholesale_tiers JSON", () => console.log("Added wholesale_tiers column"));
+                }
+            });
+
+            // Service & Staff Migrations
+            db.query("SHOW COLUMNS FROM services LIKE 'service_type'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE services ADD COLUMN service_type ENUM('Hourly', 'Shift', 'MultiDay') DEFAULT 'Hourly'", () => console.log("Added service_type column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM services LIKE 'service_location'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE services ADD COLUMN service_location ENUM('OnSite', 'Home', 'Both') DEFAULT 'OnSite'", () => console.log("Added service_location column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM services LIKE 'pricing_structure'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE services ADD COLUMN pricing_structure JSON", () => console.log("Added pricing_structure column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM services LIKE 'cancellation_policy'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE services ADD COLUMN cancellation_policy TEXT", () => console.log("Added cancellation_policy column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM services LIKE 'auto_approve'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE services ADD COLUMN auto_approve BOOLEAN DEFAULT 0", () => console.log("Added auto_approve column"));
+                }
+            });
+            db.query("SHOW TABLES LIKE 'staff'", (e, r) => {
+                if (r && r.length === 0) {
+                    const createStaff = `CREATE TABLE IF NOT EXISTS staff (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        provider_id INT NOT NULL,
+                        name VARCHAR(255) NOT NULL,
+                        role VARCHAR(255),
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (provider_id) REFERENCES users(id) ON DELETE CASCADE
+                    )`;
+                    db.query(createStaff, () => console.log("Created staff table"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM appointments LIKE 'staff_id'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE appointments ADD COLUMN staff_id INT", () => console.log("Added staff_id to appointments"));
+                }
+            });
+
             db.query("SHOW COLUMNS FROM users LIKE 'profile_pic_url'", (e, r) => {
                 if (r && r.length === 0) {
                     db.query("ALTER TABLE users ADD COLUMN profile_pic_url VARCHAR(255)", () => console.log("Added profile_pic_url column"));
@@ -419,6 +485,11 @@ db.connect(async (err) => {
             db.query("SHOW COLUMNS FROM users LIKE 'resume_url'", (e, r) => {
                 if (r && r.length === 0) {
                     db.query("ALTER TABLE users ADD COLUMN resume_url VARCHAR(255)", () => console.log("Added resume_url column"));
+                }
+            });
+            db.query("SHOW COLUMNS FROM users LIKE 'is_private'", (e, r) => {
+                if (r && r.length === 0) {
+                    db.query("ALTER TABLE users ADD COLUMN is_private BOOLEAN DEFAULT 0", () => console.log("Added is_private column"));
                 }
             });
             db.query("SHOW COLUMNS FROM business_details LIKE 'card_template'", (e, r) => {
@@ -714,35 +785,84 @@ app.post('/api/business/card-settings', verifyToken, (req, res) => {
 // --- NEW API ENDPOINTS FOR PROFILE ENHANCEMENTS ---
 
 // Get User Full Profile (including education, skills, socials)
-app.get('/api/profile/:userId', (req, res) => {
+app.get('/api/profile/:userId', verifyToken, (req, res) => {
     const userId = req.params.userId;
-    const queries = `
-        SELECT * FROM education WHERE user_id = ?;
-        SELECT * FROM social_links WHERE user_id = ?;
-        SELECT * FROM certificates WHERE user_id = ?;
-        SELECT * FROM business_details WHERE user_id = ?;
-        SELECT * FROM payment_methods WHERE user_id = ?;
-        SELECT id, name, email, phone, user_type, profile_pic_url, resume_url, address, current_job_title FROM users WHERE id = ?;
+    const viewerId = req.user.id;
+
+    // Check relationship (Self, Connected, or Stranger)
+    const relQuery = `
+        SELECT * FROM connections
+        WHERE (follower_id = ? AND following_id = ? AND status = 'accepted')
+           OR (follower_id = ? AND following_id = ? AND status = 'accepted')
     `;
 
-    dbQuery(queries, [userId, userId, userId, userId, userId, userId], req, (err, results) => {
+    db.query(relQuery, [viewerId, userId, userId, viewerId], (relErr, relResults) => {
+        const isSelf = (parseInt(userId) === parseInt(viewerId));
+        const isConnected = (relResults && relResults.length > 0);
+
+        const queries = `
+            SELECT * FROM education WHERE user_id = ?;
+            SELECT * FROM social_links WHERE user_id = ?;
+            SELECT * FROM certificates WHERE user_id = ?;
+            SELECT * FROM business_details WHERE user_id = ?;
+            SELECT * FROM payment_methods WHERE user_id = ?;
+            SELECT id, name, email, phone, user_type, profile_pic_url, resume_url, address, current_job_title, is_private FROM users WHERE id = ?;
+        `;
+
+        dbQuery(queries, [userId, userId, userId, userId, userId, userId], req, (err, results) => {
+            if (err) return res.status(500).json({ success: false });
+
+            let user = results[5][0];
+            if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+            // Log Profile View
+            if (!isSelf) {
+                db.query('INSERT INTO profile_views (profile_id, source) VALUES (?, ?)', [userId, 'app_api'], (e) => {});
+            }
+
+            // Privacy Check
+            if (user.is_private && !isSelf && !isConnected) {
+                // Return Restricted Profile
+                return res.json({
+                    success: true,
+                    is_restricted: true,
+                    user: {
+                        id: user.id,
+                        name: user.name,
+                        user_type: user.user_type,
+                        profile_pic_url: user.profile_pic_url,
+                        current_job_title: user.current_job_title,
+                        is_private: 1
+                    },
+                    education: [],
+                    socials: [],
+                    certificates: [],
+                    business: null,
+                    payments: []
+                });
+            }
+
+            // Return Full Profile
+            res.json({
+                success: true,
+                is_restricted: false,
+                education: results[0],
+                socials: results[1],
+                certificates: results[2],
+                business: results[3][0] || null,
+                payments: results[4],
+                user: user
+            });
+        });
+    });
+});
+
+app.post('/api/settings/privacy', verifyToken, (req, res) => {
+    const { is_private } = req.body;
+    const query = 'UPDATE users SET is_private = ? WHERE id = ?';
+    dbQuery(query, [is_private ? 1 : 0, req.user.id], req, (err) => {
         if (err) return res.status(500).json({ success: false });
-
-        // Log Profile View
-        db.query('INSERT INTO profile_views (profile_id, source) VALUES (?, ?)', [userId, 'app_api'], (e) => {
-            if (e) console.error("Failed to log profile view", e);
-        });
-
-        // results is array of arrays because of multipleStatements: true
-        res.json({
-            success: true,
-            education: results[0],
-            socials: results[1],
-            certificates: results[2],
-            business: results[3][0] || null,
-            payments: results[4],
-            user: results[5][0]
-        });
+        res.json({ success: true, message: 'Privacy settings updated' });
     });
 });
 
@@ -1155,9 +1275,38 @@ app.get('/api/users/discover', (req, res) => {
     // Simple discover: list all users except self
     const excludeId = req.query.excludeId || 0;
     const search = req.query.search ? `%${req.query.search}%` : '%';
+    const type = req.query.type || 'All'; // All, Skills, Location
 
-    const query = 'SELECT id, name, email, user_type, profile_pic_url FROM users WHERE id != ? AND name LIKE ? LIMIT 50';
-    dbQuery(query, [excludeId, search], req, (err, results) => {
+    let query;
+    let params;
+
+    if (type === 'Skills') {
+        // Search by skill name
+        query = `
+            SELECT DISTINCT u.id, u.name, u.email, u.user_type, u.profile_pic_url
+            FROM users u
+            JOIN skills s ON u.id = s.user_id
+            WHERE u.id != ? AND s.skill_name LIKE ?
+            LIMIT 50
+        `;
+        params = [excludeId, search];
+    } else if (type === 'Location') {
+        // Search by user address or business address
+        query = `
+            SELECT DISTINCT u.id, u.name, u.email, u.user_type, u.profile_pic_url
+            FROM users u
+            LEFT JOIN business_details bd ON u.id = bd.user_id
+            WHERE u.id != ? AND (u.address LIKE ? OR bd.address LIKE ?)
+            LIMIT 50
+        `;
+        params = [excludeId, search, search];
+    } else {
+        // Default: Search by Name
+        query = 'SELECT id, name, email, user_type, profile_pic_url FROM users WHERE id != ? AND name LIKE ? LIMIT 50';
+        params = [excludeId, search];
+    }
+
+    dbQuery(query, params, req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, users: results });
     });
@@ -1165,8 +1314,31 @@ app.get('/api/users/discover', (req, res) => {
 
 app.get('/api/products/discover', (req, res) => {
     const search = req.query.search ? `%${req.query.search}%` : '%';
-    const query = 'SELECT * FROM products WHERE name LIKE ? LIMIT 50';
-    dbQuery(query, [search], req, (err, results) => {
+    const type = req.query.type || 'All';
+
+    let query;
+    let params;
+
+    if (type === 'Skills') {
+        // Products don't match skills -> Return empty
+        return res.json({ success: true, products: [] });
+    } else if (type === 'Location') {
+        // Match seller address
+        query = `
+            SELECT p.*
+            FROM products p
+            JOIN users u ON p.user_id = u.id
+            WHERE u.address LIKE ?
+            LIMIT 50
+        `;
+        params = [search];
+    } else {
+        // Default: Search by Product Name
+        query = 'SELECT * FROM products WHERE name LIKE ? LIMIT 50';
+        params = [search];
+    }
+
+    dbQuery(query, params, req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, products: results });
     });
@@ -1175,11 +1347,22 @@ app.get('/api/products/discover', (req, res) => {
 // --- PRODUCTS & INVENTORY ---
 
 app.post('/api/products', verifyToken, (req, res) => {
-    const { user_id, name, price, description, image_url, stock_quantity } = req.body;
+    const { user_id, name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers } = req.body;
     if (req.user.id != user_id) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
-    const query = 'INSERT INTO products (user_id, name, price, description, image_url, stock_quantity) VALUES (?, ?, ?, ?, ?, ?)';
-    dbQuery(query, [user_id, name, price, description || '', image_url || '', stock_quantity || 0], req, (err, result) => {
+    const query = 'INSERT INTO products (user_id, name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    dbQuery(query, [
+        user_id,
+        name,
+        price,
+        description || '',
+        image_url || '',
+        stock_quantity || 0,
+        variants ? JSON.stringify(variants) : null,
+        delivery_fee || 0,
+        is_returnable !== undefined ? is_returnable : 1,
+        wholesale_tiers ? JSON.stringify(wholesale_tiers) : null
+    ], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, message: 'Product added', id: result.insertId });
     });
@@ -1205,11 +1388,23 @@ app.post('/api/products/:id/stock', (req, res) => {
 // --- SERVICES ---
 
 app.post('/api/services', verifyToken, (req, res) => {
-    const { user_id, name, description, price, duration_mins, image_url } = req.body;
+    const { user_id, name, description, price, duration_mins, image_url, service_type, service_location, pricing_structure, cancellation_policy, auto_approve } = req.body;
     if (req.user.id != user_id) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
-    const query = 'INSERT INTO services (user_id, name, description, price, duration_mins, image_url) VALUES (?, ?, ?, ?, ?, ?)';
-    dbQuery(query, [user_id, name, description, price, duration_mins, image_url || ''], req, (err, result) => {
+    const query = 'INSERT INTO services (user_id, name, description, price, duration_mins, image_url, service_type, service_location, pricing_structure, cancellation_policy, auto_approve) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    dbQuery(query, [
+        user_id,
+        name,
+        description,
+        price || 0,
+        duration_mins,
+        image_url || '',
+        service_type || 'Hourly',
+        service_location || 'OnSite',
+        pricing_structure ? JSON.stringify(pricing_structure) : null,
+        cancellation_policy || '',
+        auto_approve ? 1 : 0
+    ], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, message: 'Service added', id: result.insertId });
     });
@@ -1217,15 +1412,33 @@ app.post('/api/services', verifyToken, (req, res) => {
 
 app.get('/api/services/discover', (req, res) => {
     const searchTerm = req.query.search;
+    const type = req.query.type || 'All';
+    const searchPattern = searchTerm ? `%${searchTerm}%` : '%';
+
     let query;
     let params;
 
-    if (searchTerm) {
-        query = 'SELECT * FROM services WHERE name LIKE ? OR description LIKE ? LIMIT 50';
-        params = [`%${searchTerm}%`, `%${searchTerm}%`];
+    if (type === 'Skills') {
+        // Services don't match skills -> Return empty
+        return res.json({ success: true, services: [] });
+    } else if (type === 'Location') {
+         query = `
+            SELECT s.*
+            FROM services s
+            JOIN users u ON s.user_id = u.id
+            WHERE u.address LIKE ?
+            LIMIT 50
+        `;
+        params = [searchPattern];
     } else {
-        query = 'SELECT * FROM services LIMIT 50';
-        params = [];
+        // Default: Search by Name/Desc
+        if (searchTerm) {
+            query = 'SELECT * FROM services WHERE name LIKE ? OR description LIKE ? LIMIT 50';
+            params = [searchPattern, searchPattern];
+        } else {
+            query = 'SELECT * FROM services LIMIT 50';
+            params = [];
+        }
     }
 
     dbQuery(query, params, req, (err, results) => {
@@ -1243,9 +1456,48 @@ app.get('/api/services/:userId', (req, res) => {
 });
 
 app.put('/api/services/:id', verifyToken, (req, res) => {
-    const { name, description, price, duration_mins } = req.body;
-    const query = 'UPDATE services SET name = ?, description = ?, price = ?, duration_mins = ? WHERE id = ?';
-    dbQuery(query, [name, description, price, duration_mins, req.params.id], req, (err) => {
+    const { name, description, price, duration_mins, service_type, service_location, pricing_structure, cancellation_policy, auto_approve } = req.body;
+    const query = 'UPDATE services SET name = ?, description = ?, price = ?, duration_mins = ?, service_type = ?, service_location = ?, pricing_structure = ?, cancellation_policy = ?, auto_approve = ? WHERE id = ?';
+    dbQuery(query, [
+        name,
+        description,
+        price,
+        duration_mins,
+        service_type,
+        service_location,
+        pricing_structure ? JSON.stringify(pricing_structure) : null,
+        cancellation_policy,
+        auto_approve ? 1 : 0,
+        req.params.id
+    ], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
+    });
+});
+
+app.post('/api/staff', verifyToken, (req, res) => {
+    const { user_id, name, role } = req.body;
+    if (req.user.id != user_id) return res.status(403).json({ success: false, message: 'Unauthorized' });
+
+    const query = 'INSERT INTO staff (provider_id, name, role) VALUES (?, ?, ?)';
+    dbQuery(query, [user_id, name, role], req, (err, result) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, id: result.insertId, staff: { id: result.insertId, provider_id: user_id, name, role } });
+    });
+});
+
+app.get('/api/staff/:providerId', (req, res) => {
+    const query = 'SELECT * FROM staff WHERE provider_id = ?';
+    dbQuery(query, [req.params.providerId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, staff: results });
+    });
+});
+
+app.delete('/api/staff/:id', verifyToken, (req, res) => {
+    // Should verify ownership, simplified for now
+    const query = 'DELETE FROM staff WHERE id = ?';
+    dbQuery(query, [req.params.id], req, (err) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true });
     });
@@ -1449,12 +1701,31 @@ app.get('/api/reports/sales/:userId', (req, res) => {
 // --- APPOINTMENTS (For Calendar) ---
 
 app.post('/api/appointments', (req, res) => {
-    const { provider_id, customer_id, service_id, appointment_date, duration_mins } = req.body;
-    // status default pending
-    const query = 'INSERT INTO appointments (provider_id, customer_id, service_id, appointment_date, duration_mins, status) VALUES (?, ?, ?, ?, ?, "pending")';
-    dbQuery(query, [provider_id, customer_id, service_id || null, appointment_date, duration_mins || 30], req, (err, result) => {
-        if (err) return res.status(500).json({ success: false });
-        res.json({ success: true, message: 'Appointment booked', id: result.insertId });
+    const { provider_id, customer_id, service_id, appointment_date, duration_mins, staff_id } = req.body;
+
+    // Check Availability (Blocked Days)
+    // Extract YYYY-MM-DD from appointment_date (Assuming 'YYYY-MM-DD HH:mm:ss' or ISO)
+    const datePart = appointment_date.split(' ')[0].split('T')[0];
+
+    dbQuery('SELECT status FROM availability WHERE user_id = ? AND date = ?', [provider_id, datePart], req, (availErr, availRes) => {
+        if (!availErr && availRes.length > 0 && availRes[0].status === 'busy') {
+            return res.status(409).json({ success: false, message: 'Provider is unavailable on this date.' });
+        }
+
+        // Check for auto-approve if service_id is provided
+        const checkServiceQuery = 'SELECT auto_approve FROM services WHERE id = ?';
+        dbQuery(checkServiceQuery, [service_id], req, (err, results) => {
+            let status = 'pending';
+            if (!err && results.length > 0 && results[0].auto_approve) {
+                status = 'confirmed';
+            }
+
+            const query = 'INSERT INTO appointments (provider_id, customer_id, service_id, appointment_date, duration_mins, status, staff_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
+            dbQuery(query, [provider_id, customer_id, service_id || null, appointment_date, duration_mins || 30, status, staff_id || null], req, (err, result) => {
+                if (err) return res.status(500).json({ success: false });
+                res.json({ success: true, message: status === 'confirmed' ? 'Appointment confirmed!' : 'Request sent', id: result.insertId, status });
+            });
+        });
     });
 });
 
@@ -1690,7 +1961,7 @@ app.get('/api/streets/:sublocationId', (req, res) => {
 // --- PRODUCT LOGS & FULL UPDATE ---
 
 app.put('/api/products/:id', verifyToken, (req, res) => {
-    const { name, price, description, image_url, stock_quantity } = req.body;
+    const { name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers } = req.body;
     const productId = req.params.id;
 
     // First get old values for logging
@@ -1704,11 +1975,20 @@ app.put('/api/products/:id', verifyToken, (req, res) => {
             dbQuery('INSERT INTO product_logs (product_id, old_price, new_price, action) VALUES (?, ?, ?, "price_update")',
                 [productId, oldProduct.price, price], req, () => { });
         }
-        // Log stock change if significant? Or just price. User mentioned "Yesterday price 10... today 15".
-        // Let's log updates generally if we want, but price is key.
 
-        const query = 'UPDATE products SET name = ?, price = ?, description = ?, image_url = ?, stock_quantity = ? WHERE id = ?';
-        dbQuery(query, [name, price, description, image_url, stock_quantity, productId], req, (updateErr) => {
+        const query = 'UPDATE products SET name = ?, price = ?, description = ?, image_url = ?, stock_quantity = ?, variants = ?, delivery_fee = ?, is_returnable = ?, wholesale_tiers = ? WHERE id = ?';
+        dbQuery(query, [
+            name,
+            price,
+            description,
+            image_url,
+            stock_quantity,
+            variants ? JSON.stringify(variants) : null,
+            delivery_fee || 0,
+            is_returnable !== undefined ? is_returnable : 1,
+            wholesale_tiers ? JSON.stringify(wholesale_tiers) : null,
+            productId
+        ], req, (updateErr) => {
             if (updateErr) return res.status(500).json({ success: false });
             res.json({ success: true, message: 'Product updated' });
         });

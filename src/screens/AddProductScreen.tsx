@@ -267,7 +267,7 @@ const AddProductScreen = ({ navigation, route }: any) => {
                             <TextInput style={[styles.smallInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Size" placeholderTextColor={theme.subText} value={newVarSize} onChangeText={setNewVarSize} />
                             <TextInput style={[styles.smallInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Color" placeholderTextColor={theme.subText} value={newVarColor} onChangeText={setNewVarColor} />
                             <TextInput style={[styles.smallInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Stock" placeholderTextColor={theme.subText} keyboardType="numeric" value={newVarStock} onChangeText={setNewVarStock} />
-                            <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.primary }]} onPress={handleAddVariant}>
+                            <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.secondary }]} onPress={handleAddVariant}>
                                 <Text style={{ color: 'white', fontWeight: 'bold' }}>+</Text>
                             </TouchableOpacity>
                         </View>
@@ -289,7 +289,7 @@ const AddProductScreen = ({ navigation, route }: any) => {
                         </View>
                         <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }} onPress={() => setIsReturnable(!isReturnable)}>
                             <Text style={{ color: theme.text }}>Accept Returns</Text>
-                            <View style={{ width: 40, height: 20, borderRadius: 10, backgroundColor: isReturnable ? theme.primary : theme.inputBorder, justifyContent: 'center', paddingHorizontal: 2 }}>
+                            <View style={{ width: 40, height: 20, borderRadius: 10, backgroundColor: isReturnable ? theme.secondary : theme.inputBorder, justifyContent: 'center', paddingHorizontal: 2 }}>
                                 <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: 'white', alignSelf: isReturnable ? 'flex-end' : 'flex-start' }} />
                             </View>
                         </TouchableOpacity>
@@ -309,13 +309,13 @@ const AddProductScreen = ({ navigation, route }: any) => {
                         <View style={styles.addRow}>
                             <TextInput style={[styles.smallInput, { flex: 1, backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Min Qty" placeholderTextColor={theme.subText} keyboardType="numeric" value={newTierMin} onChangeText={setNewTierMin} />
                             <TextInput style={[styles.smallInput, { flex: 1, backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Unit Price" placeholderTextColor={theme.subText} keyboardType="numeric" value={newTierPrice} onChangeText={setNewTierPrice} />
-                            <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.primary }]} onPress={handleAddTier}>
+                            <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.secondary }]} onPress={handleAddTier}>
                                 <Text style={{ color: 'white', fontWeight: 'bold' }}>+</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    <TouchableOpacity style={[styles.submitButton, { backgroundColor: theme.primary }]} onPress={handleSave} disabled={loading}>
+                    <TouchableOpacity style={[styles.submitButton, { backgroundColor: theme.secondary }]} onPress={handleSave} disabled={loading}>
                         {loading ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
@@ -326,7 +326,7 @@ const AddProductScreen = ({ navigation, route }: any) => {
                     {editingProduct && (
                         <View style={{ marginTop: 30 }}>
                             <TouchableOpacity onPress={handleFetchLogs} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                                <Text style={{ color: theme.primary, fontWeight: 'bold' }}>{showLogs ? 'Hide History' : 'View Price/Stock History'}</Text>
+                                <Text style={{ color: theme.secondary, fontWeight: 'bold' }}>{showLogs ? 'Hide History' : 'View Price/Stock History'}</Text>
                             </TouchableOpacity>
                             {showLogs && (
                                 <View style={{ marginTop: 15, backgroundColor: theme.inputBg, padding: 15, borderRadius: 10 }}>
@@ -334,7 +334,7 @@ const AddProductScreen = ({ navigation, route }: any) => {
                                         logs.map((log, i) => (
                                             <View key={i} style={{ marginBottom: 10, borderBottomWidth: 1, borderBottomColor: theme.borderColor, paddingBottom: 5 }}>
                                                 <Text style={{ color: theme.text, fontWeight: '600' }}>{new Date(log.change_date).toLocaleDateString()} {new Date(log.change_date).toLocaleTimeString()}</Text>
-                                                <Text style={{ color: theme.subText }}>Price: {log.old_price} -> {log.new_price}</Text>
+                                                <Text style={{ color: theme.subText }}>Price: {log.old_price} {'->'} {log.new_price}</Text>
                                             </View>
                                         ))
                                     }
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
         marginBottom: 10
     },
     assetItem: {
-        flex: 1/3,
+        flex: 1 / 3,
         height: 80,
         padding: 5,
         margin: 2,

@@ -14,6 +14,7 @@ const { verifyToken, JWT_SECRET } = require('./middleware/auth');
 const sequelize = require('./config/database');
 const BusinessDetails = require('./models/BusinessDetails');
 const IdentityScan = require('./models/IdentityScan');
+const axios = require('axios');
 
 const app = express();
 const PORT = 3000;
@@ -2064,8 +2065,6 @@ app.post('/api/tunnel/personal/additional', (req, res) => {
         const RAAST_API_URL = process.env.RAAST_API_URL;
         const RAAST_API_KEY = process.env.RAAST_API_KEY;
 
-        // If RAAST_API_URL or RAAST_API_KEY are not set, or RAAST_API_KEY is the placeholder,
-        // the system will fall back to a dynamic mock response.
         try {
             if (requestData.action === 'merchantInquiry') {
                 const ref = requestData.referenceNumber;
@@ -2075,52 +2074,28 @@ app.post('/api/tunnel/personal/additional', (req, res) => {
                     throw new Error("Invalid Reference Number Format");
                 }
 
-                // 1. REAL UPSTREAM CALL (If Configured)
-                if (RAAST_API_URL && RAAST_API_KEY && RAAST_API_KEY !== 'YOUR_RAAST_API_KEY') {
-                    try {
-                        const axiosResponse = await axios.post(RAAST_API_URL, {
-                            referenceNumber: ref,
-                            merchantId: process.env.MERCHANT_ID || 'DEMO_MERCHANT'
-                        }, {
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${RAAST_API_KEY}`,
-                                'X-Reference-Id': `${Date.now()}`
-                            }
-                        });
+                // DIRECT REAL CALL (No Dummy Fallback)
+                try {
+                    const axiosResponse = await axios.post(RAAST_API_URL, {
+                        referenceNumber: ref,
+                        merchantId: process.env.MERCHANT_ID || 'DEMO_MERCHANT'
+                    }, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${RAAST_API_KEY}`,
+                            'X-Reference-Id': `${Date.now()}`
+                        }
+                    });
 
-                        logApiCall(endpoint, requestData, axiosResponse.data, axiosResponse.status);
-                        return res.json(axiosResponse.data);
+                    logApiCall(endpoint, requestData, axiosResponse.data, axiosResponse.status);
+                    return res.json(axiosResponse.data);
 
-                    } catch (upstreamError) {
-                        const errorMessage = upstreamError.response?.data?.message || upstreamError.message;
-                        logApiCall(endpoint, requestData, { message: errorMessage }, 500);
-                        throw new Error(`Upstream Error: ${errorMessage}`);
-                    }
+                } catch (upstreamError) {
+                    const errorMessage = upstreamError.response?.data?.message || upstreamError.message;
+                    logApiCall(endpoint, requestData, { message: errorMessage }, 500);
+                    // Return the actual error to the user for verification
+                    return res.status(500).json({ status: "error", message: `Upstream Error: ${errorMessage}`, details: upstreamError.response?.data });
                 }
-
-                // 2. DYNAMIC SIMULATION (Fallback if No Keys)
-                // User requested "No hardcoded data" & "Proceed without keys".
-                // We generate a deterministic but realistic response based on the number.
-
-                const mockNames = ["ALI KHAN", "SARA AHMED", "M. OMER", "FATIMA BIBI", "USMAN GHAZI", "ZAINAB MALIK"];
-                const lastDigit = parseInt(ref.slice(-1));
-                const nameIndex = lastDigit % mockNames.length;
-                const generatedName = `${mockNames[nameIndex]} (Raast Demo)`;
-
-                const mockResponse = {
-                    status: "success",
-                    responseCode: "00",
-                    consumerName: generatedName,
-                    accountType: "Wallet",
-                    bankName: lastDigit % 2 === 0 ? "Nayapay" : "Easypaisa"
-                };
-
-                logApiCall(endpoint, requestData, mockResponse, 200);
-
-                // Add a small artificial delay to simulate network
-                setTimeout(() => res.json(mockResponse), 800);
-                return;
 
             } else {
                 throw new Error("Invalid Action");

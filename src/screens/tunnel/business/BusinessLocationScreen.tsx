@@ -138,9 +138,9 @@ const BusinessLocationScreen = ({ navigation }: any) => {
                 <View style={styles.locationContainer}>
                     <View style={styles.locationHeader}>
                         <View style={styles.iconCircle}>
-                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2B6CB0" strokeWidth="2">
+                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A5568" strokeWidth="2">
                                 <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                <Path d="M12 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+                                <Circle cx="12" cy="10" r="3" />
                             </Svg>
                         </View>
                         <Text style={styles.locationTitle}>Business Coordinates</Text>
@@ -208,13 +208,19 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     locationContainer: {
-        backgroundColor: '#EBF8FF',
+        backgroundColor: '#F7FAFC', // Was #EBF8FF
         borderRadius: 20,
         padding: 20,
         alignItems: 'center',
         marginBottom: 10,
         borderWidth: 1,
-        borderColor: '#BEE3F8'
+        borderColor: '#E2E8F0', // Was #BEE3F8
+        // Added shadow for "Card" feel without being blue
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     locationHeader: {
         flexDirection: 'row',
@@ -222,10 +228,10 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     iconCircle: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#BEE3F8',
+        width: 44, // Slightly larger
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#EDF2F7', // Was #BEE3F8
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 10,
@@ -233,22 +239,25 @@ const styles = StyleSheet.create({
     locationTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#2C5282',
+        color: '#2D3748', // Was #2C5282
     },
     coordsBox: {
         flexDirection: 'row',
         gap: 20,
         marginBottom: 15,
         backgroundColor: 'white',
-        padding: 10,
-        borderRadius: 10,
+        padding: 12, // Increased padding slightly
+        borderRadius: 12,
         width: '100%',
         justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#EDF2F7', // Added subtle border
     },
     coordText: {
-        fontSize: 16,
+        fontSize: 15,
         color: '#4A5568',
-        fontWeight: '500',
+        fontWeight: '600',
+        fontVariant: ['tabular-nums'],
     },
     noCoordsText: {
         color: '#718096',

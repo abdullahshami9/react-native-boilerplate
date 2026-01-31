@@ -187,7 +187,7 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({ onAddressChange, init
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Select {currentStep}</Text>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
                                 <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
                             </TouchableOpacity>
                         </View>
@@ -261,14 +261,22 @@ const styles = StyleSheet.create({
     },
     modalHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        justifyContent: 'center',
         marginBottom: 15,
+        position: 'relative',
+        minHeight: 40,
+    },
+    closeButton: {
+        position: 'absolute',
+        right: 0,
+        padding: 4,
     },
     modalTitle: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#2D3748',
+        textAlign: 'center',
     },
     searchInput: {
         backgroundColor: '#F7FAFC',
@@ -282,10 +290,13 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#EDF2F7',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     listItemText: {
         fontSize: 16,
         color: '#2D3748',
+        textAlign: 'center',
     },
 });
 

@@ -12,8 +12,12 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
     const [category, setCategory] = useState('');
     const [customIndustry, setCustomIndustry] = useState('');
     const [customCategory, setCustomCategory] = useState('');
-    const [showIndustryModal, setShowIndustryModal] = useState(false);
-    const [showCategoryModal, setShowCategoryModal] = useState(false);
+
+    // Modal & Selection State
+    const [modalVisible, setModalVisible] = useState(false);
+    const [currentStep, setCurrentStep] = useState<'Industry' | 'Category' | null>(null);
+    const [searchText, setSearchText] = useState('');
+
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
     const INDUSTRIES = [
@@ -24,9 +28,63 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
         { name: 'Other', children: [] }
     ];
 
-    const selectedIndustryData = INDUSTRIES.find(i => i.name === industry);
-    const categories = selectedIndustryData ? selectedIndustryData.children : [];
     const [loading, setLoading] = useState(false);
+
+    const openSelection = (step: 'Industry' | 'Category') => {
+        setCurrentStep(step);
+        setSearchText('');
+        setModalVisible(true);
+    };
+
+    const handleSelect = (item: any) => {
+        setSearchText('');
+
+        if (currentStep === 'Industry') {
+            const industryName = item.name;
+            setIndustry(industryName);
+            setCategory(''); // Reset category on industry change
+            setCustomIndustry('');
+            setCustomCategory('');
+
+            // Auto-transition logic (Always transition, even for Other)
+            setCurrentStep('Category');
+        } else if (currentStep === 'Category') {
+            setCategory(item);
+            setModalVisible(false); // Close on final selection
+        }
+    };
+
+    const getListData = () => {
+        let data: any[] = [];
+
+        if (currentStep === 'Industry') {
+            data = INDUSTRIES;
+        } else if (currentStep === 'Category') {
+            const selectedIndustryData = INDUSTRIES.find(i => i.name === industry);
+            data = selectedIndustryData ? selectedIndustryData.children : [];
+            // Add 'Other' only if not already present (though children array is usually strings)
+            // But we want 'Other' as an option for category too
+            if (!data.includes('Other')) data = [...data, 'Other'];
+        }
+
+        if (searchText) {
+            const lower = searchText.toLowerCase();
+            return data.filter(d => {
+                const name = typeof d === 'string' ? d : d.name;
+                return name.toLowerCase().includes(lower);
+            });
+        }
+        return data;
+    };
+
+    const renderItem = ({ item }: any) => {
+        const name = typeof item === 'string' ? item : item.name;
+        return (
+            <TouchableOpacity style={styles.modalItem} onPress={() => handleSelect(item)}>
+                <Text style={styles.modalItemText}>{name}</Text>
+            </TouchableOpacity>
+        );
+    };
 
     const handleNext = async () => {
         const finalIndustry = industry === 'Other' ? customIndustry : industry;
@@ -37,12 +95,12 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
         }
 
         if (!finalIndustry || !finalIndustry.trim()) {
-            setAlertConfig({ visible: true, title: 'Missing Details', message: 'Please select or enter your Industry.', type: 'error' });
+            setAlertConfig({ visible: true, title: 'Missing Details', message: 'Please select or enter your Industry.', type: 'error', onConfirm: undefined });
             return;
         }
 
         if (!finalCategory || !finalCategory.trim()) {
-            setAlertConfig({ visible: true, title: 'Missing Details', message: 'Please select or enter your Category.', type: 'error' });
+            setAlertConfig({ visible: true, title: 'Missing Details', message: 'Please select or enter your Category.', type: 'error', onConfirm: undefined });
             return;
         }
 
@@ -52,10 +110,10 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
                 industry: finalIndustry,
                 category: finalCategory
             });
-            navigation.navigate('IdentityGate');
+            navigation.navigate('BusinessTypeContact');
         } catch (error) {
             console.error(error);
-            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error' });
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error', onConfirm: undefined });
         } finally {
             setLoading(false);
         }
@@ -65,7 +123,7 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
         <TunnelWrapper title="Business Profile - Industry" onBack={() => navigation.goBack()}>
             <View style={styles.container}>
 
-                <TouchableOpacity style={styles.inputGroup} onPress={() => setShowIndustryModal(true)}>
+                <TouchableOpacity style={styles.inputGroup} onPress={() => openSelection('Industry')}>
                     <Text style={[styles.input, !industry && styles.placeholderText]}>
                         {industry || "Select Parent Industry"}
                     </Text>
@@ -89,12 +147,12 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
                 )}
 
                 <TouchableOpacity
-                    style={[styles.inputGroup, { marginTop: 16, opacity: !industry ? 0.5 : 1 }]}
-                    onPress={() => industry && setShowCategoryModal(true)}
-                    disabled={!industry}
+                    style={[styles.inputGroup, { marginTop: 16, opacity: (!industry || industry === 'Other') ? 0.5 : 1 }]}
+                    onPress={() => (industry && industry !== 'Other') && openSelection('Category')}
+                    disabled={!industry || industry === 'Other'}
                 >
                     <Text style={[styles.input, !category && styles.placeholderText]}>
-                        {industry === 'Other' ? "Enter Custom Category below" : (category || "Select Child Industry")}
+                        {industry === 'Other' ? "Custom Category (Enter below)" : (category || "Select Child Industry")}
                     </Text>
                     <View style={styles.inputIcon}>
                         <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2">
@@ -103,7 +161,7 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
                     </View>
                 </TouchableOpacity>
 
-                {(industry === 'Other' || (industry && category === 'Other')) && (
+                {(industry === 'Other' || category === 'Other') && (
                     <View style={[styles.inputGroup, { marginTop: 10 }]}>
                         <TextInput
                             style={styles.input}
@@ -115,59 +173,33 @@ const BusinessIndustryScreen = ({ navigation }: any) => {
                     </View>
                 )}
 
-                {/* Industry Modal */}
-                <Modal visible={showIndustryModal} transparent animationType="slide">
+                {/* Unified Selection Modal */}
+                <Modal visible={modalVisible} transparent animationType="slide">
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>Select Industry</Text>
-                            <FlatList
-                                data={INDUSTRIES}
-                                keyExtractor={(item) => item.name}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        style={styles.modalItem}
-                                        onPress={() => {
-                                            setIndustry(item.name);
-                                            setCategory('');
-                                            setCustomIndustry('');
-                                            setCustomCategory('');
-                                            setShowIndustryModal(false);
-                                        }}
-                                    >
-                                        <Text style={styles.modalItemText}>{item.name}</Text>
-                                    </TouchableOpacity>
-                                )}
-                            />
-                            <TouchableOpacity style={styles.closeButton} onPress={() => setShowIndustryModal(false)}>
-                                <Text style={styles.closeButtonText}>Close</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Modal>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Select {currentStep}</Text>
+                                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
+                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
+                                </TouchableOpacity>
+                            </View>
 
-                {/* Category Modal */}
-                <Modal visible={showCategoryModal} transparent animationType="slide">
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>Select Category</Text>
-                            <FlatList
-                                data={industry === 'Other' ? ['Other'] : [...categories, 'Other']}
-                                keyExtractor={(item, index) => item + index}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        style={styles.modalItem}
-                                        onPress={() => {
-                                            setCategory(item);
-                                            setShowCategoryModal(false);
-                                        }}
-                                    >
-                                        <Text style={styles.modalItemText}>{item}</Text>
-                                    </TouchableOpacity>
-                                )}
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder={`Search ${currentStep}...`}
+                                value={searchText}
+                                onChangeText={setSearchText}
+                                autoFocus={false}
                             />
-                            <TouchableOpacity style={styles.closeButton} onPress={() => setShowCategoryModal(false)}>
-                                <Text style={styles.closeButtonText}>Close</Text>
-                            </TouchableOpacity>
+
+                            <FlatList
+                                data={getListData()}
+                                keyExtractor={(item, index) => index.toString()}
+                                renderItem={renderItem}
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={{ paddingBottom: 20 }}
+                                style={{ maxHeight: 400 }}
+                            />
                         </View>
                     </View>
                 </Modal>
@@ -225,7 +257,7 @@ const styles = StyleSheet.create({
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0)', // Transparent
+        backgroundColor: 'rgba(0,0,0,0)',
         justifyContent: 'flex-end',
     },
     modalContent: {
@@ -233,33 +265,47 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         padding: 20,
-        maxHeight: '50%',
+        maxHeight: '80%',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 15,
+        position: 'relative',
+        minHeight: 40,
     },
     modalTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        marginBottom: 15,
         color: '#2D3748',
         textAlign: 'center',
+    },
+    closeButton: {
+        position: 'absolute',
+        right: 0,
+        padding: 4,
+    },
+    searchInput: {
+        backgroundColor: '#F7FAFC',
+        padding: 12,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginBottom: 15,
+        color: '#2D3748',
     },
     modalItem: {
         paddingVertical: 15,
         borderBottomWidth: 1,
-        borderBottomColor: '#E2E8F0',
+        borderBottomColor: '#EDF2F7',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     modalItemText: {
         fontSize: 16,
         color: '#4A5568',
-    },
-    closeButton: {
-        marginTop: 15,
-        alignItems: 'center',
-        padding: 10,
-    },
-    closeButtonText: {
-        color: '#E53E3E',
-        fontSize: 16,
-        fontWeight: '600',
+        textAlign: 'center',
     },
     inputIcon: {
         marginLeft: 10,

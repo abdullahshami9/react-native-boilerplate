@@ -62,7 +62,7 @@ const BusinessTypeContactScreen = ({ navigation }: any) => {
                 business_type: bizType,
                 description: description,
             });
-            navigation.navigate('BusinessIndustry');
+            navigation.navigate('IdentityGate');
         } catch (error) {
             console.error(error);
             setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error' });

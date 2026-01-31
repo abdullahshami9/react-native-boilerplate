@@ -102,7 +102,7 @@ const BusinessLocationScreen = ({ navigation }: any) => {
                 lat: coords ? coords.lat : 0,
                 lng: coords ? coords.lng : 0
             });
-            navigation.navigate('BusinessTypeContact');
+            navigation.navigate('BusinessIndustry');
         } catch (error: any) {
             console.error(error);
             showAlert('Error', error.message || 'Failed to save details');

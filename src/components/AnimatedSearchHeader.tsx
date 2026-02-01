@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Keyboard, Dimensions, Platform } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/useTheme';
 
 const { width } = Dimensions.get('window');
@@ -18,6 +19,7 @@ interface AnimatedSearchHeaderProps {
 
 const AnimatedSearchHeader: React.FC<AnimatedSearchHeaderProps> = ({ title, onBack, onSearch, onChangeText, placeholder = "Search...", initialValue = "", onScan }) => {
     const theme = useTheme();
+    const navigation = useNavigation<any>();
     const [isFocused, setIsFocused] = useState(false);
     const [searchText, setSearchText] = useState(initialValue);
 
@@ -100,7 +102,12 @@ const AnimatedSearchHeader: React.FC<AnimatedSearchHeaderProps> = ({ title, onBa
                     </Svg>
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>{title}</Text>
-                <View style={{ width: 24 }} />
+                <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
+                        <Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                        <Path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </Svg>
+                </TouchableOpacity>
             </Animated.View>
 
             {/* Search Bar Area */}

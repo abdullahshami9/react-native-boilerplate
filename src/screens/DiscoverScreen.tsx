@@ -84,97 +84,144 @@ const DiscoverScreen = ({ navigation }: any) => {
                 </View>
             </View>
 
-            <PageWrapper
-                contentContainerStyle={styles.scrollContent}
-                onRefresh={fetchData}
-            >
-                {loading ? (
-                    <ActivityIndicator size="large" color={theme.text} style={{ marginTop: 20 }} />
-                ) : (
-                    <>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>People</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-                            {users.map((item) => (
-                                <View key={item.id} style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}>
-                                    <Image source={resolveImage(item.profile_pic_url || getDefaultImageForType(item.user_type === 'business' ? 'business' : 'customer'))} style={styles.cardImage} />
-                                    <Text style={[styles.cardName, { color: theme.text }]}>{item.name}</Text>
-                                    <Text style={[styles.cardRole, { color: theme.subText }]}>{item.user_type}</Text>
-                                    <View style={styles.actionButtons}>
-                                        <TouchableOpacity style={[styles.connectButton, { backgroundColor: isDarkMode ? '#4A5568' : '#2D3748' }]}>
-                                            <Text style={styles.connectButtonText}>Connect</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[styles.messageButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]}
-                                            onPress={async () => {
-                                                try {
-                                                    const res = await DataService.initiateChat(userInfo.id, item.id);
-                                                    if (res.success) {
-                                                        navigation.navigate('Chat', { chatId: res.chatId, otherUser: { id: item.id, name: item.name, pic: item.profile_pic_url } });
-                                                    }
-                                                } catch (e) {
-                                                    console.error("Chat Error", e);
-                                                }
-                                            }}
-                                        >
-                                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
-                                        </TouchableOpacity>
-                                    </View>
+            {loading ? (
+                <ActivityIndicator size="large" color={theme.text} style={{ marginTop: 20 }} />
+            ) : (
+                <PageWrapper contentContainerStyle={styles.scrollContent} onRefresh={fetchData}>
+                    {/* People Section */}
+                    {users.length > 0 && (
+                        <>
+                            <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 10 }]}>People</Text>
+                            {filterType === 'Skills' || search.length > 0 ? (
+                                // Grid View for Search/Skills
+                                <View style={styles.gridContainer}>
+                                    {users.map((item) => (
+                                        <View key={item.id} style={[styles.card, styles.gridCard, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}>
+                                            <Image source={resolveImage(item.profile_pic_url || getDefaultImageForType(item.user_type === 'business' ? 'business' : 'customer'))} style={styles.cardImage} />
+                                            <Text style={[styles.cardName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
+                                            <Text style={[styles.cardRole, { color: theme.subText }]}>{item.user_type}</Text>
+                                            <View style={styles.actionButtons}>
+                                                <TouchableOpacity style={[styles.connectButton, { backgroundColor: isDarkMode ? '#4A5568' : '#2D3748' }]}>
+                                                    <Text style={styles.connectButtonText}>Connect</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={[styles.messageButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]}
+                                                    onPress={async () => {
+                                                        try {
+                                                            const res = await DataService.initiateChat(userInfo.id, item.id);
+                                                            if (res.success) {
+                                                                navigation.navigate('Chat', { chatId: res.chatId, otherUser: { id: item.id, name: item.name, pic: item.profile_pic_url } });
+                                                            }
+                                                        } catch (e) {
+                                                            console.error("Chat Error", e);
+                                                        }
+                                                    }}
+                                                >
+                                                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    ))}
                                 </View>
-                            ))}
-                            {users.length === 0 && <Text style={{ color: '#A0AEC0', padding: 20 }}>No users found.</Text>}
-                        </ScrollView>
-                    </>
-                )}
+                            ) : (
+                                // Horizontal View for Default
+                                <FlatList
+                                    horizontal
+                                    data={users}
+                                    showsHorizontalScrollIndicator={false}
+                                    style={styles.horizontalScroll}
+                                    keyExtractor={(item) => item.id.toString()}
+                                    renderItem={({ item }) => (
+                                        <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}>
+                                            <Image source={resolveImage(item.profile_pic_url || getDefaultImageForType(item.user_type === 'business' ? 'business' : 'customer'))} style={styles.cardImage} />
+                                            <Text style={[styles.cardName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
+                                            <Text style={[styles.cardRole, { color: theme.subText }]}>{item.user_type}</Text>
+                                            <View style={styles.actionButtons}>
+                                                <TouchableOpacity style={[styles.connectButton, { backgroundColor: isDarkMode ? '#4A5568' : '#2D3748' }]}>
+                                                    <Text style={styles.connectButtonText}>Connect</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={[styles.messageButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]}
+                                                    onPress={async () => {
+                                                        try {
+                                                            const res = await DataService.initiateChat(userInfo.id, item.id);
+                                                            if (res.success) {
+                                                                navigation.navigate('Chat', { chatId: res.chatId, otherUser: { id: item.id, name: item.name, pic: item.profile_pic_url } });
+                                                            }
+                                                        } catch (e) {
+                                                            console.error("Chat Error", e);
+                                                        }
+                                                    }}
+                                                >
+                                                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    )}
+                                />
+                            )}
+                        </>
+                    )}
 
-                {/* Business Products */}
-                <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Business Product</Text>
-                    <TouchableOpacity>
-                        <Text style={styles.seeAllText}>See All</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.gridContainer}>
-                    {businessProducts.map((item) => (
-                        <TouchableOpacity
-                            key={item.id}
-                            style={[styles.productCard, { backgroundColor: theme.cardBg }]}
-                            onPress={() => navigation.navigate('ProductDetails', { product: item })}
-                        >
-                            <Image source={resolveImage(item.image_url || getDefaultImageForType('product', item.name))} style={styles.productImage} />
-                            <View style={styles.productInfo}>
-                                <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
-                                <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price} PKR</Text>
+                    {/* Products */}
+                    {businessProducts.length > 0 && (
+                        <>
+                            <View style={styles.sectionHeader}>
+                                <Text style={[styles.sectionTitle, { color: theme.text }]}>Products</Text>
+                                <TouchableOpacity onPress={() => navigation.navigate('Shop')}>
+                                    <Text style={styles.seeAllText}>See All</Text>
+                                </TouchableOpacity>
                             </View>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                {/* Services */}
-                <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Services</Text>
-                    <TouchableOpacity onPress={() => navigation.navigate('Shop', { params: { screen: 'Services' } })}>
-                        <Text style={styles.seeAllText}>See All</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.gridContainer}>
-                    {services.map((item) => (
-                        <TouchableOpacity
-                            key={item.id}
-                            style={[styles.productCard, { backgroundColor: theme.cardBg }]}
-                            onPress={() => navigation.navigate('ServiceDetails', { service: item })}
-                        >
-                            <Image source={resolveImage(item.image_url || getDefaultImageForType('service', item.name))} style={styles.productImage} />
-                            <View style={styles.productInfo}>
-                                <Text style={[styles.productName, { color: theme.text }]}>{item.name}</Text>
-                                <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price} PKR • {item.duration_mins}m</Text>
+                            <View style={styles.gridContainer}>
+                                {businessProducts.map((item) => (
+                                    <TouchableOpacity
+                                        key={item.id}
+                                        style={[styles.productCard, { backgroundColor: theme.cardBg }]}
+                                        onPress={() => navigation.navigate('ProductDetails', { product: item })}
+                                    >
+                                        <Image source={resolveImage(item.image_url || getDefaultImageForType('product', item.name))} style={styles.productImage} />
+                                        <View style={styles.productInfo}>
+                                            <Text style={[styles.productName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
+                                            <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price} PKR</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
                             </View>
-                        </TouchableOpacity>
-                    ))}
-                    {services.length === 0 && <Text style={{ color: theme.subText, marginLeft: 5 }}>No services found.</Text>}
-                </View>
-            </PageWrapper>
+                        </>
+                    )}
+
+                    {/* Services */}
+                    {services.length > 0 && (
+                        <>
+                            <View style={styles.sectionHeader}>
+                                <Text style={[styles.sectionTitle, { color: theme.text }]}>Services</Text>
+                                <TouchableOpacity onPress={() => navigation.navigate('Shop', { params: { screen: 'Services' } })}>
+                                    <Text style={styles.seeAllText}>See All</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.gridContainer}>
+                                {services.map((item) => (
+                                    <TouchableOpacity
+                                        key={item.id}
+                                        style={[styles.productCard, { backgroundColor: theme.cardBg }]}
+                                        onPress={() => navigation.navigate('ServiceDetails', { service: item })}
+                                    >
+                                        <Image source={resolveImage(item.image_url || getDefaultImageForType('service', item.name))} style={styles.productImage} />
+                                        <View style={styles.productInfo}>
+                                            <Text style={[styles.productName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
+                                            <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price} PKR • {item.duration_mins}m</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </>
+                    )}
+
+                    {users.length === 0 && businessProducts.length === 0 && services.length === 0 && (
+                        <Text style={{ textAlign: 'center', marginTop: 50, color: theme.subText }}>No results found.</Text>
+                    )}
+                </PageWrapper>
+            )}
         </View>
     );
 };
@@ -283,6 +330,11 @@ const styles = StyleSheet.create({
         elevation: 3,
         borderWidth: 1,
         borderColor: '#EDF2F7',
+    },
+    gridCard: {
+        width: (width - 50) / 2, // 2 columns
+        marginRight: 0,
+        marginBottom: 15
     },
     cardImage: {
         width: 60,

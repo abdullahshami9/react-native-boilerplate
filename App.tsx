@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -67,7 +68,7 @@ const AppNav = () => {
         {userToken !== null ? (
           // User is logged in
           userInfo?.is_tunnel_completed ? (
-             // Main App Stack
+            // Main App Stack
             <>
               <Stack.Screen name="Main" component={BottomTabNavigator} />
               <Stack.Screen name="BusinessOnboarding" component={BusinessOnboardingScreen} />
@@ -129,13 +130,15 @@ const AppNav = () => {
 
 const App = () => {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <CartProvider>
-          <AppNav />
-        </CartProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <CartProvider>
+            <AppNav />
+          </CartProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 };
 

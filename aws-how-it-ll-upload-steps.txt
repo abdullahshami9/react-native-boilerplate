@@ -1,0 +1,16 @@
+I have created all the necessary scripts for your "khud ba khud" (automatic) deployment, but since you don't have the AWS CLI or Terraform installed, I cannot run them primarily yet.
+
+Action Required:
+
+1. Run the prereq script: In your terminal, run .\deployment\setup_prereqs.ps1. This effectively tries to install the tools for you.
+2. Restart Terminal: After installation, close and reopen your specific terminal.
+3. Configure AWS: Run aws configure and enter your AWS Access Key ID and Secret Access Key (Get these from your AWS IAM Console).
+4. Deploy: Once configured, run .\deployment\deploy.ps1.
+This script will:
+
+Create the server (EC2).
+Install everything.
+Upload your code.
+Start the app.
+Build the APK with the new IP.
+Let me know once you have configured AWS!

@@ -100,7 +100,11 @@ const ProfileScreen = ({ navigation, route }: any) => {
     // If route.params.user exists, we are viewing someone else.
     // Otherwise, we are viewing ourselves (userInfo).
     const paramUser = route?.params?.user;
-    const isOwnProfile = !paramUser || (userInfo && paramUser.id === userInfo.id);
+    const viewAsGuest = route?.params?.viewAsGuest;
+    // We are viewing our own profile IF:
+    // 1. No paramUser passed (default tab view)
+    // 2. OR paramUser ID matches our ID AND we are NOT in 'viewAsGuest' mode
+    const isOwnProfile = (!paramUser || (userInfo && paramUser.id === userInfo.id)) && !viewAsGuest;
 
     // Use local user state to support dynamic updates (pic, resume) without full context reload
     const [localUser, setLocalUser] = useState(isOwnProfile ? userInfo : paramUser);
@@ -1056,6 +1060,21 @@ const ProfileScreen = ({ navigation, route }: any) => {
                             <TouchableOpacity style={styles.menuItem} onPress={() => { closeModal(); navigation.navigate('BusinessCardEditor'); }}>
                                 <Text style={[styles.menuItemText, { color: theme.text }]}>Business Card</Text>
                             </TouchableOpacity>
+
+                            {/* View As Public (Business Only) */}
+                            {isBusinessUser && (
+                                <TouchableOpacity
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        closeModal();
+                                        // Push a new instance of ProfileScreen (UserProfile) with viewAsGuest=true
+                                        // We pass userInfo as the 'user' param so it renders our data
+                                        navigation.push('UserProfile', { user: userInfo, viewAsGuest: true });
+                                    }}
+                                >
+                                    <Text style={[styles.menuItemText, { color: theme.text }]}>View as Public</Text>
+                                </TouchableOpacity>
+                            )}
 
                             <View style={[styles.menuItem, { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 }]}>
                                 <Text style={[styles.menuItemText, { color: theme.text }]}>Dark Mode</Text>

@@ -16,6 +16,7 @@ const StatsScreen = ({ navigation }: any) => {
     const [salesData, setSalesData] = useState<any[]>([]);
     const [monthlyTotal, setMonthlyTotal] = useState(0);
     const [totalOrders, setTotalOrders] = useState(0);
+    const [stats, setStats] = useState({ pending_count: 0, pending_amount: 0, cancelled_count: 0, cancelled_amount: 0 });
 
     const fetchData = async () => {
         try {
@@ -26,9 +27,10 @@ const StatsScreen = ({ navigation }: any) => {
                 setSalesData(sorted);
                 setMonthlyTotal(res.monthlyTotal || 0);
 
-                // Calculate total orders for the period
+                // Calculate total orders for the period (Completed only as per backend)
                 const orders = sorted.reduce((sum: number, day: any) => sum + day.count, 0);
                 setTotalOrders(orders);
+                setStats(res.stats || { pending_count: 0, pending_amount: 0, cancelled_count: 0, cancelled_amount: 0 });
             }
         } catch (error) {
             console.error('StatsScreen: Error fetching sales report', error);
@@ -138,15 +140,43 @@ const StatsScreen = ({ navigation }: any) => {
                     }
                 >
                     {/* Summary Cards */}
-                    <View style={styles.summaryContainer}>
-                        <View style={[styles.summaryCard, { backgroundColor: theme.cardBg }]}>
-                            <Text style={[styles.summaryLabel, { color: theme.subText }]}>Total Revenue (Mo)</Text>
+                    <View style={styles.summaryRow}>
+                        <TouchableOpacity
+                            style={[styles.summaryCard, { backgroundColor: theme.cardBg }]}
+                            onPress={() => navigation.navigate('BusinessOrders', { status: 'completed' })}
+                        >
+                            <Text style={[styles.summaryLabel, { color: theme.subText }]}>Completed Revenue (Mo)</Text>
                             <Text style={[styles.summaryValue, { color: theme.primary }]}>PKR {monthlyTotal.toLocaleString()}</Text>
-                        </View>
-                        <View style={[styles.summaryCard, { backgroundColor: theme.cardBg }]}>
-                            <Text style={[styles.summaryLabel, { color: theme.subText }]}>Total Orders</Text>
-                            <Text style={[styles.summaryValue, { color: theme.text }]}>{totalOrders}</Text>
-                        </View>
+                            <Text style={{ fontSize: 10, color: theme.subText, marginTop: 5 }}>{totalOrders} Orders</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.summaryCard, { backgroundColor: theme.cardBg }]}
+                            onPress={() => navigation.navigate('BusinessOrders', { status: 'pending' })}
+                        >
+                            <Text style={[styles.summaryLabel, { color: theme.subText }]}>Pending Orders</Text>
+                            <Text style={[styles.summaryValue, { color: '#D69E2E' }]}>{stats.pending_count}</Text>
+                            <Text style={{ fontSize: 10, color: theme.subText, marginTop: 5 }}>PKR {parseFloat(stats.pending_amount || '0').toLocaleString()}</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.summaryRow}>
+                        <TouchableOpacity
+                            style={[styles.summaryCard, { backgroundColor: theme.cardBg }]}
+                            onPress={() => navigation.navigate('BusinessOrders', { status: 'cancelled' })}
+                        >
+                            <Text style={[styles.summaryLabel, { color: theme.subText }]}>Cancelled Orders</Text>
+                            <Text style={[styles.summaryValue, { color: '#E53E3E' }]}>{stats.cancelled_count}</Text>
+                            <Text style={{ fontSize: 10, color: theme.subText, marginTop: 5 }}>PKR {parseFloat(stats.cancelled_amount || '0').toLocaleString()}</Text>
+                        </TouchableOpacity>
+
+                         {/* Placeholder or Cancellation Rate */}
+                         <View style={[styles.summaryCard, { backgroundColor: theme.cardBg }]}>
+                            <Text style={[styles.summaryLabel, { color: theme.subText }]}>Cancellation Rate</Text>
+                            <Text style={[styles.summaryValue, { color: theme.text }]}>
+                                {((stats.cancelled_count / (stats.cancelled_count + totalOrders + stats.pending_count || 1)) * 100).toFixed(1)}%
+                            </Text>
+                         </View>
                     </View>
 
                     {/* Chart Section */}
@@ -184,7 +214,7 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: 20, fontWeight: 'bold' },
     backButton: { padding: 5, borderRadius: 20 },
     content: { padding: 20 },
-    summaryContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+    summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
     summaryCard: { flex: 0.48, padding: 20, borderRadius: 12, elevation: 2, alignItems: 'center' },
     summaryLabel: { fontSize: 12, marginBottom: 5 },
     summaryValue: { fontSize: 20, fontWeight: 'bold' },

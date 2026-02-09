@@ -704,6 +704,11 @@ const dbQuery = (sql, params, reqOrUrl, callback) => {
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
+    socket.on('register_user', (userId) => {
+        socket.join(`user_${userId}`);
+        console.log(`User ${userId} registered for notifications`);
+    });
+
     socket.on('join_room', (chatId) => {
         socket.join(`chat_${chatId}`);
         console.log(`User ${socket.id} joined room chat_${chatId}`);
@@ -767,8 +772,27 @@ app.put('/api/notifications/:id/read', verifyToken, (req, res) => {
 // Helper to create notification
 const createNotification = (userId, title, message, type, relatedId) => {
     const query = 'INSERT INTO notifications (user_id, title, message, type, related_id) VALUES (?, ?, ?, ?, ?)';
-    db.query(query, [userId, title, message, type, relatedId || null], (err) => {
+    db.query(query, [userId, title, message, type, relatedId || null], (err, result) => {
         if (err) console.error("Failed to create notification:", err);
+        else {
+            // Emit to user room
+            try {
+                if (typeof io !== 'undefined') {
+                    io.to(`user_${userId}`).emit('new_notification', {
+                        id: result.insertId,
+                        user_id: userId,
+                        title,
+                        message,
+                        type,
+                        related_id: relatedId,
+                        created_at: new Date(),
+                        read_status: 0
+                    });
+                }
+            } catch (e) {
+                console.error("Socket emit error:", e);
+            }
+        }
     });
 };
 
@@ -1706,14 +1730,23 @@ app.put('/api/orders/:orderId/status', (req, res) => {
 });
 
 app.get('/api/orders/business/:userId', (req, res) => {
-    const query = `
+    const status = req.query.status;
+    let query = `
         SELECT o.*, u.name as buyer_name, u.phone as buyer_phone
         FROM orders o
         LEFT JOIN users u ON o.buyer_id = u.id
         WHERE o.seller_id = ?
-        ORDER BY o.created_at DESC
     `;
-    dbQuery(query, [req.params.userId], req, (err, results) => {
+    const params = [req.params.userId];
+
+    if (status && status !== 'All') {
+        query += ' AND o.status = ?';
+        params.push(status);
+    }
+
+    query += ' ORDER BY o.created_at DESC';
+
+    dbQuery(query, params, req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
 
         // For each order, fetch items (simplistic N+1 solution for now, or use GROUP_CONCAT)
@@ -1756,14 +1789,14 @@ app.get('/api/business/procurement/:userId', (req, res) => {
 });
 
 app.get('/api/reports/sales/:userId', (req, res) => {
-    // Returns daily sales for the last 30 days
+    // Returns daily sales for the last 30 days (COMPLETED ONLY)
     const query = `
         SELECT
             DATE(created_at) as date,
             COUNT(*) as count,
             SUM(total_amount) as total
         FROM orders
-        WHERE seller_id = ?
+        WHERE seller_id = ? AND status = 'completed'
         GROUP BY DATE(created_at)
         ORDER BY date DESC
         LIMIT 30
@@ -1771,17 +1804,32 @@ app.get('/api/reports/sales/:userId', (req, res) => {
     dbQuery(query, [req.params.userId], req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
 
-        // Also get Monthly total
+        // Also get Monthly total (COMPLETED ONLY)
         const monthQuery = `
             SELECT SUM(total_amount) as total
             FROM orders
-            WHERE seller_id = ? AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())
+            WHERE seller_id = ? AND status = 'completed' AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())
         `;
+
+        // Pending/Cancelled Stats
+        const statsQuery = `
+            SELECT
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_count,
+                SUM(CASE WHEN status = 'pending' THEN total_amount ELSE 0 END) as pending_amount,
+                SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count,
+                SUM(CASE WHEN status = 'cancelled' THEN total_amount ELSE 0 END) as cancelled_amount
+            FROM orders
+            WHERE seller_id = ?
+        `;
+
         dbQuery(monthQuery, [req.params.userId], req, (err2, monthResult) => {
-            res.json({
-                success: true,
-                daily: results,
-                monthlyTotal: monthResult[0]?.total || 0
+            dbQuery(statsQuery, [req.params.userId], req, (err3, statsResult) => {
+                res.json({
+                    success: true,
+                    daily: results,
+                    monthlyTotal: monthResult[0]?.total || 0,
+                    stats: statsResult[0] || { pending_count: 0, pending_amount: 0, cancelled_count: 0, cancelled_amount: 0 }
+                });
             });
         });
     });

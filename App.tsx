@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -7,6 +7,8 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { CartProvider } from './src/context/CartContext';
+import SocketService from './src/services/SocketService';
+import MiniToast, { MiniToastRef } from './src/components/MiniToast';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
@@ -48,6 +50,24 @@ const Stack = createNativeStackNavigator();
 
 const AppNav = () => {
   const { isLoading, userToken, userInfo } = useContext(AuthContext);
+  const toastRef = useRef<MiniToastRef>(null);
+
+  useEffect(() => {
+    if (userInfo?.id) {
+      SocketService.connect(userInfo.id);
+      SocketService.registerUser(userInfo.id);
+
+      SocketService.onNotification((data: any) => {
+        if (toastRef.current) {
+          toastRef.current.show(`${data.title}: ${data.message}`);
+        }
+      });
+
+      return () => {
+        SocketService.disconnect();
+      };
+    }
+  }, [userInfo?.id]);
 
   if (isLoading) {
     return (
@@ -58,19 +78,20 @@ const AppNav = () => {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{
-        headerShown: false,
-        animation: 'slide_from_right',
-        presentation: 'card',
-        gestureEnabled: true,
-      }}>
-        {userToken !== null ? (
-          // User is logged in
-          userInfo?.is_tunnel_completed ? (
-            // Main App Stack
-            <>
-              <Stack.Screen name="Main" component={BottomTabNavigator} />
+    <>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          presentation: 'card',
+          gestureEnabled: true,
+        }}>
+          {userToken !== null ? (
+            // User is logged in
+            userInfo?.is_tunnel_completed ? (
+              // Main App Stack
+              <>
+                <Stack.Screen name="Main" component={BottomTabNavigator} />
               <Stack.Screen name="BusinessOnboarding" component={BusinessOnboardingScreen} />
               <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
               <Stack.Screen name="Inventory" component={InventoryScreen} />
@@ -121,10 +142,12 @@ const AppNav = () => {
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+      <MiniToast ref={toastRef} />
+    </>
   );
 };
 

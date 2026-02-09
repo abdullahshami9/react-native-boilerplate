@@ -25,6 +25,18 @@ class SocketService {
         }
     }
 
+    registerUser(userId: number) {
+        if (this.socket) {
+            this.socket.emit("register_user", userId);
+        }
+    }
+
+    onNotification(callback: (notification: any) => void) {
+        if (this.socket) {
+            this.socket.on("new_notification", callback);
+        }
+    }
+
     sendMessage(chatId: number, senderId: number, content: string, type: 'text' | 'image' = 'text') {
         if (this.socket) {
             this.socket.emit("send_message", { chatId, senderId, content, type });

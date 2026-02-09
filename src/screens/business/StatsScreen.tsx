@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, ActivityIndicator } from 'react-native';
-import Svg, { Rect, Text as SvgText, Line } from 'react-native-svg';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, ActivityIndicator, TouchableOpacity } from 'react-native';
+import Svg, { Rect, Text as SvgText, Line, Path } from 'react-native-svg';
 import { AuthContext } from '../../context/AuthContext';
 import { DataService } from '../../services/DataService';
 import { useTheme } from '../../theme/useTheme';
@@ -8,7 +8,7 @@ import StandardLoader from '../../components/StandardLoader';
 
 const { width } = Dimensions.get('window');
 
-const StatsScreen = () => {
+const StatsScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);
     const theme = useTheme();
     const [loading, setLoading] = useState(true);
@@ -113,7 +113,7 @@ const StatsScreen = () => {
                         );
                     })}
                 </Svg>
-                 <Text style={{ color: theme.subText, fontSize: 12, marginTop: 5 }}>Last 7 Days Sales (PKR)</Text>
+                <Text style={{ color: theme.subText, fontSize: 12, marginTop: 5 }}>Last 7 Days Sales (PKR)</Text>
             </View>
         );
     };
@@ -121,7 +121,11 @@ const StatsScreen = () => {
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.navBorder }]}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: theme.inputBg }]}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M19 12H5M12 19l-7-7 7-7" /></Svg>
+                </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>Analytics</Text>
+                <View style={{ width: 40 }} />
             </View>
 
             {loading ? (
@@ -155,9 +159,9 @@ const StatsScreen = () => {
                     <View style={[styles.section, { backgroundColor: theme.cardBg }]}>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent Activity</Text>
                         {salesData.length === 0 ? (
-                             <Text style={{ color: theme.subText, padding: 10 }}>No activity recorded yet.</Text>
+                            <Text style={{ color: theme.subText, padding: 10 }}>No activity recorded yet.</Text>
                         ) : (
-                             salesData.slice(0).reverse().map((day: any, index: number) => (
+                            salesData.slice(0).reverse().map((day: any, index: number) => (
                                 <View key={index} style={[styles.historyRow, { borderBottomColor: theme.divider }]}>
                                     <View>
                                         <Text style={[styles.historyDate, { color: theme.text }]}>{new Date(day.date).toDateString()}</Text>
@@ -176,8 +180,9 @@ const StatsScreen = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: { paddingVertical: 15, alignItems: 'center', borderBottomWidth: 1, elevation: 2 },
-    headerTitle: { fontSize: 18, fontWeight: 'bold' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20, borderBottomWidth: 1 },
+    headerTitle: { fontSize: 20, fontWeight: 'bold' },
+    backButton: { padding: 5, borderRadius: 20 },
     content: { padding: 20 },
     summaryContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
     summaryCard: { flex: 0.48, padding: 20, borderRadius: 12, elevation: 2, alignItems: 'center' },

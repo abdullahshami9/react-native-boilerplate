@@ -4,6 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { DataService } from '../../services/DataService';
 import Svg, { Path } from 'react-native-svg';
 import CustomAlert from '../../components/CustomAlert';
+import { useTheme } from '../../theme/useTheme';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -11,20 +12,11 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const BusinessOrdersScreen = ({ navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
+    const theme = useTheme();
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'success' as 'success' | 'error' });
-
-    const theme = {
-        bg: isDarkMode ? '#1A202C' : '#F7FAFC',
-        text: isDarkMode ? '#F7FAFC' : '#2D3748',
-        subText: isDarkMode ? '#A0AEC0' : '#718096',
-        cardBg: isDarkMode ? '#2D3748' : '#fff',
-        inputBg: isDarkMode ? '#2D3748' : '#F7FAFC',
-        borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
-        headerBg: isDarkMode ? '#2D3748' : '#fff',
-    };
 
     useEffect(() => {
         fetchOrders();
@@ -68,14 +60,14 @@ const BusinessOrdersScreen = ({ navigation }: any) => {
                     <View style={styles.headerInfo}>
                         <Text style={[styles.orderId, { color: theme.subText }]}>Order #{item.id}</Text>
                         <Text style={[styles.customerName, { color: theme.text }]}>{item.buyer_name || 'Guest Customer'}</Text>
-                        <Text style={[styles.dateText, { color: theme.subText }]}>{dateObj.toLocaleDateString()} • {dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+                        <Text style={[styles.dateText, { color: theme.subText }]}>{dateObj.toLocaleDateString()} • {dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                     </View>
                     <View style={styles.statusCol}>
                         <View style={[styles.statusBadge,
-                            { backgroundColor: item.status === 'completed' ? '#C6F6D5' : item.status === 'cancelled' ? '#FED7D7' : item.status === 'accepted' ? '#EBF8FF' : '#FEFCBF' }
+                        { backgroundColor: item.status === 'completed' ? '#C6F6D5' : item.status === 'cancelled' ? '#FED7D7' : item.status === 'accepted' ? '#EBF8FF' : '#FEFCBF' }
                         ]}>
                             <Text style={[styles.statusText,
-                                { color: item.status === 'completed' ? '#22543D' : item.status === 'cancelled' ? '#822727' : item.status === 'accepted' ? '#2B6CB0' : '#744210' }
+                            { color: item.status === 'completed' ? '#22543D' : item.status === 'cancelled' ? '#822727' : item.status === 'accepted' ? '#2B6CB0' : '#744210' }
                             ]}>{item.status.toUpperCase()}</Text>
                         </View>
                         <Text style={[styles.totalAmount, { color: theme.text }]}>${item.total_amount}</Text>
@@ -104,7 +96,7 @@ const BusinessOrdersScreen = ({ navigation }: any) => {
                             </View>
                         )}
                         {item.status === 'accepted' && (
-                             <View style={styles.actionButtons}>
+                            <View style={styles.actionButtons}>
                                 <TouchableOpacity style={[styles.actionBtn, styles.completeBtn]} onPress={() => handleUpdateStatus(item.id, 'completed')}>
                                     <Text style={styles.completeText}>Complete Order</Text>
                                 </TouchableOpacity>
@@ -118,7 +110,7 @@ const BusinessOrdersScreen = ({ navigation }: any) => {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
-             <CustomAlert
+            <CustomAlert
                 visible={alertConfig.visible}
                 title={alertConfig.title}
                 message={alertConfig.message}
@@ -126,8 +118,12 @@ const BusinessOrdersScreen = ({ navigation }: any) => {
                 onDismiss={() => setAlertConfig({ ...alertConfig, visible: false })}
             />
 
-             <View style={[styles.header, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
+            <View style={[styles.header, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: theme.inputBg }]}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M19 12H5M12 19l-7-7 7-7" /></Svg>
+                </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>Incoming Orders</Text>
+                <View style={{ width: 40 }} />
             </View>
 
             <FlatList
@@ -144,8 +140,9 @@ const BusinessOrdersScreen = ({ navigation }: any) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F7FAFC' },
-    header: { padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderColor: '#E2E8F0' },
-    headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#2D3748' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20, borderBottomWidth: 1 },
+    headerTitle: { fontSize: 20, fontWeight: 'bold' },
+    backButton: { padding: 5, borderRadius: 20 },
     listContent: { padding: 20 },
     card: { backgroundColor: 'white', borderRadius: 12, marginBottom: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, elevation: 2, overflow: 'hidden' },
     cardHeader: { flexDirection: 'row', padding: 16, justifyContent: 'space-between' },

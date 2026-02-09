@@ -10,17 +10,23 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const BusinessOrdersScreen = ({ navigation }: any) => {
+import { ScrollView } from 'react-native';
+
+const BusinessOrdersScreen = ({ navigation, route }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
     const theme = useTheme();
     const [orders, setOrders] = useState<any[]>([]);
+    const [filterStatus, setFilterStatus] = useState<string>('All');
     const [loading, setLoading] = useState(false);
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'success' as 'success' | 'error' });
 
     useEffect(() => {
+        if (route.params?.status) {
+            setFilterStatus(route.params.status);
+        }
         fetchOrders();
-    }, []);
+    }, [route.params?.status]);
 
     const fetchOrders = async () => {
         setLoading(true);
@@ -33,6 +39,8 @@ const BusinessOrdersScreen = ({ navigation }: any) => {
             setLoading(false);
         }
     };
+
+    const filteredOrders = orders.filter(o => filterStatus === 'All' || o.status === filterStatus);
 
     const handleUpdateStatus = async (orderId: number, newStatus: string) => {
         try {
@@ -126,8 +134,30 @@ const BusinessOrdersScreen = ({ navigation }: any) => {
                 <View style={{ width: 40 }} />
             </View>
 
+            <View style={{ height: 50, marginBottom: 10 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, alignItems: 'center', gap: 10 }}>
+                    {['All', 'pending', 'accepted', 'completed', 'cancelled'].map(status => (
+                        <TouchableOpacity
+                            key={status}
+                            style={[
+                                styles.filterChip,
+                                { backgroundColor: filterStatus === status ? (theme.buttonBg || '#4A9EFF') : theme.inputBg }
+                            ]}
+                            onPress={() => setFilterStatus(status)}
+                        >
+                            <Text style={[
+                                styles.filterText,
+                                { color: filterStatus === status ? 'white' : theme.text }
+                            ]}>
+                                {status === 'All' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
+
             <FlatList
-                data={orders}
+                data={filteredOrders}
                 renderItem={renderItem}
                 keyExtractor={item => item.id.toString()}
                 contentContainerStyle={styles.listContent}
@@ -170,6 +200,8 @@ const styles = StyleSheet.create({
     completeBtn: { backgroundColor: '#C6F6D5' },
     completeText: { color: '#22543D', fontWeight: 'bold' },
     emptyText: { textAlign: 'center', color: '#A0AEC0', marginTop: 50 },
+    filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+    filterText: { fontWeight: '600', fontSize: 13 },
 });
 
 export default BusinessOrdersScreen;

@@ -120,6 +120,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
     // Data State
     const [skills, setSkills] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
+    const [services, setServices] = useState<any[]>([]);
     const [appointments, setAppointments] = useState<any[]>([]);
     const [salesData, setSalesData] = useState<any[]>([]);
     const [education, setEducation] = useState<any[]>([]);
@@ -203,8 +204,13 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 const res = await DataService.getProducts(displayedUser.id);
                 if (res.success) setProducts(res.products);
 
-                const salesRes = await DataService.getSalesReport(displayedUser.id);
-                if (salesRes.success) setSalesData(salesRes.daily);
+                const srvRes = await DataService.getServices(displayedUser.id);
+                if (srvRes.success) setServices(srvRes.services);
+
+                if (isOwnProfile) {
+                    const salesRes = await DataService.getSalesReport(displayedUser.id);
+                    if (salesRes.success) setSalesData(salesRes.daily);
+                }
             } else {
                 const res = await DataService.getSkills(displayedUser.id);
                 if (res.success) setSkills(res.skills);
@@ -783,48 +789,102 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     </View>
                 )}
 
-                {/* Calendar */}
-                <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                    <ContributionGraph data={isBusinessUser ? salesData : appointments} onDateClick={handleDateClick} isBusiness={isBusinessUser} />
-                </View>
+                {/* Calendar (Hide Sales Activity for Customers viewing Business) */}
+                {(!isBusinessUser || isOwnProfile) && (
+                    <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
+                        <ContributionGraph data={isBusinessUser ? salesData : appointments} onDateClick={handleDateClick} isBusiness={isBusinessUser} />
+                    </View>
+                )}
 
-                {/* Skills/Products List (Original) */}
-                <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 15, position: 'relative' }}>
-                        <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>{isBusinessUser ? 'Product Catalog' : 'Professional Skills'}</Text>
-                        {isOwnProfile && !isBusinessUser && (
-                            <TouchableOpacity onPress={() => setAddSkillVisible(true)} style={{ position: 'absolute', right: 0, padding: 5 }}>
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M12 5v14M5 12h14" /></Svg>
-                            </TouchableOpacity>
+                {/* Customer View of Business: Grid Layout */}
+                {isBusinessUser && !isOwnProfile ? (
+                    <View style={{ paddingHorizontal: 20 }}>
+                        {/* Products Grid */}
+                        {products.length > 0 && (
+                            <>
+                                <Text style={[styles.sectionTitle, { color: theme.text, textAlign: 'left', marginBottom: 10 }]}>Products</Text>
+                                <View style={styles.gridContainer}>
+                                    {products.map((item) => (
+                                        <TouchableOpacity
+                                            key={item.id}
+                                            style={[styles.productCard, { backgroundColor: theme.cardBg }]}
+                                            onPress={() => navigation.navigate('ProductDetails', { product: item })}
+                                        >
+                                            <Image source={resolveImage(item.image_url || getDefaultImageForType('product', item.name))} style={styles.productImage} />
+                                            <View style={styles.productInfo}>
+                                                <Text style={[styles.productName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
+                                                <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price} PKR</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </>
+                        )}
+
+                        {/* Services Grid */}
+                        {services.length > 0 && (
+                            <>
+                                <Text style={[styles.sectionTitle, { color: theme.text, textAlign: 'left', marginBottom: 10, marginTop: 10 }]}>Services</Text>
+                                <View style={styles.gridContainer}>
+                                    {services.map((item) => (
+                                        <TouchableOpacity
+                                            key={item.id}
+                                            style={[styles.productCard, { backgroundColor: theme.cardBg }]}
+                                            onPress={() => navigation.navigate('ServiceDetails', { service: item })}
+                                        >
+                                            <Image source={resolveImage(item.image_url || getDefaultImageForType('service', item.name))} style={styles.productImage} />
+                                            <View style={styles.productInfo}>
+                                                <Text style={[styles.productName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
+                                                <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price} PKR • {item.duration_mins}m</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </>
+                        )}
+
+                        {products.length === 0 && services.length === 0 && (
+                             <Text style={{ textAlign: 'center', color: theme.subText, marginTop: 20 }}>No items available.</Text>
                         )}
                     </View>
-                    {/* Content omitted for brevity, same as before */}
-                    {!isBusinessUser && (
-                        <View style={styles.tagsContainer}>
-                            {skills.map((s, i) => (
-                                <View key={i} style={[styles.tag, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7', flexDirection: 'row', alignItems: 'center', gap: 5 }]}>
-                                    <Text style={[styles.tagText, { color: theme.text }]}>{s.skill_name}</Text>
-                                    {isOwnProfile && (
-                                        <TouchableOpacity onPress={() => handleDeleteSkill(s.id)}>
-                                            <Svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
-                            ))}
+                ) : (
+                    /* Original Skills/Product List for Own Profile or Individual */
+                    <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 15, position: 'relative' }}>
+                            <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>{isBusinessUser ? 'Product Catalog' : 'Professional Skills'}</Text>
+                            {isOwnProfile && !isBusinessUser && (
+                                <TouchableOpacity onPress={() => setAddSkillVisible(true)} style={{ position: 'absolute', right: 0, padding: 5 }}>
+                                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M12 5v14M5 12h14" /></Svg>
+                                </TouchableOpacity>
+                            )}
                         </View>
-                    )}
-                    {isBusinessUser && (
-                        <View>
-                            {products.length === 0 && <Text style={{ color: '#aaa' }}>No products found.</Text>}
-                            {products.slice(0, 3).map((p, i) => (
-                                <View key={i} style={styles.prodRow}>
-                                    <Text style={[styles.prodName, { color: theme.text }]}>{p.name}</Text>
-                                    <Text style={styles.prodPrice}>{p.price} PKR</Text>
-                                </View>
-                            ))}
-                        </View>
-                    )}
-                </View>
+                        {!isBusinessUser && (
+                            <View style={styles.tagsContainer}>
+                                {skills.map((s, i) => (
+                                    <View key={i} style={[styles.tag, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7', flexDirection: 'row', alignItems: 'center', gap: 5 }]}>
+                                        <Text style={[styles.tagText, { color: theme.text }]}>{s.skill_name}</Text>
+                                        {isOwnProfile && (
+                                            <TouchableOpacity onPress={() => handleDeleteSkill(s.id)}>
+                                                <Svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+                        {isBusinessUser && (
+                            <View>
+                                {products.length === 0 && <Text style={{ color: '#aaa' }}>No products found.</Text>}
+                                {products.slice(0, 3).map((p, i) => (
+                                    <View key={i} style={styles.prodRow}>
+                                        <Text style={[styles.prodName, { color: theme.text }]}>{p.name}</Text>
+                                        <Text style={styles.prodPrice}>{p.price} PKR</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+                    </View>
+                )}
 
                 {/* Education Section (Individual) */}
                 {!isBusinessUser && (
@@ -1390,6 +1450,14 @@ const styles = StyleSheet.create({
     landscapeInfoSection: { flex: 1, marginLeft: 15, justifyContent: 'center' },
     landscapeAvatar: { width: 40, height: 40, borderRadius: 20, marginBottom: 5 },
     businessCardContainer: { width: '90%', borderRadius: 20, padding: 20, alignItems: 'center', elevation: 10, maxHeight: 400 }, // limited height for landscape feel
+
+    // Grid Styles
+    gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+    productCard: { width: (width - 60) / 2, borderRadius: 15, marginBottom: 15, overflow: 'hidden', elevation: 2 },
+    productImage: { width: '100%', height: 120, backgroundColor: '#EDF2F7' },
+    productInfo: { padding: 10 },
+    productName: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
+    productPrice: { fontSize: 12, fontWeight: 'bold' },
 });
 
 export default ProfileScreen;

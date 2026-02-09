@@ -118,7 +118,7 @@ const BusinessOrdersScreen = ({ navigation }: any) => {
                 onDismiss={() => setAlertConfig({ ...alertConfig, visible: false })}
             />
 
-            <View style={[styles.header, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
+            <View style={[styles.header, { backgroundColor: theme.bg, borderColor: theme.borderColor }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: theme.inputBg }]}>
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M19 12H5M12 19l-7-7 7-7" /></Svg>
                 </TouchableOpacity>

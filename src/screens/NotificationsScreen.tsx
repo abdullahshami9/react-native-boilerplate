@@ -6,7 +6,7 @@ import { DataService } from '../services/DataService';
 import { useTheme } from '../theme/useTheme';
 
 const NotificationsScreen = ({ navigation }: any) => {
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, isDarkMode } = useContext(AuthContext);
     const theme = useTheme();
     const [notifications, setNotifications] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -54,7 +54,7 @@ const NotificationsScreen = ({ navigation }: any) => {
 
     const renderItem = ({ item }: any) => (
         <TouchableOpacity
-            style={[styles.card, { backgroundColor: item.read_status ? theme.cardBg : (theme.isDark ? '#2D3748' : '#EBF8FF'), borderColor: theme.borderColor }]}
+            style={[styles.card, { backgroundColor: item.read_status ? theme.cardBg : (isDarkMode ? '#2D3748' : '#EBF8FF'), borderColor: theme.borderColor }]}
             onPress={() => handlePress(item)}
         >
             <View style={styles.iconContainer}>
@@ -83,7 +83,7 @@ const NotificationsScreen = ({ navigation }: any) => {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
-            <View style={[styles.header, { backgroundColor: theme.headerBg }]}>
+            <View style={[styles.header, { backgroundColor: theme.bg }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: theme.inputBg }]}>
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M19 12H5M12 19l-7-7 7-7" /></Svg>
                 </TouchableOpacity>

@@ -2,16 +2,16 @@
 
 import React, { useEffect, useState, useContext } from 'react'
 import { Navbar } from '@/components/Navbar'
-import { InventoryTable } from '@/components/dashboard/InventoryTable'
+import { ServiceTable } from '@/components/dashboard/ServiceTable'
 import { AuthContext } from '@/context/AuthContext'
 import api from '@/lib/api'
-import { Product } from '@/types'
+import { Service } from '@/types'
 import { useRouter } from 'next/navigation'
 
-export default function AdminProductsPage() {
+export default function AdminServicesPage() {
     const { userInfo, userToken, isLoading: authLoading } = useContext(AuthContext);
     const router = useRouter();
-    const [products, setProducts] = useState<Product[]>([]);
+    const [services, setServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -20,39 +20,32 @@ export default function AdminProductsPage() {
             return;
         }
         if (userInfo) {
-            fetchProducts();
+            fetchServices();
         }
     }, [userInfo, userToken, authLoading]);
 
-    const fetchProducts = async () => {
+    const fetchServices = async () => {
         try {
-            const res = await api.get(`/api/products/${userInfo?.id}`);
+            const res = await api.get(`/api/services/${userInfo?.id}`);
             if (res.data.success) {
-                setProducts(res.data.products);
+                setServices(res.data.services);
             }
         } catch (err) {
-            console.error("Failed to fetch products", err);
+            console.error("Failed to fetch services", err);
         } finally {
             setLoading(false);
         }
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this product?')) return;
+        if (!confirm('Are you sure you want to delete this service?')) return;
         try {
-            // Need to implement DELETE in backend for products if not exists
-            // backend only has PUT/GET/POST for products in standard crud?
-            // Let's check server.js. It does NOT have DELETE /api/products/:id explicitly visible in previous `read_file`.
-            // Wait, I saw `app.post('/api/products')`.
-            // I should assume it might not exist.
-            // But I'll try calling DELETE.
-            // If it fails, I'll add it.
-            const res = await api.delete(`/api/products/${id}`); // Assuming this exists or I'll add it
+            const res = await api.delete(`/api/services/${id}`);
             if (res.data.success) {
-                setProducts(prev => prev.filter(p => p.id !== id));
+                setServices(prev => prev.filter(s => s.id !== id));
             }
         } catch (err) {
-            alert('Failed to delete product');
+            alert('Failed to delete service');
         }
     }
 
@@ -68,8 +61,8 @@ export default function AdminProductsPage() {
         <div className="min-h-screen bg-gray-50 dark:bg-junr-dark-bg">
             <Navbar />
             <main className="max-w-7xl mx-auto px-4 py-8 pt-24">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Manage Products</h1>
-                <InventoryTable products={products} onDelete={handleDelete} />
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Manage Services</h1>
+                <ServiceTable services={services} onDelete={handleDelete} />
             </main>
         </div>
     )

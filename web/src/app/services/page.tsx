@@ -1,30 +1,29 @@
 'use client'
 
 import { Navbar } from '@/components/Navbar'
-import { ProductList } from '@/components/profile/ProductList'
+import { ServiceList } from '@/components/profile/ServiceList'
 import { Search, Filter } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import api from '@/lib/api'
-import { Product } from '@/types'
+import { Service } from '@/types'
 
-export default function Shop() {
-  const [products, setProducts] = useState<Product[]>([])
+export default function ServicesPage() {
+  const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    fetchProducts()
+    fetchServices()
   }, [search])
 
-  const fetchProducts = async () => {
+  const fetchServices = async () => {
     try {
-      // Debounce could be added here, but for now simple fetch is okay
-      const res = await api.get(`/api/products/discover?search=${search}`)
+      const res = await api.get(`/api/services/discover?search=${search}`)
       if (res.data.success) {
-        setProducts(res.data.products)
+        setServices(res.data.services)
       }
     } catch (error) {
-      console.error('Failed to fetch products', error)
+      console.error('Failed to fetch services', error)
     } finally {
       setLoading(false)
     }
@@ -37,8 +36,8 @@ export default function Shop() {
       <main className="max-w-7xl mx-auto px-4 py-8 pt-24">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Marketplace</h1>
-              <p className="text-gray-500">Discover products from professional connections</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Professional Services</h1>
+              <p className="text-gray-500">Book appointments with experts</p>
            </div>
 
            <div className="flex gap-2">
@@ -46,7 +45,7 @@ export default function Shop() {
                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                  <input
                     type="text"
-                    placeholder="Search products..."
+                    placeholder="Search services..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 w-full md:w-64 focus:ring-2 focus:ring-junr-blue outline-none"
@@ -63,15 +62,7 @@ export default function Shop() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-junr-blue"></div>
             </div>
         ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                 {/* ProductList expects products prop, but I used map inside ProductList.
-                     Let's correct ProductList usage. Wait, ProductList takes products array.
-                     So I should pass products to ProductList.
-                  */}
-                 <div className="col-span-4">
-                    <ProductList products={products} />
-                 </div>
-            </div>
+            <ServiceList services={services} />
         )}
       </main>
     </div>

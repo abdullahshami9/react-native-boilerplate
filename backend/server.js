@@ -853,9 +853,10 @@ app.get('/api/profile/:userId', verifyToken, (req, res) => {
             SELECT * FROM business_details WHERE user_id = ?;
             SELECT * FROM payment_methods WHERE user_id = ?;
             SELECT id, name, email, phone, user_type, profile_pic_url, resume_url, address, current_job_title, is_private FROM users WHERE id = ?;
+            SELECT * FROM skills WHERE user_id = ?;
         `;
 
-        dbQuery(queries, [userId, userId, userId, userId, userId, userId], req, (err, results) => {
+        dbQuery(queries, [userId, userId, userId, userId, userId, userId, userId], req, (err, results) => {
             if (err) return res.status(500).json({ success: false });
 
             let user = results[5][0];
@@ -884,7 +885,8 @@ app.get('/api/profile/:userId', verifyToken, (req, res) => {
                     socials: [],
                     certificates: [],
                     business: null,
-                    payments: []
+                    payments: [],
+                    skills: []
                 });
             }
 
@@ -897,7 +899,8 @@ app.get('/api/profile/:userId', verifyToken, (req, res) => {
                 certificates: results[2],
                 business: results[3][0] || null,
                 payments: results[4],
-                user: user
+                user: user,
+                skills: results[6]
             });
         });
     });
@@ -1390,6 +1393,15 @@ app.get('/api/products/discover', (req, res) => {
     });
 });
 
+app.get('/api/product/:id', (req, res) => {
+    const query = 'SELECT p.*, u.name as seller_name, u.profile_pic_url as seller_pic FROM products p JOIN users u ON p.user_id = u.id WHERE p.id = ?';
+    dbQuery(query, [req.params.id], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        if (results.length === 0) return res.status(404).json({ success: false, message: 'Product not found' });
+        res.json({ success: true, product: results[0] });
+    });
+});
+
 // --- PRODUCTS & INVENTORY ---
 
 app.post('/api/products', verifyToken, (req, res) => {
@@ -1411,6 +1423,14 @@ app.post('/api/products', verifyToken, (req, res) => {
     ], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, message: 'Product added', id: result.insertId });
+    });
+});
+
+app.delete('/api/products/:id', verifyToken, (req, res) => {
+    const query = 'DELETE FROM products WHERE id = ? AND user_id = ?';
+    dbQuery(query, [req.params.id, req.user.id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, message: 'Product deleted' });
     });
 });
 
@@ -1491,6 +1511,15 @@ app.get('/api/services/discover', (req, res) => {
     dbQuery(query, params, req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, services: results });
+    });
+});
+
+app.get('/api/service/:id', (req, res) => {
+    const query = 'SELECT s.*, u.name as provider_name, u.profile_pic_url as provider_pic FROM services s JOIN users u ON s.user_id = u.id WHERE s.id = ?';
+    dbQuery(query, [req.params.id], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        if (results.length === 0) return res.status(404).json({ success: false, message: 'Service not found' });
+        res.json({ success: true, service: results[0] });
     });
 });
 

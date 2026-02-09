@@ -35,6 +35,7 @@ export interface Product {
   price: number;
   description: string;
   image_url: string;
+  stock_quantity: number;
 }
 
 export interface SalesReport {
@@ -94,10 +95,10 @@ export const MOCK_EDUCATION: Education[] = [
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
-  { id: 1, name: "Wireless Earbuds Pro", price: 15000, description: "High fidelity noise cancelling earbuds.", image_url: "https://images.unsplash.com/photo-1572569028738-411a0977d4aa?w=500" },
-  { id: 2, name: "Smart Watch Series 5", price: 45000, description: "Track your fitness and stay connected.", image_url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500" },
-  { id: 3, name: "Mechanical Keyboard", price: 12000, description: "Clicky tactile switches for professionals.", image_url: "https://images.unsplash.com/photo-1587829741301-dc798b91a603?w=500" },
-  { id: 4, name: "Ergonomic Mouse", price: 5000, description: "Reduce wrist strain with this vertical mouse.", image_url: "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500" }
+  { id: 1, name: "Wireless Earbuds Pro", price: 15000, description: "High fidelity noise cancelling earbuds.", image_url: "https://images.unsplash.com/photo-1572569028738-411a0977d4aa?w=500", stock_quantity: 10 },
+  { id: 2, name: "Smart Watch Series 5", price: 45000, description: "Track your fitness and stay connected.", image_url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500", stock_quantity: 5 },
+  { id: 3, name: "Mechanical Keyboard", price: 12000, description: "Clicky tactile switches for professionals.", image_url: "https://images.unsplash.com/photo-1587829741301-dc798b91a603?w=500", stock_quantity: 0 },
+  { id: 4, name: "Ergonomic Mouse", price: 5000, description: "Reduce wrist strain with this vertical mouse.", image_url: "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500", stock_quantity: 20 }
 ];
 
 // Generate last 30 days of sales data

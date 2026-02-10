@@ -1,8 +1,10 @@
 import React, { useContext, useEffect, useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
@@ -46,7 +48,7 @@ import BusinessIndustryScreen from './src/screens/tunnel/business/BusinessIndust
 import PaymentIntegrationScreen from './src/screens/tunnel/PaymentIntegrationScreen';
 import IdentityGateScreen from './src/screens/tunnel/IdentityGateScreen';
 
-const Stack = createNativeStackNavigator();
+const Stack = Platform.OS === 'web' ? createStackNavigator() : createNativeStackNavigator();
 
 const AppNav = () => {
   const { isLoading, userToken, userInfo } = useContext(AuthContext);
@@ -92,56 +94,56 @@ const AppNav = () => {
               // Main App Stack
               <>
                 <Stack.Screen name="Main" component={BottomTabNavigator} />
-              <Stack.Screen name="BusinessOnboarding" component={BusinessOnboardingScreen} />
-              <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
-              <Stack.Screen name="Inventory" component={InventoryScreen} />
-              <Stack.Screen name="AddProduct" component={AddProductScreen} />
-              <Stack.Screen name="ChatList" component={ChatListScreen} />
-              <Stack.Screen name="Chat" component={ChatScreen} />
-              <Stack.Screen name="UserProfile" component={ProfileScreen} />
-              <Stack.Screen name="BusinessCardEditor" component={BusinessCardEditorScreen} />
-              <Stack.Screen name="Notifications" component={NotificationsScreen} />
+                <Stack.Screen name="BusinessOnboarding" component={BusinessOnboardingScreen} />
+                <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+                <Stack.Screen name="Inventory" component={InventoryScreen} />
+                <Stack.Screen name="AddProduct" component={AddProductScreen} />
+                <Stack.Screen name="ChatList" component={ChatListScreen} />
+                <Stack.Screen name="Chat" component={ChatScreen} />
+                <Stack.Screen name="UserProfile" component={ProfileScreen} />
+                <Stack.Screen name="BusinessCardEditor" component={BusinessCardEditorScreen} />
+                <Stack.Screen name="Notifications" component={NotificationsScreen} />
 
-              {/* Customer Screens */}
-              <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
-              <Stack.Screen name="Booking" component={BookingScreen} />
-              <Stack.Screen name="CustomerOrders" component={CustomerOrdersScreen} />
-              <Stack.Screen name="Checkout" component={CheckoutScreen} />
+                {/* Customer Screens */}
+                <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
+                <Stack.Screen name="Booking" component={BookingScreen} />
+                <Stack.Screen name="CustomerOrders" component={CustomerOrdersScreen} />
+                <Stack.Screen name="Checkout" component={CheckoutScreen} />
 
-              {/* Business Screens */}
-              <Stack.Screen name="ManageServices" component={ManageServicesScreen} />
-              <Stack.Screen name="ServiceAppointments" component={ServiceAppointmentsScreen} />
-              <Stack.Screen name="Procurement" component={ProcurementScreen} />
-              <Stack.Screen name="BusinessOrders" component={BusinessOrdersScreen} />
-              <Stack.Screen name="ARCardScanner" component={ARCardScannerScreen} />
-            </>
+                {/* Business Screens */}
+                <Stack.Screen name="ManageServices" component={ManageServicesScreen} />
+                <Stack.Screen name="ServiceAppointments" component={ServiceAppointmentsScreen} />
+                <Stack.Screen name="Procurement" component={ProcurementScreen} />
+                <Stack.Screen name="BusinessOrders" component={BusinessOrdersScreen} />
+                <Stack.Screen name="ARCardScanner" component={ARCardScannerScreen} />
+              </>
+            ) : (
+              // Tunnel Stack (Mandatory Onboarding)
+              <>
+                <Stack.Screen name="ChooseProfileType" component={ChooseProfileTypeScreen} />
+
+                {/* Personal Flow */}
+                <Stack.Screen name="PersonalDetails" component={PersonalDetailsScreen} />
+                <Stack.Screen name="PersonalSkills" component={PersonalSkillsScreen} />
+                <Stack.Screen name="PersonalEducation" component={PersonalEducationScreen} />
+                <Stack.Screen name="PersonalLocationJob" component={PersonalLocationJobScreen} />
+
+                {/* Business Flow */}
+                <Stack.Screen name="BusinessLocation" component={BusinessLocationScreen} />
+                <Stack.Screen name="BusinessTypeContact" component={BusinessTypeContactScreen} />
+                <Stack.Screen name="BusinessIndustry" component={BusinessIndustryScreen} />
+
+                {/* Common Final Step */}
+                <Stack.Screen name="IdentityGate" component={IdentityGateScreen} />
+                <Stack.Screen name="PaymentIntegration" component={PaymentIntegrationScreen} />
+              </>
+            )
           ) : (
-            // Tunnel Stack (Mandatory Onboarding)
+            // Auth Stack
             <>
-              <Stack.Screen name="ChooseProfileType" component={ChooseProfileTypeScreen} />
-
-              {/* Personal Flow */}
-              <Stack.Screen name="PersonalDetails" component={PersonalDetailsScreen} />
-              <Stack.Screen name="PersonalSkills" component={PersonalSkillsScreen} />
-              <Stack.Screen name="PersonalEducation" component={PersonalEducationScreen} />
-              <Stack.Screen name="PersonalLocationJob" component={PersonalLocationJobScreen} />
-
-              {/* Business Flow */}
-              <Stack.Screen name="BusinessLocation" component={BusinessLocationScreen} />
-              <Stack.Screen name="BusinessTypeContact" component={BusinessTypeContactScreen} />
-              <Stack.Screen name="BusinessIndustry" component={BusinessIndustryScreen} />
-
-              {/* Common Final Step */}
-              <Stack.Screen name="IdentityGate" component={IdentityGateScreen} />
-              <Stack.Screen name="PaymentIntegration" component={PaymentIntegrationScreen} />
-            </>
-          )
-        ) : (
-          // Auth Stack
-          <>
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Signup" component={SignupScreen} />
+              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Signup" component={SignupScreen} />
             </>
           )}
         </Stack.Navigator>
@@ -154,7 +156,7 @@ const AppNav = () => {
 const App = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <AuthProvider>
           <CartProvider>
             <AppNav />

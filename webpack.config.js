@@ -7,7 +7,8 @@ const { presets } = require(`${appDirectory}/babel.config.js`);
 
 const compileNodeModules = [
     // Add every react-native package that needs compiling
-    // 'react-native-gesture-handler',
+    'react-native-qrcode-svg',
+    'react-native-svg',
 ].map((moduleName) => path.resolve(appDirectory, `node_modules/${moduleName}`));
 
 const babelLoaderConfiguration = {
@@ -15,6 +16,7 @@ const babelLoaderConfiguration = {
     // Add every directory that needs to be compiled by Babel during the build.
     include: [
         path.resolve(appDirectory, 'index.web.js'),
+        path.resolve(appDirectory, 'App.tsx'),
         path.resolve(appDirectory, 'src'),
         path.resolve(appDirectory, 'node_modules/react-native-uncompiled'),
         ...compileNodeModules,
@@ -69,6 +71,9 @@ module.exports = {
             'react-native-image-picker': path.resolve(appDirectory, 'src/mocks/native-modules.js'),
             'react-native-print': path.resolve(appDirectory, 'src/mocks/native-modules.js'),
             'react-native-webview': path.resolve(appDirectory, 'src/mocks/native-modules.js'),
+            '@react-native-community/blur': path.resolve(appDirectory, 'src/mocks/native-modules.js'),
+            'react-native-document-picker': path.resolve(appDirectory, 'src/mocks/native-modules.js'),
+            '@viro-community/react-viro': path.resolve(appDirectory, 'src/mocks/native-modules.js'),
         },
     },
     module: {
@@ -76,6 +81,12 @@ module.exports = {
             babelLoaderConfiguration,
             imageLoaderConfiguration,
             svgLoaderConfiguration,
+            {
+                test: /\.m?js$/,
+                resolve: {
+                    fullySpecified: false,
+                },
+            },
         ],
     },
     plugins: [

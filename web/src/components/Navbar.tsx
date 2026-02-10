@@ -7,6 +7,7 @@ import { useState, useContext } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AuthContext } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
+import { resolveImage, getDefaultImageForType } from '@/utils/imageHelper'
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -36,17 +37,17 @@ export function Navbar() {
 
             {userToken ? (
               <>
-                <Link href="/dashboard" className="text-sm font-medium hover:text-junr-blue transition-colors">Dashboard</Link>
+                {userInfo?.user_type === 'Business' && (
+                  <Link href="/dashboard" className="text-sm font-medium hover:text-junr-blue transition-colors">Dashboard</Link>
+                )}
                 <div className="flex items-center gap-4">
                   <ThemeToggle />
                   <Link href={`/profile/${userInfo?.id}`} className="flex items-center gap-2 hover:opacity-80">
-                      {userInfo?.profile_pic_url ? (
-                          <img src={`http://localhost:3000/${userInfo.profile_pic_url}`} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-gray-200" />
-                      ) : (
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center dark:bg-gray-700">
-                             <UserIcon className="w-4 h-4" />
-                          </div>
-                      )}
+                      <img
+                        src={resolveImage(userInfo?.profile_pic_url, getDefaultImageForType(userInfo?.user_type === 'Business' ? 'business' : 'customer'))}
+                        alt="Profile"
+                        className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                      />
                   </Link>
                   <button onClick={handleLogout} className="text-sm font-medium hover:text-red-500 transition-colors">
                     <LogOut className="w-5 h-5" />
@@ -90,7 +91,9 @@ export function Navbar() {
 
               {userToken ? (
                 <>
-                  <Link href="/dashboard" className="block px-3 py-2 rounded-md hover:bg-black/5 dark:hover:bg-white/5" onClick={() => setIsOpen(false)}>Dashboard</Link>
+                  {userInfo?.user_type === 'Business' && (
+                    <Link href="/dashboard" className="block px-3 py-2 rounded-md hover:bg-black/5 dark:hover:bg-white/5" onClick={() => setIsOpen(false)}>Dashboard</Link>
+                  )}
                   <Link href={`/profile/${userInfo?.id}`} className="block px-3 py-2 rounded-md hover:bg-black/5 dark:hover:bg-white/5" onClick={() => setIsOpen(false)}>My Profile</Link>
                   <button onClick={handleLogout} className="w-full text-left px-3 py-2 rounded-md text-red-500 hover:bg-black/5 dark:hover:bg-white/5">Logout</button>
                 </>

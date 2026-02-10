@@ -60,7 +60,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('userToken', token);
         localStorage.setItem('userInfo', JSON.stringify(user));
         setIsLoading(false);
-        router.push(user.is_tunnel_completed ? '/dashboard' : '/tunnel');
+
+        if (!user.is_tunnel_completed) {
+            router.push('/tunnel');
+        } else if (user.user_type === 'Business') {
+            router.push('/dashboard');
+        } else {
+            router.push('/discover');
+        }
     };
 
     const logout = () => {

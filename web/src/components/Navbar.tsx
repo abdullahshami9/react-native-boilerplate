@@ -6,18 +6,46 @@ import { Menu, X, User as UserIcon, LogOut } from 'lucide-react'
 import { useState, useContext } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AuthContext } from '@/context/AuthContext'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { resolveImage, getDefaultImageForType } from '@/utils/imageHelper'
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const { userToken, userInfo, logout } = useContext(AuthContext)
   const router = useRouter()
+  const pathname = usePathname();
 
   const handleLogout = () => {
     logout()
     setIsOpen(false)
   }
+
+  const isBusiness = userInfo?.user_type === 'Business';
+  const isCustomer = userInfo?.user_type === 'Individual' || userInfo?.user_type === 'individual';
+
+  // Navigation Links based on Role
+  const businessLinks = [
+    { name: 'Profile', href: `/profile/${userInfo?.id}` },
+    { name: 'Stats', href: '/business/stats' },
+    { name: 'Orders', href: '/business/orders' },
+    { name: 'Notifications', href: '/notifications' },
+  ];
+
+  const customerLinks = [
+    { name: 'Discover', href: '/discover' },
+    { name: 'Connections', href: '/connections' },
+    { name: 'Shop', href: '/shop' },
+    { name: 'Profile', href: `/profile/${userInfo?.id}` },
+  ];
+
+  const publicLinks = [
+    { name: 'Home', href: '/' },
+    { name: 'Discover', href: '/discover' },
+    { name: 'Shop', href: '/shop' },
+    { name: 'Services', href: '/services' },
+  ];
+
+  const currentLinks = userToken ? (isBusiness ? businessLinks : customerLinks) : publicLinks;
 
   return (
     <nav className="fixed top-0 w-full z-50 glass border-b border-white/10 dark:border-white/5">
@@ -30,30 +58,30 @@ export function Navbar() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/" className="text-sm font-medium hover:text-junr-blue transition-colors">Home</Link>
-            <Link href="/discover" className="text-sm font-medium hover:text-junr-blue transition-colors">Discover</Link>
-            <Link href="/shop" className="text-sm font-medium hover:text-junr-blue transition-colors">Shop</Link>
-            <Link href="/services" className="text-sm font-medium hover:text-junr-blue transition-colors">Services</Link>
+            {currentLinks.map((link) => (
+               <Link
+                  key={link.name}
+                  href={link.href}
+                  className={`text-sm font-medium transition-colors ${pathname === link.href ? 'text-junr-blue font-bold' : 'text-gray-600 dark:text-gray-300 hover:text-junr-blue'}`}
+               >
+                 {link.name}
+               </Link>
+            ))}
 
             {userToken ? (
-              <>
-                {userInfo?.user_type === 'Business' && (
-                  <Link href="/dashboard" className="text-sm font-medium hover:text-junr-blue transition-colors">Dashboard</Link>
-                )}
-                <div className="flex items-center gap-4">
-                  <ThemeToggle />
-                  <Link href={`/profile/${userInfo?.id}`} className="flex items-center gap-2 hover:opacity-80">
-                      <img
-                        src={resolveImage(userInfo?.profile_pic_url, getDefaultImageForType(userInfo?.user_type === 'Business' ? 'business' : 'customer'))}
-                        alt="Profile"
-                        className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700"
-                      />
-                  </Link>
-                  <button onClick={handleLogout} className="text-sm font-medium hover:text-red-500 transition-colors">
+              <div className="flex items-center gap-4 ml-4 pl-4 border-l border-gray-200 dark:border-gray-700">
+                <ThemeToggle />
+                <button onClick={handleLogout} className="text-sm font-medium hover:text-red-500 transition-colors" title="Logout">
                     <LogOut className="w-5 h-5" />
-                  </button>
-                </div>
-              </>
+                </button>
+                <Link href={`/profile/${userInfo?.id}`} className="flex items-center gap-2 hover:opacity-80">
+                    <img
+                      src={resolveImage(userInfo?.profile_pic_url, getDefaultImageForType(isBusiness ? 'business' : 'customer'))}
+                      alt="Profile"
+                      className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                    />
+                </Link>
+              </div>
             ) : (
               <div className="flex items-center gap-4">
                 <ThemeToggle />
@@ -84,19 +112,19 @@ export function Navbar() {
             className="md:hidden glass border-t border-white/10 dark:border-white/5"
           >
             <div className="px-4 pt-2 pb-6 space-y-2">
-              <Link href="/" className="block px-3 py-2 rounded-md hover:bg-black/5 dark:hover:bg-white/5" onClick={() => setIsOpen(false)}>Home</Link>
-              <Link href="/discover" className="block px-3 py-2 rounded-md hover:bg-black/5 dark:hover:bg-white/5" onClick={() => setIsOpen(false)}>Discover</Link>
-              <Link href="/shop" className="block px-3 py-2 rounded-md hover:bg-black/5 dark:hover:bg-white/5" onClick={() => setIsOpen(false)}>Shop</Link>
-              <Link href="/services" className="block px-3 py-2 rounded-md hover:bg-black/5 dark:hover:bg-white/5" onClick={() => setIsOpen(false)}>Services</Link>
+              {currentLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className={`block px-3 py-2 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${pathname === link.href ? 'text-junr-blue font-bold' : ''}`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  {link.name}
+                </Link>
+              ))}
 
               {userToken ? (
-                <>
-                  {userInfo?.user_type === 'Business' && (
-                    <Link href="/dashboard" className="block px-3 py-2 rounded-md hover:bg-black/5 dark:hover:bg-white/5" onClick={() => setIsOpen(false)}>Dashboard</Link>
-                  )}
-                  <Link href={`/profile/${userInfo?.id}`} className="block px-3 py-2 rounded-md hover:bg-black/5 dark:hover:bg-white/5" onClick={() => setIsOpen(false)}>My Profile</Link>
-                  <button onClick={handleLogout} className="w-full text-left px-3 py-2 rounded-md text-red-500 hover:bg-black/5 dark:hover:bg-white/5">Logout</button>
-                </>
+                <button onClick={handleLogout} className="w-full text-left px-3 py-2 rounded-md text-red-500 hover:bg-black/5 dark:hover:bg-white/5 mt-4 border-t border-gray-100 dark:border-gray-800 pt-4">Logout</button>
               ) : (
                 <Link href="/auth/login" className="block px-3 py-2 mt-4 text-center rounded-md bg-junr-blue text-white font-semibold" onClick={() => setIsOpen(false)}>Login</Link>
               )}

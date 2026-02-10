@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { Product } from '@/types'
 import { ShoppingCart } from 'lucide-react'
 import { CartContext } from '@/context/CartContext'
-import { resolveImage, getDefaultImageForType } from '@/utils/imageHelper'
 
 export function ProductList({ products }: { products: Product[] }) {
   const { addToCart } = useContext(CartContext);
@@ -19,11 +18,17 @@ export function ProductList({ products }: { products: Product[] }) {
       {products.map((product) => (
         <div key={product.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow group flex flex-col">
           <Link href={`/products/${product.id}`} className="relative h-48 w-full bg-gray-200 block">
-            <img
-                src={resolveImage(product.image_url, getDefaultImageForType('product', product.name))}
+            {product.image_url ? (
+                <img
+                src={`http://localhost:3000/${product.image_url}`}
                 alt={product.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
+                />
+            ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
+                    No Image
+                </div>
+            )}
           </Link>
           <div className="p-4 flex flex-col flex-1">
             <Link href={`/products/${product.id}`}>

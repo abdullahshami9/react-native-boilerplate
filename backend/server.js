@@ -1686,6 +1686,18 @@ app.post('/api/orders', verifyToken, (req, res) => {
             // Notify Seller
             createNotification(seller_id, 'New Order Received', `You have a new order of ${total} PKR`, 'order', orderId);
 
+            // Emit NEW_ORDER event to seller's room
+            if (typeof io !== 'undefined') {
+                io.to(`user_${seller_id}`).emit('new_order', {
+                    id: orderId,
+                    buyer_id,
+                    total_amount: total,
+                    status: 'pending',
+                    payment_method: payment_method || 'cod',
+                    created_at: new Date()
+                });
+            }
+
             res.json({ success: true, message: 'Order created', orderId });
         });
     });

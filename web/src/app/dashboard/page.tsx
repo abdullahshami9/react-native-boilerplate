@@ -2,12 +2,12 @@
 
 import { Navbar } from '@/components/Navbar'
 import { InventoryTable } from '@/components/dashboard/InventoryTable'
+import { MOCK_PRODUCTS } from '@/data/mock' // Keep for fallback if products fetch fails or not implemented yet for dashboard
 import { Package, TrendingUp, DollarSign, Users, Calendar, MessageSquare, ShoppingBag } from 'lucide-react'
 import { useContext, useEffect, useState } from 'react'
 import { AuthContext } from '@/context/AuthContext'
 import api from '@/lib/api'
 import { useRouter } from 'next/navigation'
-import { Product } from '@/types'
 
 export default function Dashboard() {
   const { userInfo, isLoading: authLoading } = useContext(AuthContext);
@@ -18,7 +18,6 @@ export default function Dashboard() {
       appointments_upcoming: 0,
       messages_active: 0
   });
-  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,32 +25,20 @@ export default function Dashboard() {
           router.push('/auth/login');
           return;
       }
-      // Redirect if not business (Safety check)
-      if (userInfo && userInfo.user_type !== 'Business') {
-          router.push('/discover');
-          return;
-      }
 
       if (userInfo) {
-          fetchData();
+          fetchStats();
       }
   }, [userInfo, authLoading]);
 
-  const fetchData = async () => {
+  const fetchStats = async () => {
       try {
-          const [statsRes, productsRes] = await Promise.all([
-             api.get(`/api/user/counts/${userInfo?.id}`),
-             api.get(`/api/products/${userInfo?.id}`)
-          ]);
-
-          if (statsRes.data.success) {
-              setStats(statsRes.data);
-          }
-          if (productsRes.data.success) {
-              setProducts(productsRes.data.products);
+          const res = await api.get(`/api/user/counts/${userInfo?.id}`);
+          if (res.data.success) {
+              setStats(res.data);
           }
       } catch (err) {
-          console.error("Failed to fetch dashboard data", err);
+          console.error("Failed to fetch stats", err);
       } finally {
           setLoading(false);
       }
@@ -70,67 +57,74 @@ export default function Dashboard() {
           label: 'Pending Sales',
           value: stats.sales_pending,
           icon: DollarSign,
-          color: 'text-green-500 bg-green-50 dark:bg-green-900/20',
+          color: 'text-green-500',
+          role: 'Business'
+      },
+      {
+          label: 'Pending Purchases',
+          value: stats.purchases_pending,
+          icon: ShoppingBag,
+          color: 'text-blue-500',
+          role: 'Individual' // Everyone can buy
       },
       {
           label: 'Upcoming Appointments',
           value: stats.appointments_upcoming,
           icon: Calendar,
-          color: 'text-purple-500 bg-purple-50 dark:bg-purple-900/20',
+          color: 'text-purple-500',
+          role: 'Both'
       },
       {
           label: 'Active Messages',
           value: stats.messages_active,
           icon: MessageSquare,
-          color: 'text-orange-500 bg-orange-50 dark:bg-orange-900/20',
+          color: 'text-orange-500',
+          role: 'Both'
       },
-      {
-          label: 'Total Products',
-          value: products.length,
-          icon: Package,
-          color: 'text-blue-500 bg-blue-50 dark:bg-blue-900/20',
-      }
   ];
 
+  // Filter based on user type (simplified logic: everyone sees purchasing/appointments/messages, businesses see sales)
+  const visibleStats = statCards.filter(stat => {
+      if (stat.role === 'Business' && userInfo?.user_type !== 'Business') return false;
+      return true;
+  });
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-junr-dark-bg transition-colors duration-300">
+    <div className="min-h-screen bg-gray-50 dark:bg-junr-dark-bg">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 py-8 pt-24 space-y-8">
-        <div>
+      <main className="max-w-7xl mx-auto px-4 py-8 pt-24">
+        <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Hello, {userInfo?.name}
           </h1>
           <p className="text-gray-500">
-            Welcome to your Business Dashboard.
+            {userInfo?.user_type === 'Business' ? 'Business Dashboard' : 'Personal Dashboard'}
           </p>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-           {statCards.map((stat, i) => (
-             <div key={i} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-shadow hover:shadow-md">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+           {visibleStats.map((stat, i) => (
+             <div key={i} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                 <div className="flex justify-between items-start">
                    <div>
-                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{stat.label}</p>
-                      <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</h3>
+                      <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
+                      <h3 className="text-2xl font-bold">{stat.value}</h3>
                    </div>
-                   <div className={`p-3 rounded-xl ${stat.color}`}>
-                      <stat.icon className="w-6 h-6" />
+                   <div className={`p-3 bg-gray-50 dark:bg-white/5 rounded-lg ${stat.color}`}>
+                      <stat.icon className="w-5 h-5" />
                    </div>
                 </div>
              </div>
            ))}
         </div>
 
-        {/* Inventory Section */}
-        <section>
-            <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Inventory Management</h2>
-                <p className="text-gray-500 text-sm">Manage your products and stock levels.</p>
-            </div>
-            <InventoryTable products={products} />
-        </section>
+        {/* Show Inventory Table only for Business Users */}
+        {userInfo?.user_type === 'Business' && (
+             <InventoryTable products={MOCK_PRODUCTS} />
+             /* Ideally pass real products here later */
+        )}
 
       </main>
     </div>

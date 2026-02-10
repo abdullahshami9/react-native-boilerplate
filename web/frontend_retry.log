@@ -1,0 +1,56 @@
+
+> web@0.1.0 dev
+> next dev
+
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /app/package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles:
+   * /app/web/package-lock.json
+
+▲ Next.js 16.1.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+
+✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+✓ Ready in 2.2s
+○ Compiling / ...
+⨯ ./web/src/components/Navbar.tsx:10:1
+Module not found: Can't resolve '@/utils/imageHelper'
+[0m [90m  8 |[39m [36mimport[39m { [33mAuthContext[39m } [36mfrom[39m [32m'@/context/AuthContext'[39m
+ [90m  9 |[39m [36mimport[39m { useRouter[33m,[39m usePathname } [36mfrom[39m [32m'next/navigation'[39m
+[31m[1m>[22m[39m[90m 10 |[39m [36mimport[39m { resolveImage[33m,[39m getDefaultImageForType } [36mfrom[39m [32m'@/utils/imageHelper'[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 11 |[39m
+ [90m 12 |[39m [36mexport[39m [36mfunction[39m [33mNavbar[39m() {
+ [90m 13 |[39m   [36mconst[39m [isOpen[33m,[39m setIsOpen] [33m=[39m useState([36mfalse[39m)[0m
+
+Import map: aliased to relative './src/utils/imageHelper' inside of [project]/web
+
+
+Import trace:
+  Server Component:
+    ./web/src/components/Navbar.tsx
+    ./web/src/app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+✓ Compiled in 64ms
+ GET / 200 in 876ms (compile: 339ms, render: 537ms)
+ GET / 200 in 283ms (compile: 103ms, render: 180ms)
+ GET /business/orders 200 in 1833ms (compile: 1587ms, render: 246ms)
+ GET /api/orders/business/1 404 in 1295ms (compile: 962ms, render: 332ms)
+ GET /socket.io?EIO=4&transport=polling&t=8m07ea3d 404 in 1287ms (compile: 1142ms, render: 145ms)
+ GET /assets/Blues%20illustrations/Scenes/1x/Business,%20Startup,%20Growth,%20success%20_%20build,%20idea,%20innovation,%20man,%20thought,%20grow,%20smart.png 404 in 151ms (compile: 12ms, render: 138ms)
+ GET /discover 404 in 625ms (compile: 40ms, render: 585ms)
+ GET /socket.io?EIO=4&transport=polling&t=8m2animr 404 in 291ms (compile: 59ms, render: 232ms)
+ GET /socket.io?EIO=4&transport=polling&t=8m37xjrd 404 in 127ms (compile: 15ms, render: 112ms)
+ GET /socket.io?EIO=4&transport=polling&t=8m48hcqa 404 in 118ms (compile: 12ms, render: 107ms)
+ GET /socket.io?EIO=4&transport=polling&t=8m4l2m8h 404 in 103ms (compile: 11ms, render: 92ms)

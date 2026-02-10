@@ -5,7 +5,6 @@ import { Product } from '@/types'
 import { Edit, Trash2, Plus } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { resolveImage, getDefaultImageForType } from '@/utils/imageHelper'
 
 export function InventoryTable({ products, onDelete }: { products: Product[], onDelete?: (id: number) => void }) {
   return (
@@ -36,11 +35,11 @@ export function InventoryTable({ products, onDelete }: { products: Product[], on
                 <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4 flex items-center gap-4">
                     <div className="w-12 h-12 relative rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                        <img
-                          src={resolveImage(product.image_url, getDefaultImageForType('product', product.name))}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
+                        {product.image_url ? (
+                            <img src={`http://localhost:3000/${product.image_url}`} alt={product.name} className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full bg-gray-200" />
+                        )}
                     </div>
                     <div>
                         <div className="font-semibold text-gray-900 dark:text-white">{product.name}</div>

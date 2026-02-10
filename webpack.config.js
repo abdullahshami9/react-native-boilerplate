@@ -9,6 +9,10 @@ const compileNodeModules = [
     // Add every react-native package that needs compiling
     'react-native-qrcode-svg',
     'react-native-svg',
+    'react-native-reanimated',
+    'react-native-gesture-handler',
+    'react-native-screens',
+    'react-native-safe-area-context',
 ].map((moduleName) => path.resolve(appDirectory, `node_modules/${moduleName}`));
 
 const babelLoaderConfiguration = {
@@ -96,6 +100,10 @@ module.exports = {
         new webpack.HotModuleReplacementPlugin(),
         new webpack.DefinePlugin({
             __DEV__: JSON.stringify(true),
+            'process.env.NODE_ENV': JSON.stringify('development'),
+        }),
+        new webpack.ProvidePlugin({
+            process: 'process/browser',
         }),
     ],
     devServer: {

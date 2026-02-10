@@ -1,0 +1,24 @@
+
+> junr@0.0.1 web
+> webpack-cli serve --mode development
+
+<w> [webpack-dev-server] "hot: true" automatically applies HMR plugin, you don't have to add it manually to your webpack configuration.
+<i> [webpack-dev-server] Project is running at:
+<i> [webpack-dev-server] Loopback: http://localhost:8080/, http://[::1]:8080/
+<i> [webpack-dev-server] On Your Network (IPv4): http://192.168.0.2:8080/
+<i> [webpack-dev-server] Content not from webpack is served from '/app/public' directory
+asset rnw.bundle.js 11.5 MiB [emitted] (name: app)
+asset index.html 519 bytes [emitted]
+runtime modules 27 KiB 13 modules
+orphan modules 426 bytes [orphan] 2 modules
+modules by path ./node_modules/ 5.25 MiB
+  javascript modules 5.24 MiB 1059 modules
+  json modules 7.19 KiB
+    ./node_modules/react-native-reanimated/scripts/worklets-version.json 37 bytes [built] [code generated]
+    ./node_modules/react-native-reanimated/compatibility.json 2.32 KiB [built] [code generated]
+    ./node_modules/react-native-worklets/package.json 4.84 KiB [optional] [built] [code generated]
+modules by path ./src/ 4.7 MiB 110 modules
+./index.web.js 430 bytes [built] [code generated]
+./App.tsx 9.66 KiB [built] [code generated]
+./app.json 56 bytes [built] [code generated]
+webpack 5.105.0 compiled successfully in 5865 ms

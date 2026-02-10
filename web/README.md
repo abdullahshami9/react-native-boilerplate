@@ -34,3 +34,19 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+npm run web (Root Folder me):
+Chalta hai: Mobile APP (React Native)
+Uses: 
+webpack.config.js
+ (root folder me)
+Goal: Mobile app ko hi web par dikhana.
+MobileApp/web Folder:
+Yeh ek alag Next.js Project hai (Dashboard type).
+Agar aapko isay chalana hai, toh aapko alag command deni hogi:
+bash
+cd web
+npm run dev
+
+or to run direct mobile application on web use command npm run web directly on root folder(MobileApp)

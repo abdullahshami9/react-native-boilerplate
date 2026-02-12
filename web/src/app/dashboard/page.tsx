@@ -2,12 +2,14 @@
 
 import { Navbar } from '@/components/Navbar'
 import { InventoryTable } from '@/components/dashboard/InventoryTable'
-import { MOCK_PRODUCTS } from '@/data/mock' // Keep for fallback if products fetch fails or not implemented yet for dashboard
+import { HorizontalList } from '@/components/dashboard/HorizontalList'
 import { Package, TrendingUp, DollarSign, Users, Calendar, MessageSquare, ShoppingBag } from 'lucide-react'
 import { useContext, useEffect, useState } from 'react'
 import { AuthContext } from '@/context/AuthContext'
+import { StandardLoader } from '@/components/StandardLoader'
 import api from '@/lib/api'
 import { useRouter } from 'next/navigation'
+import { Product, Service } from '@/types'
 
 export default function Dashboard() {
   const { userInfo, isLoading: authLoading } = useContext(AuthContext);
@@ -18,6 +20,8 @@ export default function Dashboard() {
       appointments_upcoming: 0,
       messages_active: 0
   });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,30 +31,59 @@ export default function Dashboard() {
       }
 
       if (userInfo) {
-          fetchStats();
+          fetchData();
       }
   }, [userInfo, authLoading]);
 
-  const fetchStats = async () => {
+  const fetchData = async () => {
       try {
-          const res = await api.get(`/api/user/counts/${userInfo?.id}`);
-          if (res.data.success) {
-              setStats(res.data);
+          const isBusiness = userInfo?.user_type?.toLowerCase() === 'business';
+
+          // Parallel fetch
+          const promises = [
+              api.get(`/api/user/counts/${userInfo?.id}`),
+          ];
+
+          if (isBusiness) {
+              promises.push(api.get(`/api/products/${userInfo?.id}`));
+              // Ideally fetch services too if business has them, but start with products for inventory
+          } else {
+              promises.push(api.get('/api/products/discover'));
+              promises.push(api.get('/api/services/discover'));
           }
+
+          const results = await Promise.all(promises);
+
+          // Handle stats
+          if (results[0].data.success) {
+              setStats(results[0].data);
+          }
+
+          if (isBusiness) {
+              if (results[1]?.data.success) {
+                  setProducts(results[1].data.products);
+              }
+          } else {
+              if (results[1]?.data.success) {
+                   setProducts(results[1].data.products);
+              }
+              if (results[2]?.data.success) {
+                   setServices(results[2].data.services);
+              }
+          }
+
       } catch (err) {
-          console.error("Failed to fetch stats", err);
+          console.error("Failed to fetch dashboard data", err);
       } finally {
           setLoading(false);
       }
   };
 
   if (authLoading || loading) {
-      return (
-          <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-junr-dark-bg">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-junr-blue"></div>
-          </div>
-      );
+      return <StandardLoader />;
   }
+
+  const isBusiness = userInfo?.user_type?.toLowerCase() === 'business';
 
   const statCards = [
       {
@@ -58,34 +91,33 @@ export default function Dashboard() {
           value: stats.sales_pending,
           icon: DollarSign,
           color: 'text-green-500',
-          role: 'Business'
+          role: 'business'
       },
       {
           label: 'Pending Purchases',
           value: stats.purchases_pending,
           icon: ShoppingBag,
           color: 'text-blue-500',
-          role: 'Individual' // Everyone can buy
+          role: 'individual' // Everyone can buy
       },
       {
           label: 'Upcoming Appointments',
           value: stats.appointments_upcoming,
           icon: Calendar,
           color: 'text-purple-500',
-          role: 'Both'
+          role: 'both'
       },
       {
           label: 'Active Messages',
           value: stats.messages_active,
           icon: MessageSquare,
           color: 'text-orange-500',
-          role: 'Both'
+          role: 'both'
       },
   ];
 
-  // Filter based on user type (simplified logic: everyone sees purchasing/appointments/messages, businesses see sales)
   const visibleStats = statCards.filter(stat => {
-      if (stat.role === 'Business' && userInfo?.user_type !== 'Business') return false;
+      if (stat.role === 'business' && !isBusiness) return false;
       return true;
   });
 
@@ -99,18 +131,18 @@ export default function Dashboard() {
             Hello, {userInfo?.name}
           </h1>
           <p className="text-gray-500">
-            {userInfo?.user_type === 'Business' ? 'Business Dashboard' : 'Personal Dashboard'}
+            {isBusiness ? 'Business Dashboard' : 'Personal Dashboard'}
           </p>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
            {visibleStats.map((stat, i) => (
-             <div key={i} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+             <div key={i} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start">
                    <div>
                       <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
-                      <h3 className="text-2xl font-bold">{stat.value}</h3>
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</h3>
                    </div>
                    <div className={`p-3 bg-gray-50 dark:bg-white/5 rounded-lg ${stat.color}`}>
                       <stat.icon className="w-5 h-5" />
@@ -120,10 +152,13 @@ export default function Dashboard() {
            ))}
         </div>
 
-        {/* Show Inventory Table only for Business Users */}
-        {userInfo?.user_type === 'Business' && (
-             <InventoryTable products={MOCK_PRODUCTS} />
-             /* Ideally pass real products here later */
+        {isBusiness ? (
+             <InventoryTable products={products} />
+        ) : (
+            <div className="space-y-10">
+                <HorizontalList title="Discover Products" items={products} type="product" />
+                <HorizontalList title="Discover Services" items={services} type="service" />
+            </div>
         )}
 
       </main>

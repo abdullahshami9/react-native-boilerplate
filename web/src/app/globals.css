@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-junr-dark-bg: #1A202C;
   --color-junr-light-bg: #F7FAFC;

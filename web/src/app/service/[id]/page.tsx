@@ -8,6 +8,8 @@ import { AuthContext } from '@/context/AuthContext';
 import { Calendar, ArrowLeft, Clock, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { Service } from '@/types';
+import { resolveImage, getDefaultImageForType } from '@/utils/imageHelper';
+import { StandardLoader } from '@/components/StandardLoader';
 
 export default function ServiceDetailsPage() {
     const params = useParams();
@@ -77,26 +79,20 @@ export default function ServiceDetailsPage() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-junr-dark-bg">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-junr-blue"></div>
-            </div>
-        );
-    }
+    if (loading) return <StandardLoader />;
 
     if (error || !service) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-junr-dark-bg">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-junr-dark-bg transition-colors duration-300">
                 <Navbar />
-                <p className="text-red-500 mb-4">{error}</p>
+                <p className="text-red-500 mb-4 text-lg">{error}</p>
                 <Link href="/services" className="text-junr-blue hover:underline">Back to Services</Link>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-junr-dark-bg">
+        <div className="min-h-screen bg-gray-50 dark:bg-junr-dark-bg transition-colors duration-300">
             <Navbar />
 
             <main className="max-w-7xl mx-auto px-4 py-8 pt-24">
@@ -109,28 +105,22 @@ export default function ServiceDetailsPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div className="grid grid-cols-1 md:grid-cols-2">
                         {/* Image Section */}
-                        <div className="relative h-96 md:h-full bg-gray-200 min-h-[400px]">
-                            {service.image_url ? (
-                                <img
-                                    src={`http://localhost:3000/${service.image_url}`}
-                                    alt={service.name}
-                                    className="absolute inset-0 w-full h-full object-cover"
-                                />
-                            ) : (
-                                <div className="flex items-center justify-center h-full text-gray-400">
-                                    No Image Available
-                                </div>
-                            )}
+                        <div className="relative h-96 md:h-full bg-gray-100 dark:bg-gray-700 min-h-[400px]">
+                            <img
+                                src={resolveImage(service.image_url, getDefaultImageForType('service', service.name))}
+                                alt={service.name}
+                                className="absolute inset-0 w-full h-full object-cover"
+                            />
                         </div>
 
                         {/* Details Section */}
                         <div className="p-8 md:p-12 flex flex-col">
                             <div className="flex items-center gap-3 mb-4">
-                                {service.provider_pic ? (
-                                    <img src={`http://localhost:3000/${service.provider_pic}`} className="w-8 h-8 rounded-full object-cover" />
-                                ) : (
-                                    <div className="w-8 h-8 rounded-full bg-gray-300"></div>
-                                )}
+                                <img
+                                    src={resolveImage(service.provider_pic, getDefaultImageForType('business'))}
+                                    className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-600"
+                                    alt={service.provider_name}
+                                />
                                 <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                                     Service by {service.provider_name}
                                 </span>
@@ -140,7 +130,7 @@ export default function ServiceDetailsPage() {
 
                             <div className="flex items-center gap-6 mb-6 text-gray-600 dark:text-gray-300">
                                 <span className="font-bold text-2xl text-junr-blue">{service.price.toLocaleString()} PKR</span>
-                                <span className="flex items-center gap-1 text-sm"><Clock className="w-4 h-4"/> {service.duration_mins} mins</span>
+                                <span className="flex items-center gap-1 text-sm bg-gray-100 dark:bg-white/10 px-2 py-1 rounded-full"><Clock className="w-4 h-4"/> {service.duration_mins} mins</span>
                                 <span className="flex items-center gap-1 text-sm"><MapPin className="w-4 h-4"/> {service.service_location}</span>
                             </div>
 
@@ -152,10 +142,10 @@ export default function ServiceDetailsPage() {
                                 <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Book an Appointment</h3>
 
                                 {bookingSuccess ? (
-                                    <div className="bg-green-50 text-green-700 p-4 rounded-lg">
-                                        <p className="font-bold">Booking Request Sent!</p>
+                                    <div className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 p-4 rounded-xl border border-green-200 dark:border-green-800">
+                                        <p className="font-bold text-lg">Booking Request Sent!</p>
                                         <p className="text-sm">The provider will review your request shortly.</p>
-                                        <button onClick={() => setBookingSuccess(false)} className="mt-2 text-sm underline">Book another</button>
+                                        <button onClick={() => setBookingSuccess(false)} className="mt-2 text-sm underline hover:text-green-800 dark:hover:text-green-200">Book another</button>
                                     </div>
                                 ) : (
                                     <form onSubmit={handleBooking} className="space-y-4">
@@ -165,7 +155,7 @@ export default function ServiceDetailsPage() {
                                                 <input
                                                     type="date"
                                                     required
-                                                    className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-junr-blue outline-none"
                                                     value={bookingDate}
                                                     onChange={e => setBookingDate(e.target.value)}
                                                     min={new Date().toISOString().split('T')[0]}
@@ -176,7 +166,7 @@ export default function ServiceDetailsPage() {
                                                 <input
                                                     type="time"
                                                     required
-                                                    className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-junr-blue outline-none"
                                                     value={bookingTime}
                                                     onChange={e => setBookingTime(e.target.value)}
                                                 />
@@ -186,7 +176,7 @@ export default function ServiceDetailsPage() {
                                         <button
                                             type="submit"
                                             disabled={bookingLoading}
-                                            className="w-full py-4 bg-junr-blue text-white rounded-xl font-bold text-lg hover:bg-blue-600 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30"
+                                            className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold text-lg hover:opacity-90 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-gray-200 dark:shadow-none"
                                         >
                                             <Calendar className="w-6 h-6" />
                                             {bookingLoading ? 'Processing...' : 'Request Appointment'}

@@ -35,15 +35,15 @@ export function ProfileHeader({ user, isOwnProfile }: ProfileHeaderProps) {
     <>
       <motion.div
         style={{ height: headerHeight, borderBottomLeftRadius: borderRadius, borderBottomRightRadius: borderRadius }}
-        className="fixed top-0 left-0 right-0 z-40 bg-gray-200 dark:bg-gray-800 shadow-lg overflow-hidden flex items-center justify-center"
+        className="fixed top-0 left-0 right-0 z-40 bg-gray-100 dark:bg-[#202c33] shadow-lg overflow-hidden flex items-center justify-center"
       >
         {/* Background Overlay */}
-        <div className="absolute inset-0 bg-blue-500/10 dark:bg-black/20" />
+        <div className="absolute inset-0 bg-[var(--color-junr-blue)] opacity-10 dark:opacity-20" />
 
         {/* Top Nav Icons */}
         <div className="absolute top-4 w-full px-6 flex justify-between items-center z-50">
-           <Link href="/dashboard" className="p-2 bg-white/20 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors">
-             <ArrowLeft className="w-6 h-6 text-junr-dark-bg dark:text-white" />
+           <Link href="/" className="p-2 bg-white/20 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors">
+             <ArrowLeft className="w-6 h-6 text-gray-800 dark:text-white" />
            </Link>
            {isOwnProfile && (
              <Link href="/settings" className="p-2 bg-white/20 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors">
@@ -58,9 +58,8 @@ export function ProfileHeader({ user, isOwnProfile }: ProfileHeaderProps) {
            <p className="text-sm text-gray-600 dark:text-gray-300">{user.email}</p>
         </motion.div>
 
-        {/* Expanded Info (Fades Out) */}
+        {/* Expanded Info (Fades Out) - QR Code */}
         <motion.div style={{ opacity: bodyInfoOpacity }} className="flex flex-col items-center justify-center pt-10 z-30">
-           {/* QR Code Card */}
            <div className="bg-white p-4 rounded-2xl shadow-xl mb-8 transform hover:scale-105 transition-transform duration-300 cursor-pointer">
               <QRCodeSVG value={`raabtaa://user/${user.id}`} size={120} />
            </div>
@@ -74,12 +73,13 @@ export function ProfileHeader({ user, isOwnProfile }: ProfileHeaderProps) {
           }}
           className="absolute bottom-[-50px] left-0 right-0 mx-auto w-32 h-32 z-50 flex items-center justify-center pointer-events-none"
         >
-           <div className="w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 shadow-lg overflow-hidden bg-white flex items-center justify-center">
+           <div className="w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 shadow-lg overflow-hidden bg-white flex items-center justify-center relative">
               {profilePicUrl ? (
-                  <img
+                  <Image
                     src={profilePicUrl}
                     alt={user.name}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
                   />
               ) : (
                   <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-2xl">
@@ -117,11 +117,11 @@ export function ProfileInfo({ user, isBusiness }: { user: User, isBusiness: bool
 
             <div className="flex gap-4 mt-6">
                  {user.phone && (
-                     <a href={`tel:${user.phone}`} className="p-3 bg-junr-blue rounded-full text-white hover:bg-blue-600 transition shadow-lg shadow-blue-500/30">
+                     <a href={`tel:${user.phone}`} className="p-3 bg-junr-blue rounded-full text-white hover:bg-opacity-90 transition shadow-lg shadow-junr-blue/30 flex items-center justify-center">
                         <Phone className="w-5 h-5" />
                      </a>
                  )}
-                 <button className="p-3 bg-junr-blue rounded-full text-white hover:bg-blue-600 transition shadow-lg shadow-blue-500/30">
+                 <button className="p-3 bg-junr-blue rounded-full text-white hover:bg-opacity-90 transition shadow-lg shadow-junr-blue/30 flex items-center justify-center">
                     <MessageCircle className="w-5 h-5" />
                  </button>
             </div>

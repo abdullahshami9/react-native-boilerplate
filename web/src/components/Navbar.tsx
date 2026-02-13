@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { ThemeToggle } from './ui/ThemeToggle'
-import { Menu, X, User as UserIcon, LogOut } from 'lucide-react'
+import { Menu, X, LogOut } from 'lucide-react'
 import { useState, useContext } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AuthContext } from '@/context/AuthContext'
@@ -21,7 +22,6 @@ export function Navbar() {
   }
 
   const isBusiness = userInfo?.user_type?.toLowerCase() === 'business';
-  const isCustomer = !isBusiness;
 
   // Navigation Links based on Role
   const businessLinks = [
@@ -38,12 +38,8 @@ export function Navbar() {
     { name: 'Profile', href: `/profile/${userInfo?.id}` },
   ];
 
-  const publicLinks = [
-    { name: 'Home', href: '/' },
-    { name: 'Discover', href: '/discover' },
-    { name: 'Shop', href: '/shop' },
-    { name: 'Services', href: '/services' },
-  ];
+  // Public links are now hidden to match "App" feel (Login required to see features)
+  const publicLinks: { name: string; href: string }[] = [];
 
   const currentLinks = userToken ? (isBusiness ? businessLinks : customerLinks) : publicLinks;
 
@@ -75,17 +71,19 @@ export function Navbar() {
                     <LogOut className="w-5 h-5" />
                 </button>
                 <Link href={`/profile/${userInfo?.id}`} className="flex items-center gap-2 hover:opacity-80">
-                    <img
+                    <Image
                       src={resolveImage(userInfo?.profile_pic_url, getDefaultImageForType(isBusiness ? 'business' : 'customer'))}
                       alt="Profile"
-                      className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                      width={32}
+                      height={32}
+                      className="rounded-full object-cover border border-gray-200 dark:border-gray-700"
                     />
                 </Link>
               </div>
             ) : (
               <div className="flex items-center gap-4">
                 <ThemeToggle />
-                <Link href="/auth/login" className="px-4 py-2 rounded-full bg-junr-blue text-white text-sm font-semibold hover:bg-blue-600 transition-colors">
+                <Link href="/auth/login" className="px-4 py-2 rounded-full bg-junr-blue text-white text-sm font-semibold hover:bg-opacity-90 transition-colors shadow-lg shadow-junr-blue/30">
                   Login
                 </Link>
               </div>
@@ -109,7 +107,7 @@ export function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden glass border-t border-white/10 dark:border-white/5"
+            className="md:hidden glass border-t border-white/10 dark:border-white/5 overflow-hidden"
           >
             <div className="px-4 pt-2 pb-6 space-y-2">
               {currentLinks.map((link) => (

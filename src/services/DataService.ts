@@ -2,6 +2,19 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import { CONFIG } from '../Config';
 import LoggerService from './LoggerService';
+import * as NavigationHelper from '../utils/NavigationHelper';
+
+// Add Interceptor for 402 Payment Required
+axios.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.response && error.response.status === 402) {
+            // Navigate to Premium Upgrade Screen
+            NavigationHelper.navigate('PremiumUpgrade' as never);
+        }
+        return Promise.reject(error);
+    }
+);
 
 export const DataService = {
     // --- PROFILE ---
@@ -530,6 +543,15 @@ export const DataService = {
             return response.data;
         } catch (error: any) {
             LoggerService.error('Read Notification Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    subscribeBusiness: async () => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/business/subscribe`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Subscribe Business Error:', error, 'DataService');
             throw error.response?.data || { message: 'Network Error' };
         }
     }

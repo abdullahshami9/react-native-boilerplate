@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Modal, TextInput, ScrollView, ActivityIndicator, Platform } from 'react-native';
-import { AuthContext } from '../../context/AuthContext';
-import { DataService } from '../../services/DataService';
-import CustomAlert from '../../components/CustomAlert';
+import { AuthContext } from '../../../context/AuthContext';
+import { DataService } from '../../../services/DataService';
+import CustomAlert from '../../../components/CustomAlert';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { CONFIG } from '../../Config';
-import LocalAssets from '../../utils/LocalAssets';
-import { resolveImage } from '../../utils/ImageHelper';
+import LocalAssets from '../../../utils/LocalAssets';
+import { resolveImage } from '../../../utils/ImageHelper';
 
 const ManageServicesScreen = ({ navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);

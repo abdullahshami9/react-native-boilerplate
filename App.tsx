@@ -22,23 +22,23 @@ import SignupScreen from './src/features/auth/screens/SignupScreen';
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
 import OnboardingScreen from './src/features/auth/screens/OnboardingScreen';
 import ProductDetailsScreen from './src/features/market/screens/ProductDetailsScreen';
-import InventoryScreen from './src/screens/InventoryScreen';
+import InventoryScreen from './src/features/market/screens/InventoryScreen';
 import AddProductScreen from './src/features/market/screens/AddProductScreen';
-import BusinessOnboardingScreen from './src/screens/BusinessOnboardingScreen';
+import BusinessOnboardingScreen from './src/features/business/screens/BusinessOnboardingScreen';
 import ChatListScreen from './src/features/social/screens/ChatListScreen';
 import ChatScreen from './src/features/social/screens/ChatScreen';
 import ProfileScreen from './src/features/social/screens/ProfileScreen';
 import ServiceDetailsScreen from './src/features/services/screens/ServiceDetailsScreen';
 import BookingScreen from './src/features/services/screens/BookingScreen';
 import CheckoutScreen from './src/features/market/screens/CheckoutScreen';
-import BusinessCardEditorScreen from './src/screens/BusinessCardEditorScreen';
+import BusinessCardEditorScreen from './src/features/business/screens/BusinessCardEditorScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 
 // Business Screens
-import ManageServicesScreen from './src/screens/business/ManageServicesScreen';
+import ManageServicesScreen from './src/features/business/screens/ManageServicesScreen';
 import ServiceAppointmentsScreen from './src/features/services/screens/ServiceAppointmentsScreen';
-import ProcurementScreen from './src/screens/business/ProcurementScreen';
-import BusinessOrdersScreen from './src/screens/business/BusinessOrdersScreen';
+import ProcurementScreen from './src/features/business/screens/ProcurementScreen';
+import BusinessOrdersScreen from './src/features/business/screens/BusinessOrdersScreen';
 import CustomerOrdersScreen from './src/screens/CustomerOrdersScreen';
 import ARCardScannerScreen from './src/screens/ar/ARCardScannerScreen';
 
@@ -53,6 +53,8 @@ import BusinessTypeContactScreen from './src/screens/tunnel/business/BusinessTyp
 import BusinessIndustryScreen from './src/screens/tunnel/business/BusinessIndustryScreen';
 import PaymentIntegrationScreen from './src/screens/tunnel/PaymentIntegrationScreen';
 import IdentityGateScreen from './src/screens/tunnel/IdentityGateScreen';
+import PremiumUpgradeScreen from './src/features/business/screens/PremiumUpgradeScreen';
+import { navigationRef } from './src/utils/NavigationHelper';
 
 const Stack = Platform.OS === 'web' ? createStackNavigator() : createNativeStackNavigator();
 
@@ -104,7 +106,7 @@ const AppNav = () => {
 
   return (
     <>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Stack.Navigator screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
@@ -139,6 +141,7 @@ const AppNav = () => {
                 <Stack.Screen name="Procurement" component={ProcurementScreen} />
                 <Stack.Screen name="BusinessOrders" component={BusinessOrdersScreen} />
                 <Stack.Screen name="ARCardScanner" component={ARCardScannerScreen} />
+                <Stack.Screen name="PremiumUpgrade" component={PremiumUpgradeScreen} />
               </>
             ) : (
               // Tunnel Stack (Mandatory Onboarding)

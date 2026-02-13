@@ -3,15 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView,
 import QRCode from 'react-native-qrcode-svg';
 import RNPrint from 'react-native-print';
 import Svg, { Path } from 'react-native-svg';
-import { AuthContext } from '../context/AuthContext';
-import { useTheme } from '../theme/useTheme';
+import { AuthContext } from '../../../context/AuthContext';
+import { useTheme } from '../../../theme/useTheme';
 import { CONFIG } from '../Config';
 import axios from 'axios';
-import CustomAlert from '../components/CustomAlert';
+import CustomAlert from '../../../components/CustomAlert';
 import { WebView } from 'react-native-webview';
-import { CardTemplates } from '../utils/CardTemplates';
-import LocalAssets, { AssetCategories } from '../utils/LocalAssets';
-import { resolveImage } from '../utils/ImageHelper';
+import { CardTemplates } from '../../../utils/CardTemplates';
+import LocalAssets, { AssetCategories } from '../../../utils/LocalAssets';
+import { resolveImage } from '../../../utils/ImageHelper';
 
 const { width } = Dimensions.get('window');
 

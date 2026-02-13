@@ -1,10 +1,10 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
-import { AuthContext } from '../context/AuthContext';
+import { AuthContext } from '../../../context/AuthContext';
 import axios from 'axios';
 import { CONFIG } from '../Config';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import CustomAlert from '../components/CustomAlert';
+import CustomAlert from '../../../components/CustomAlert';
 
 const { width } = Dimensions.get('window');
 

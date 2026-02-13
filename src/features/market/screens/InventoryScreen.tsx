@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl, Modal, Platform, Alert, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { DataService } from '../services/DataService';
-import { AuthContext } from '../context/AuthContext';
+import { DataService } from '../../../services/DataService';
+import { AuthContext } from '../../../context/AuthContext';
 import { CONFIG } from '../Config';
-import CustomAlert from '../components/CustomAlert';
-import StandardLoader from '../components/StandardLoader';
+import CustomAlert from '../../../components/CustomAlert';
+import StandardLoader from '../../../components/StandardLoader';
 
 const isWeb = Platform.OS === 'web';
 const { width } = Dimensions.get('window');

@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Svg, { Rect, Text as SvgText, Line, Path } from 'react-native-svg';
-import { AuthContext } from '../../context/AuthContext';
-import { DataService } from '../../services/DataService';
-import { useTheme } from '../../theme/useTheme';
-import StandardLoader from '../../components/StandardLoader';
+import { AuthContext } from '../../../context/AuthContext';
+import { DataService } from '../../../services/DataService';
+import { useTheme } from '../../../theme/useTheme';
+import StandardLoader from '../../../components/StandardLoader';
 
 const { width } = Dimensions.get('window');
 

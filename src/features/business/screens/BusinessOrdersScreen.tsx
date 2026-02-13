@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { AuthContext } from '../../context/AuthContext';
-import { DataService } from '../../services/DataService';
+import { AuthContext } from '../../../context/AuthContext';
+import { DataService } from '../../../services/DataService';
 import Svg, { Path } from 'react-native-svg';
-import CustomAlert from '../../components/CustomAlert';
-import { useTheme } from '../../theme/useTheme';
+import CustomAlert from '../../../components/CustomAlert';
+import { useTheme } from '../../../theme/useTheme';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);

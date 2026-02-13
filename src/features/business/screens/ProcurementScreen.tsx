@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, Image, TouchableOpacity } from 'react-native';
-import { AuthContext } from '../../context/AuthContext';
-import { DataService } from '../../services/DataService';
+import { AuthContext } from '../../../context/AuthContext';
+import { DataService } from '../../../services/DataService';
 import { CONFIG } from '../../Config';
 
 const ProcurementScreen = ({ navigation }: any) => {

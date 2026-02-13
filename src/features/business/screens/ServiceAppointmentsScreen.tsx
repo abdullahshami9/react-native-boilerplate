@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, Image, TouchableOpacity, Alert } from 'react-native';
-import { AuthContext } from '../../context/AuthContext';
-import { DataService } from '../../services/DataService';
+import { AuthContext } from '../../../context/AuthContext';
+import { DataService } from '../../../services/DataService';
 import Svg, { Path, Circle } from 'react-native-svg';
-import AnimatedSearchHeader from '../../components/AnimatedSearchHeader';
+import AnimatedSearchHeader from '../../../components/AnimatedSearchHeader';
 
 const ServiceAppointmentsScreen = ({ navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);

@@ -9,6 +9,7 @@ import { ProfileDetails } from '@/components/profile/ProfileDetails';
 import { ProductList } from '@/components/profile/ProductList';
 import { ServiceList } from '@/components/profile/ServiceList';
 import api from '@/lib/api';
+import { StandardLoader } from '@/components/StandardLoader';
 import { AuthContext } from '@/context/AuthContext';
 import { User, Skill, Education, Product, Service } from '@/types';
 
@@ -82,11 +83,7 @@ export default function ProfilePage() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-junr-dark-bg">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-junr-blue"></div>
-            </div>
-        );
+        return <StandardLoader />;
     }
 
     if (!user) {

@@ -20,8 +20,8 @@ export function Navbar() {
     setIsOpen(false)
   }
 
-  const isBusiness = userInfo?.user_type === 'Business';
-  const isCustomer = userInfo?.user_type === 'Individual' || userInfo?.user_type === 'individual';
+  const isBusiness = userInfo?.user_type?.toLowerCase() === 'business';
+  const isCustomer = !isBusiness;
 
   // Navigation Links based on Role
   const businessLinks = [

@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { Users, UserPlus, MessageSquare } from 'lucide-react'
 import { resolveImage, getDefaultImageForType } from '@/utils/imageHelper'
 import Link from 'next/link'
+import { StandardLoader } from '@/components/StandardLoader'
 
 export default function Connections() {
   const { userInfo, isLoading: authLoading } = useContext(AuthContext);
@@ -39,11 +40,7 @@ export default function Connections() {
   };
 
   if (authLoading || loading) {
-      return (
-          <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-junr-dark-bg">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-junr-blue"></div>
-          </div>
-      );
+      return <StandardLoader />;
   }
 
   return (
@@ -51,36 +48,39 @@ export default function Connections() {
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 py-8 pt-24 space-y-8">
-        <div>
+        <div className="text-center md:text-left">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Connections
           </h1>
-          <p className="text-gray-500">
+          <p className="text-gray-500 mt-1">
             People you are following.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {connections.length === 0 ? (
-                <div className="col-span-full text-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No connections yet. Find people in <Link href="/discover" className="text-junr-blue hover:underline">Discover</Link>.</p>
+                <div className="col-span-full flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg mb-4">No connections yet.</p>
+                    <Link href="/discover" className="px-6 py-2 bg-junr-blue text-white rounded-full font-medium hover:bg-blue-600 transition-colors">
+                        Find People
+                    </Link>
                 </div>
             ) : (
                 connections.map((user) => (
-                    <div key={user.id} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:shadow-md transition-shadow">
-                        <Link href={`/profile/${user.id}`}>
+                    <div key={user.id} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:shadow-lg transition-all duration-300 group">
+                        <Link href={`/profile/${user.id}`} className="relative">
                             <img
-                                src={resolveImage(user.profile_pic_url, getDefaultImageForType(user.user_type === 'Business' ? 'business' : 'customer'))}
+                                src={resolveImage(user.profile_pic_url, getDefaultImageForType(user.user_type?.toLowerCase() === 'business' ? 'business' : 'customer'))}
                                 alt={user.name}
-                                className="w-20 h-20 rounded-full object-cover mb-4 border-4 border-gray-50 dark:border-gray-700"
+                                className="w-24 h-24 rounded-full object-cover mb-4 border-4 border-gray-50 dark:border-gray-700 group-hover:scale-105 transition-transform"
                             />
                         </Link>
                         <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1">{user.name}</h3>
-                        <span className="px-3 py-1 bg-gray-100 dark:bg-white/5 text-xs rounded-full text-gray-500 mb-4 uppercase tracking-wider">{user.user_type}</span>
+                        <span className="px-3 py-1 bg-gray-100 dark:bg-white/5 text-xs rounded-full text-gray-500 mb-6 uppercase tracking-wider font-bold">{user.user_type}</span>
 
                         <div className="flex gap-2 w-full mt-auto">
-                            <button className="flex-1 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+                            <button className="flex-1 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
                                 <MessageSquare className="w-4 h-4" /> Message
                             </button>
                         </div>

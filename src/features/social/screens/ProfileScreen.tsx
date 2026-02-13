@@ -3,17 +3,17 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions
 import Svg, { Path, Circle, Line } from 'react-native-svg';
 import QRCode from 'react-native-qrcode-svg';
 import { BlurView } from "@react-native-community/blur";
-import { AuthContext } from '../context/AuthContext';
-import { DataService } from '../services/DataService';
+import { AuthContext } from '../../../context/AuthContext';
+import { DataService } from '../../../services/DataService';
 import { launchImageLibrary } from 'react-native-image-picker';
 import DocumentPicker from 'react-native-document-picker';
 import axios from 'axios';
 import { CONFIG } from '../Config';
 import Animated, { useSharedValue, useAnimatedStyle, interpolate, interpolateColor, Extrapolate, useAnimatedScrollHandler, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
-import CustomAlert from '../components/CustomAlert';
-import StandardLoader from '../components/StandardLoader';
-import { useTheme } from '../theme/useTheme';
-import { resolveImage, getDefaultImageForType } from '../utils/ImageHelper';
+import CustomAlert from '../../../components/CustomAlert';
+import StandardLoader from '../../../components/StandardLoader';
+import { useTheme } from '../../../theme/useTheme';
+import { resolveImage, getDefaultImageForType } from '../../../utils/ImageHelper';
 
 const { width, height } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';

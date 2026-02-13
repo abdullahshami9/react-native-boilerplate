@@ -1,25 +1,23 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, TextInput, RefreshControl, Modal } from 'react-native';
-import { AuthContext } from '../context/AuthContext';
+import { View, Text, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { AuthContext } from '../../../context/AuthContext';
 import axios from 'axios';
 import { CONFIG } from '../Config';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
-import StandardLoader from '../components/StandardLoader';
-
-import { useTheme } from '../theme/useTheme';
+import { useTheme } from '../../../theme/useTheme';
+import { FlashList } from '@shopify/flash-list';
+import Img from '../../../shared/components/Img';
 
 export default function ChatListScreen({ navigation }: any) {
-    const { userInfo, isDarkMode } = useContext(AuthContext);
+    const { userInfo } = useContext(AuthContext);
     const theme = useTheme();
     const [chats, setChats] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [showLoader, setShowLoader] = useState(false);
 
     useEffect(() => {
         fetchChats();
-        const interval = setInterval(fetchChats, 5000); // Polling for list updates as fallback
+        const interval = setInterval(fetchChats, 5000);
         return () => clearInterval(interval);
     }, []);
 
@@ -39,10 +37,8 @@ export default function ChatListScreen({ navigation }: any) {
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        setShowLoader(true);
         await fetchChats();
         setRefreshing(false);
-        setShowLoader(false);
     };
 
     const getOtherUser = (chat: any) => {
@@ -62,7 +58,7 @@ export default function ChatListScreen({ navigation }: any) {
                 style={[styles.chatItem, { borderBottomColor: theme.divider }]}
                 onPress={() => navigation.navigate('Chat', { chatId: item.id, otherUser })}
             >
-                <Image source={{ uri: profileUrl }} style={[styles.avatar, { backgroundColor: theme.inputBg }]} />
+                <Img source={{ uri: profileUrl }} style={[styles.avatar, { backgroundColor: theme.inputBg }]} />
                 <View style={styles.chatInfo}>
                     <Text style={[styles.name, { color: theme.text }]}>{otherUser.name}</Text>
                     <Text style={[styles.lastMessage, { color: theme.subText }]} numberOfLines={1}>
@@ -81,24 +77,23 @@ export default function ChatListScreen({ navigation }: any) {
             <View style={[styles.header, { borderBottomColor: theme.divider, backgroundColor: theme.headerBg }]}>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>Messages</Text>
             </View>
-            <FlatList
-                data={chats}
-                renderItem={renderItem}
-                keyExtractor={(item: any) => item.id.toString()}
-                contentContainerStyle={styles.list}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={handleRefresh}
-                        colors={['transparent']}
-                        tintColor="transparent"
-                        progressBackgroundColor="transparent"
-                    />
-                }
-                ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>No conversations yet.</Text>}
-            />
-
-            <StandardLoader visible={showLoader} />
+            <View style={{ flex: 1 }}>
+                <FlashList
+                    data={chats}
+                    renderItem={renderItem}
+                    estimatedItemSize={80}
+                    keyExtractor={(item: any) => item.id.toString()}
+                    contentContainerStyle={styles.list}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={handleRefresh}
+                            tintColor={theme.primary}
+                        />
+                    }
+                    ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>No conversations yet.</Text>}
+                />
+            </View>
         </SafeAreaView>
     );
 }

@@ -25,18 +25,18 @@ import ProductDetailsScreen from './src/features/market/screens/ProductDetailsSc
 import InventoryScreen from './src/screens/InventoryScreen';
 import AddProductScreen from './src/features/market/screens/AddProductScreen';
 import BusinessOnboardingScreen from './src/screens/BusinessOnboardingScreen';
-import ChatListScreen from './src/screens/ChatListScreen';
-import ChatScreen from './src/screens/ChatScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-import ServiceDetailsScreen from './src/screens/ServiceDetailsScreen';
-import BookingScreen from './src/screens/BookingScreen';
+import ChatListScreen from './src/features/social/screens/ChatListScreen';
+import ChatScreen from './src/features/social/screens/ChatScreen';
+import ProfileScreen from './src/features/social/screens/ProfileScreen';
+import ServiceDetailsScreen from './src/features/services/screens/ServiceDetailsScreen';
+import BookingScreen from './src/features/services/screens/BookingScreen';
 import CheckoutScreen from './src/features/market/screens/CheckoutScreen';
 import BusinessCardEditorScreen from './src/screens/BusinessCardEditorScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 
 // Business Screens
 import ManageServicesScreen from './src/screens/business/ManageServicesScreen';
-import ServiceAppointmentsScreen from './src/screens/business/ServiceAppointmentsScreen';
+import ServiceAppointmentsScreen from './src/features/services/screens/ServiceAppointmentsScreen';
 import ProcurementScreen from './src/screens/business/ProcurementScreen';
 import BusinessOrdersScreen from './src/screens/business/BusinessOrdersScreen';
 import CustomerOrdersScreen from './src/screens/CustomerOrdersScreen';

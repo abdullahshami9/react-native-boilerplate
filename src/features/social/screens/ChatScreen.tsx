@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image } from 'react-native';
-import { AuthContext } from '../context/AuthContext';
-import SocketService from '../services/SocketService';
+import { AuthContext } from '../../../context/AuthContext';
+import SocketService from '../../../services/SocketService';
 import axios from 'axios';
 import { CONFIG } from '../Config';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { useTheme } from '../theme/useTheme';
+import { useTheme } from '../../../theme/useTheme';
 
 export default function ChatScreen({ route, navigation }: any) {
     const { chatId, otherUser } = route.params;

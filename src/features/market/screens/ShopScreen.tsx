@@ -8,8 +8,21 @@ import { resolveImage, getDefaultImageForType } from '../../../utils/ImageHelper
 import { FlashList } from '@shopify/flash-list';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import Img from '../../../shared/components/Img';
+import SkeletonLoader from '../../../shared/components/SkeletonLoader';
+import AnimatedButton from '../../../shared/components/AnimatedButton';
+import FadeInList from '../../../shared/components/FadeInList';
 
 const { width } = Dimensions.get('window');
+
+const ProductSkeleton = () => (
+    <View style={styles.productCard}>
+        <SkeletonLoader height={140} width="100%" borderRadius={12} style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }} />
+        <View style={{ padding: 10, gap: 5 }}>
+            <SkeletonLoader height={16} width="80%" />
+            <SkeletonLoader height={14} width="40%" />
+        </View>
+    </View>
+);
 
 const ShopScreen = ({ navigation }: any) => {
     const { userInfo: user, isDarkMode } = React.useContext(AuthContext);
@@ -56,25 +69,27 @@ const ShopScreen = ({ navigation }: any) => {
 
     const flattenedData = data?.pages.flatMap(page => page.products || []) || [];
 
-    const renderItem = ({ item }: any) => (
-        <TouchableOpacity
-            style={[styles.productCard, { backgroundColor: theme.cardBg }]}
-            onPress={() => (navigation as any).navigate(activeTab === 'Products' ? 'ProductDetails' : 'ServiceDetails', activeTab === 'Products' ? { product: item } : { service: item })}
-        >
-            <View style={[styles.imageContainer, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
-                <Img
-                    source={resolveImage(item.image_url || getDefaultImageForType(activeTab === 'Products' ? 'product' : 'service', item.name))}
-                    style={styles.productImage}
-                    resizeMode="cover"
-                />
-            </View>
-            <View style={styles.productInfo}>
-                <Text style={[styles.productName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
-                <Text style={[styles.productPrice, { color: theme.subText }]}>
-                    {item.price} PKR {activeTab === 'Services' ? `• ${item.duration_mins}m` : ''}
-                </Text>
-            </View>
-        </TouchableOpacity>
+    const renderItem = ({ item, index }: any) => (
+        <FadeInList index={index % 10} style={{ flex: 1 }}>
+            <AnimatedButton
+                style={[styles.productCard, { backgroundColor: theme.cardBg }]}
+                onPress={() => (navigation as any).navigate(activeTab === 'Products' ? 'ProductDetails' : 'ServiceDetails', activeTab === 'Products' ? { product: item } : { service: item })}
+            >
+                <View style={[styles.imageContainer, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
+                    <Img
+                        source={resolveImage(item.image_url || getDefaultImageForType(activeTab === 'Products' ? 'product' : 'service', item.name))}
+                        style={styles.productImage}
+                        resizeMode="cover"
+                    />
+                </View>
+                <View style={styles.productInfo}>
+                    <Text style={[styles.productName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
+                    <Text style={[styles.productPrice, { color: theme.subText }]}>
+                        {item.price} PKR {activeTab === 'Services' ? `• ${item.duration_mins}m` : ''}
+                    </Text>
+                </View>
+            </AnimatedButton>
+        </FadeInList>
     );
 
     const renderFooter = () => {
@@ -106,8 +121,14 @@ const ShopScreen = ({ navigation }: any) => {
             </View>
 
             {isLoading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={theme.text} />
+                <View style={styles.listContainer}>
+                    <FlashList
+                        data={[1, 2, 3, 4, 5, 6]}
+                        renderItem={() => <ProductSkeleton />}
+                        estimatedItemSize={220}
+                        numColumns={2}
+                        contentContainerStyle={styles.listContent}
+                    />
                 </View>
             ) : (
                 <View style={styles.listContainer}>

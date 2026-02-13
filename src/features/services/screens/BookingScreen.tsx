@@ -1,9 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Modal } from 'react-native';
-import { AuthContext } from '../context/AuthContext';
-import { DataService } from '../services/DataService';
-import { useTheme } from '../theme/useTheme';
-import CustomAlert from '../components/CustomAlert';
+import { AuthContext } from '../../../context/AuthContext';
+import { DataService } from '../../../services/DataService';
+import { useTheme } from '../../../theme/useTheme';
+import CustomAlert from '../../../components/CustomAlert';
 import Svg, { Path } from 'react-native-svg';
 
 const BookingScreen = ({ route, navigation }: any) => {

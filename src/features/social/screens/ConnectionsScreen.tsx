@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
 import Svg, { Path, Circle, Line } from 'react-native-svg';
-import { DataService } from '../services/DataService';
-import { AuthContext } from '../context/AuthContext';
+import { DataService } from '../../../services/DataService';
+import { AuthContext } from '../../../context/AuthContext';
 import { CONFIG } from '../Config';
-import { useTheme } from '../theme/useTheme';
-import AnimatedSearchHeader from '../components/AnimatedSearchHeader';
-import { resolveImage, getDefaultImageForType } from '../utils/ImageHelper';
+import { useTheme } from '../../../theme/useTheme';
+import AnimatedSearchHeader from '../../../components/AnimatedSearchHeader';
+import { resolveImage, getDefaultImageForType } from '../../../utils/ImageHelper';
 
 const { width } = Dimensions.get('window');
 

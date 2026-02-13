@@ -1,11 +1,11 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, Modal, RefreshControl } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { DataService } from '../services/DataService';
-import { AuthContext } from '../context/AuthContext';
-import { useTheme } from '../theme/useTheme';
-import CustomAlert from '../components/CustomAlert';
-import StandardLoader from '../components/StandardLoader';
+import { DataService } from '../../../services/DataService';
+import { AuthContext } from '../../../context/AuthContext';
+import { useTheme } from '../../../theme/useTheme';
+import CustomAlert from '../../../components/CustomAlert';
+import StandardLoader from '../../../components/StandardLoader';
 
 const ServiceAppointmentsScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);

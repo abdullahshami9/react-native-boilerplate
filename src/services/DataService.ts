@@ -318,9 +318,9 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
-    discoverUsers: async (search: string, excludeId: number, type: string = 'All') => {
+    discoverUsers: async (search: string, excludeId: number, type: string = 'All', cursor: number = 0, limit: number = 20) => {
         try {
-            const response = await axios.get(`${CONFIG.API_URL}/api/users/discover`, { params: { search, excludeId, type } });
+            const response = await axios.get(`${CONFIG.API_URL}/api/users/discover`, { params: { search, excludeId, type, cursor, limit } });
             return response.data;
         } catch (error: any) {
             LoggerService.error('Discover Users Error:', error, 'DataService');

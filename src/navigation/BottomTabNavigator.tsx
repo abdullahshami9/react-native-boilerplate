@@ -51,7 +51,17 @@ const BottomTabNavigator = () => {
             <Tab.Navigator
                 screenOptions={{
                     headerShown: false,
-                    tabBarStyle: {
+                    tabBarStyle: Platform.OS === 'web' ? {
+                        backgroundColor: theme.navBg,
+                        height: 70,
+                        paddingBottom: 10,
+                        paddingTop: 10,
+                        borderTopWidth: 1,
+                        borderTopColor: theme.inputBorder || '#E2E8F0',
+                        elevation: 0,
+                        position: 'relative', // Standard web flow
+                        width: '100%',
+                    } : {
                         backgroundColor: theme.navBg,
                         height: Platform.OS === 'ios' ? 85 : 65,
                         paddingBottom: Platform.OS === 'ios' ? 30 : 10,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Modal, TextInput, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Modal, TextInput, ScrollView, ActivityIndicator, Platform } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import { DataService } from '../../services/DataService';
 import CustomAlert from '../../components/CustomAlert';
@@ -30,6 +30,7 @@ const ManageServicesScreen = ({ navigation }: any) => {
 
     // Alert State
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' });
+    const isWeb = Platform.OS === 'web';
 
     const theme = {
         bg: isDarkMode ? '#1A202C' : '#F7FAFC',
@@ -58,6 +59,26 @@ const ManageServicesScreen = ({ navigation }: any) => {
     };
 
     const handleImagePick = async () => {
+        if (isWeb) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e: any) => {
+                const file = e.target.files[0];
+                if (file) {
+                    setImage(file);
+                    // For preview, we need to handle file object or createObjectURL
+                    // The component uses image.uri.
+                    // We can augment the file object to have uri property for compatibility
+                    file.uri = URL.createObjectURL(file);
+                    setImage(file);
+                    setShowImageOptions(false);
+                }
+            };
+            input.click();
+            return;
+        }
+
         const result = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1 });
         if (result.assets && result.assets.length > 0) {
             setImage(result.assets[0]);

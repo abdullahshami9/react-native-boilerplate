@@ -90,7 +90,8 @@ const AppNav = () => {
         }}>
           {userToken !== null ? (
             // User is logged in
-            userInfo?.is_tunnel_completed ? (
+            // Safe check for is_tunnel_completed to handle 0/1, "0"/"1", true/false
+            (Number(userInfo?.is_tunnel_completed) === 1 || userInfo?.is_tunnel_completed === true) ? (
               // Main App Stack
               <>
                 <Stack.Screen name="Main" component={BottomTabNavigator} />

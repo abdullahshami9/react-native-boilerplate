@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 import { CONFIG } from '../Config';
 import LoggerService from './LoggerService';
 
@@ -137,6 +138,15 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
+    deleteProduct: async (productId: number) => {
+        try {
+            const response = await axios.delete(`${CONFIG.API_URL}/api/products/${productId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Delete Product Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
     getProducts: async (userId: number) => {
         try {
             const response = await axios.get(`${CONFIG.API_URL}/api/products/${userId}`);
@@ -218,11 +228,16 @@ export const DataService = {
     uploadProfilePic: async (userId: number, file: any) => {
         const formData = new FormData();
         formData.append('userId', String(userId));
-        formData.append('image', {
-            uri: file.uri,
-            type: file.type || 'image/jpeg',
-            name: file.fileName || 'profile.jpg'
-        });
+
+        if (Platform.OS === 'web') {
+            formData.append('image', file);
+        } else {
+            formData.append('image', {
+                uri: file.uri,
+                type: file.type || 'image/jpeg',
+                name: file.fileName || 'profile.jpg'
+            });
+        }
 
         try {
             const response = await axios.post(`${CONFIG.API_URL}/api/upload/profile`, formData, {
@@ -238,11 +253,16 @@ export const DataService = {
         const formData = new FormData();
         formData.append('productId', String(productId));
         formData.append('index', String(index));
-        formData.append('image', {
-            uri: file.uri,
-            type: file.type || 'image/jpeg',
-            name: file.fileName || `product-${index}.jpg`
-        });
+
+        if (Platform.OS === 'web') {
+            formData.append('image', file);
+        } else {
+            formData.append('image', {
+                uri: file.uri,
+                type: file.type || 'image/jpeg',
+                name: file.fileName || `product-${index}.jpg`
+            });
+        }
 
         try {
             const response = await axios.post(`${CONFIG.API_URL}/api/upload/product`, formData, {
@@ -257,11 +277,16 @@ export const DataService = {
     uploadServiceImage: async (serviceId: number, file: any) => {
         const formData = new FormData();
         formData.append('serviceId', String(serviceId));
-        formData.append('image', {
-            uri: file.uri,
-            type: file.type || 'image/jpeg',
-            name: file.fileName || `service-${serviceId}.jpg`
-        });
+
+        if (Platform.OS === 'web') {
+            formData.append('image', file);
+        } else {
+            formData.append('image', {
+                uri: file.uri,
+                type: file.type || 'image/jpeg',
+                name: file.fileName || `service-${serviceId}.jpg`
+            });
+        }
 
         try {
             const response = await axios.post(`${CONFIG.API_URL}/api/upload/service`, formData, {

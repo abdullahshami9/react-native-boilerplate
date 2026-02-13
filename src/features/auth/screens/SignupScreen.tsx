@@ -1,15 +1,15 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, StatusBar as RNStatusBar, ScrollView, Alert, Platform, Image } from 'react-native';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
-import { AuthContext } from '../context/AuthContext';
-import { useTheme } from '../theme/useTheme';
-import LocalAssets from '../utils/LocalAssets';
+import { AuthContext } from '../../../context/AuthContext';
+import { useTheme } from '../../../theme/useTheme';
+import LocalAssets from '../../../utils/LocalAssets';
 
 const { width, height } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 
-import CustomAlert from '../components/CustomAlert';
-import TermsModal from '../components/TermsModal';
+import CustomAlert from '../../../components/CustomAlert';
+import TermsModal from '../../../components/TermsModal';
 
 const SignupScreen = ({ navigation }: any) => {
     const [email, setEmail] = useState('');

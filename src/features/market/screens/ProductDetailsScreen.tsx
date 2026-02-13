@@ -2,13 +2,13 @@ import React, { useRef } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, StatusBar, Share } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 
-import { CartContext } from '../context/CartContext';
+import { CartContext } from '../../../context/CartContext';
 import { CONFIG } from '../Config';
-import MiniToast, { MiniToastRef } from '../components/MiniToast';
+import MiniToast, { MiniToastRef } from '../../../components/MiniToast';
 
 const { width } = Dimensions.get('window');
 
-import { AuthContext } from '../context/AuthContext';
+import { AuthContext } from '../../../context/AuthContext';
 
 // ...
 

@@ -8,7 +8,7 @@ import { useTheme } from '../theme/useTheme';
 // Screens
 import DiscoverScreen from '../screens/DiscoverScreen';
 import ConnectionsScreen from '../screens/ConnectionsScreen';
-import ShopScreen from '../screens/ShopScreen';
+import ShopScreen from '../features/market/screens/ShopScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 // Business Screens

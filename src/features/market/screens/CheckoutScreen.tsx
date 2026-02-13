@@ -1,12 +1,12 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ScrollView } from 'react-native';
-import { CartContext } from '../context/CartContext';
-import { AuthContext } from '../context/AuthContext';
-import { DataService } from '../services/DataService';
+import { CartContext } from '../../../context/CartContext';
+import { AuthContext } from '../../../context/AuthContext';
+import { DataService } from '../../../services/DataService';
 import { CONFIG } from '../Config';
 import Svg, { Path, Circle } from 'react-native-svg';
-import { useTheme } from '../theme/useTheme';
-import CustomAlert from '../components/CustomAlert';
+import { useTheme } from '../../../theme/useTheme';
+import CustomAlert from '../../../components/CustomAlert';
 
 const CheckoutScreen = ({ navigation }: any) => {
     const { cartItems, clearCart, removeFromCart } = useContext(CartContext);

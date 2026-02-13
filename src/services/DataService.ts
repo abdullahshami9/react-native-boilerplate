@@ -327,9 +327,9 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
-    discoverProducts: async (search: string, type: string = 'All') => {
+    discoverProducts: async (search: string, cursor: number = 0, limit: number = 10, type: string = 'All') => {
         try {
-            const response = await axios.get(`${CONFIG.API_URL}/api/products/discover`, { params: { search, type } });
+            const response = await axios.get(`${CONFIG.API_URL}/api/products/discover`, { params: { search, cursor, limit, type } });
             return response.data;
         } catch (error: any) {
             LoggerService.error('Discover Products Error:', error, 'DataService');

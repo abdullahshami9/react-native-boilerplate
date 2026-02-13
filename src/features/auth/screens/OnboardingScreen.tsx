@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, StatusBar as RNStatusBar, Image, TouchableOpacity } from 'react-native';
-import { useTheme } from '../theme/useTheme';
+import { useTheme } from '../../../theme/useTheme';
 
 const OnboardingScreen = ({ navigation }: any) => {
   const [isNavigating, setIsNavigating] = React.useState(false);
@@ -59,12 +59,12 @@ const OnboardingScreen = ({ navigation }: any) => {
 
       {/* Header */}
       <View style={styles.header}>
-        {/* <Image source={require('../assets/logo-provision.png')} style={styles.logoImage} resizeMode="contain" /> */}
+        {/* <Image source={require('../../../assets/logo-provision.png')} style={styles.logoImage} resizeMode="contain" /> */}
       </View>
 
       {/* Illustration */}
       <View style={styles.illustrationContainer}>
-        <Image source={require('../assets/starter-img.png')} style={styles.illustrationImage} resizeMode="contain" />
+        <Image source={require('../../../assets/starter-img.png')} style={styles.illustrationImage} resizeMode="contain" />
       </View>
 
       {/* Content */}

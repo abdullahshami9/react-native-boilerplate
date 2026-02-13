@@ -1,12 +1,12 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, StatusBar as RNStatusBar, ScrollView, Platform, Image } from 'react-native';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
-import { AuthContext } from '../context/AuthContext';
-import CustomAlert from '../components/CustomAlert';
+import { AuthContext } from '../../../context/AuthContext';
+import CustomAlert from '../../../components/CustomAlert';
 import ReactNativeBiometrics, { BiometryTypes } from 'react-native-biometrics';
-import LoggerService from '../services/LoggerService';
-import { useTheme } from '../theme/useTheme';
-import LocalAssets from '../utils/LocalAssets';
+import LoggerService from '../../../services/LoggerService';
+import { useTheme } from '../../../theme/useTheme';
+import LocalAssets from '../../../utils/LocalAssets';
 
 const { width, height } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';

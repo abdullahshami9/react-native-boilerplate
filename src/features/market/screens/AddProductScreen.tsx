@@ -2,12 +2,12 @@ import React, { useState, useContext } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, Dimensions, ActivityIndicator, Modal, FlatList, Platform } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { DataService } from '../services/DataService';
-import { AuthContext } from '../context/AuthContext';
-import CustomAlert from '../components/CustomAlert';
-import { useTheme } from '../theme/useTheme';
-import LocalAssets from '../utils/LocalAssets';
-import { resolveImage } from '../utils/ImageHelper';
+import { DataService } from '../../../services/DataService';
+import { AuthContext } from '../../../context/AuthContext';
+import CustomAlert from '../../../components/CustomAlert';
+import { useTheme } from '../../../theme/useTheme';
+import LocalAssets from '../../../utils/LocalAssets';
+import { resolveImage } from '../../../utils/ImageHelper';
 
 const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';

@@ -7,24 +7,30 @@ import { Platform } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { ActivityIndicator, View } from 'react-native';
 
+// React Query & Persistence
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import storage from './src/shared/utils/storage';
+
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { CartProvider } from './src/context/CartContext';
 import SocketService from './src/services/SocketService';
 import MiniToast, { MiniToastRef } from './src/components/MiniToast';
-import LoginScreen from './src/screens/LoginScreen';
-import SignupScreen from './src/screens/SignupScreen';
+import LoginScreen from './src/features/auth/screens/LoginScreen';
+import SignupScreen from './src/features/auth/screens/SignupScreen';
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
-import OnboardingScreen from './src/screens/OnboardingScreen';
-import ProductDetailsScreen from './src/screens/ProductDetailsScreen';
+import OnboardingScreen from './src/features/auth/screens/OnboardingScreen';
+import ProductDetailsScreen from './src/features/market/screens/ProductDetailsScreen';
 import InventoryScreen from './src/screens/InventoryScreen';
-import AddProductScreen from './src/screens/AddProductScreen';
+import AddProductScreen from './src/features/market/screens/AddProductScreen';
 import BusinessOnboardingScreen from './src/screens/BusinessOnboardingScreen';
 import ChatListScreen from './src/screens/ChatListScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import ServiceDetailsScreen from './src/screens/ServiceDetailsScreen';
 import BookingScreen from './src/screens/BookingScreen';
-import CheckoutScreen from './src/screens/CheckoutScreen';
+import CheckoutScreen from './src/features/market/screens/CheckoutScreen';
 import BusinessCardEditorScreen from './src/screens/BusinessCardEditorScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 
@@ -49,6 +55,23 @@ import PaymentIntegrationScreen from './src/screens/tunnel/PaymentIntegrationScr
 import IdentityGateScreen from './src/screens/tunnel/IdentityGateScreen';
 
 const Stack = Platform.OS === 'web' ? createStackNavigator() : createNativeStackNavigator();
+
+// React Query Setup
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours
+    },
+  },
+});
+
+const asyncStoragePersister = createAsyncStoragePersister({
+  storage: {
+    getItem: async (key) => storage.getString(key),
+    setItem: async (key, value) => storage.setString(key, value),
+    removeItem: async (key) => storage.delete(key),
+  },
+});
 
 const AppNav = () => {
   const { isLoading, userToken, userInfo } = useContext(AuthContext);
@@ -90,7 +113,6 @@ const AppNav = () => {
         }}>
           {userToken !== null ? (
             // User is logged in
-            // Safe check for is_tunnel_completed to handle 0/1, "0"/"1", true/false
             (Number(userInfo?.is_tunnel_completed) === 1 || userInfo?.is_tunnel_completed === true) ? (
               // Main App Stack
               <>
@@ -158,11 +180,13 @@ const App = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <AuthProvider>
-          <CartProvider>
-            <AppNav />
-          </CartProvider>
-        </AuthProvider>
+        <PersistQueryClientProvider client={queryClient} persistOptions={{ persister: asyncStoragePersister }}>
+          <AuthProvider>
+            <CartProvider>
+              <AppNav />
+            </CartProvider>
+          </AuthProvider>
+        </PersistQueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

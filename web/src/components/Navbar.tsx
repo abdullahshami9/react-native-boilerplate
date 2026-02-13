@@ -25,10 +25,12 @@ export function Navbar() {
 
   // Navigation Links based on Role
   const businessLinks = [
-    { name: 'Profile', href: `/profile/${userInfo?.id}` },
     { name: 'Stats', href: '/business/stats' },
+    { name: 'Inventory', href: '/business/products' },
+    { name: 'Services', href: '/business/services' },
     { name: 'Orders', href: '/business/orders' },
-    { name: 'Notifications', href: '/notifications' },
+    { name: 'Messages', href: '/messages' },
+    { name: 'Profile', href: `/profile/${userInfo?.id}` },
   ];
 
   const customerLinks = [

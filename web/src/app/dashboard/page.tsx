@@ -153,7 +153,7 @@ export default function Dashboard() {
         </div>
 
         {isBusiness ? (
-             <InventoryTable products={products} />
+             <InventoryTable products={products} basePath="/business/products" />
         ) : (
             <div className="space-y-10">
                 <HorizontalList title="Discover Products" items={products} type="product" />

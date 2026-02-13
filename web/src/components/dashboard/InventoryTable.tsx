@@ -6,12 +6,12 @@ import { Edit, Trash2, Plus } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
-export function InventoryTable({ products, onDelete }: { products: Product[], onDelete?: (id: number) => void }) {
+export function InventoryTable({ products, onDelete, basePath = '/admin/products' }: { products: Product[], onDelete?: (id: number) => void, basePath?: string }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
       <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Inventory</h2>
-        <Link href="/admin/products/add" className="flex items-center gap-2 px-4 py-2 bg-junr-blue text-white rounded-lg hover:bg-blue-600 transition">
+        <Link href={`${basePath}/add`} className="flex items-center gap-2 px-4 py-2 bg-junr-blue text-white rounded-lg hover:bg-blue-600 transition">
           <Plus className="w-4 h-4" /> Add Product
         </Link>
       </div>
@@ -60,7 +60,7 @@ export function InventoryTable({ products, onDelete }: { products: Product[], on
                     </td>
                     <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
-                        <Link href={`/admin/products/edit/${product.id}`} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500">
+                        <Link href={`${basePath}/edit/${product.id}`} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500">
                         <Edit className="w-4 h-4" />
                         </Link>
                         {onDelete && (

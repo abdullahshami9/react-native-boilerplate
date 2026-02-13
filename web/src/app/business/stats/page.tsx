@@ -128,7 +128,7 @@ export default function BusinessStats() {
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">Inventory Management</h2>
                 <p className="text-gray-500 text-sm">Manage your products and stock levels.</p>
             </div>
-            <InventoryTable products={products} />
+            <InventoryTable products={products} basePath="/business/products" />
         </section>
 
       </main>

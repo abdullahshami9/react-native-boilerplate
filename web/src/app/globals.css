@@ -3,9 +3,9 @@
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-junr-dark-bg: #1A202C;
+  --color-junr-dark-bg: #0b141a;
   --color-junr-light-bg: #F7FAFC;
-  --color-junr-blue: #4A9EFF;
+  --color-junr-blue: #00a884; /* Updated to Mobile Primary (Teal) */
   --color-junr-green: #38A169;
 
   --font-inter: var(--font-inter);
@@ -15,7 +15,7 @@
   --background: #F7FAFC;
   --foreground: #2D3748;
   --card-bg: #FFFFFF;
-  --input-bg: #FFFFFF;
+  --input-bg: rgba(255, 255, 255, 0.4);
   --border-color: #E2E8F0;
 
   /* Text colors */
@@ -24,15 +24,15 @@
 }
 
 .dark {
-  --background: #1A202C;
-  --foreground: #F7FAFC;
-  --card-bg: #2D3748;
-  --input-bg: #2D3748;
-  --border-color: #4A5568;
+  --background: #0b141a;
+  --foreground: #e9edef;
+  --card-bg: #202c33;
+  --input-bg: #2a3942;
+  --border-color: #37404a;
 
   /* Text colors */
-  --text-primary: #F7FAFC;
-  --text-secondary: #A0AEC0;
+  --text-primary: #e9edef;
+  --text-secondary: #8696a0;
 }
 
 body {
@@ -44,14 +44,14 @@ body {
 
 /* Glassmorphism Utilities */
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.9); /* More opaque for mobile feel */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .dark .glass {
-  background: rgba(26, 32, 44, 0.7);
+  background: rgba(32, 44, 51, 0.9); /* Mobile Header BG with opacity */
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 

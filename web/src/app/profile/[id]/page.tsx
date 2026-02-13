@@ -8,6 +8,7 @@ import { ProfileTabs } from '@/components/profile/ProfileTabs';
 import { ProfileDetails } from '@/components/profile/ProfileDetails';
 import { ProductList } from '@/components/profile/ProductList';
 import { ServiceList } from '@/components/profile/ServiceList';
+import { DashboardGrid } from '@/components/profile/DashboardGrid';
 import api from '@/lib/api';
 import { StandardLoader } from '@/components/StandardLoader';
 import { AuthContext } from '@/context/AuthContext';
@@ -24,6 +25,7 @@ export default function ProfilePage() {
     const [education, setEducation] = useState<Education[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [services, setServices] = useState<Service[]>([]);
+    const [counts, setCounts] = useState<any>({});
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
 
@@ -57,6 +59,10 @@ export default function ProfilePage() {
                     fetchProducts();
                     fetchServices();
                 }
+
+                if (userInfo?.id === res.data.user.id) {
+                    fetchCounts();
+                }
             } else {
                 // If profile not found or error
                 console.error("Profile load error", res.data.message);
@@ -79,6 +85,13 @@ export default function ProfilePage() {
         try {
             const res = await api.get(`/api/services/${id}`);
             if (res.data.success) setServices(res.data.services);
+        } catch (e) { console.error(e) }
+    };
+
+    const fetchCounts = async () => {
+        try {
+            const res = await api.get('/api/user/counts');
+            if (res.data.success) setCounts(res.data);
         } catch (e) { console.error(e) }
     };
 
@@ -122,6 +135,10 @@ export default function ProfilePage() {
 
             <main className="max-w-3xl mx-auto px-4 relative z-10">
                 <ProfileInfo user={user} isBusiness={isBusiness} />
+
+                {isOwnProfile && (
+                    <DashboardGrid userType={user.user_type} counts={counts} />
+                )}
 
                 {/* Tabs */}
                 <ProfileTabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />

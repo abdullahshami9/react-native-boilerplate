@@ -59,6 +59,20 @@ export default function ChatScreen({ route, navigation }: any) {
     };
 
     const handlePickImage = async () => {
+        if (Platform.OS === 'web') {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e: any) => {
+                const file = e.target.files[0];
+                if (file) {
+                    uploadImage(file);
+                }
+            };
+            input.click();
+            return;
+        }
+
         const result = await launchImageLibrary({ mediaType: 'photo' });
         if (result.assets && result.assets.length > 0) {
             const asset = result.assets[0];
@@ -68,11 +82,16 @@ export default function ChatScreen({ route, navigation }: any) {
 
     const uploadImage = async (file: any) => {
         const formData = new FormData();
-        formData.append('image', {
-            uri: file.uri,
-            type: file.type || 'image/jpeg',
-            name: file.fileName || 'chat.jpg'
-        });
+
+        if (Platform.OS === 'web') {
+            formData.append('image', file);
+        } else {
+            formData.append('image', {
+                uri: file.uri,
+                type: file.type || 'image/jpeg',
+                name: file.fileName || 'chat.jpg'
+            });
+        }
 
         try {
             const response = await axios.post(`${CONFIG.API_URL}/api/upload/chat`, formData, {

@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl, Modal } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl, Modal, Platform, Alert, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { DataService } from '../services/DataService';
 import { AuthContext } from '../context/AuthContext';
 import { CONFIG } from '../Config';
 import CustomAlert from '../components/CustomAlert';
 import StandardLoader from '../components/StandardLoader';
+
+const isWeb = Platform.OS === 'web';
+const { width } = Dimensions.get('window');
 
 const InventoryScreen = ({ navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
@@ -68,6 +71,41 @@ const InventoryScreen = ({ navigation }: any) => {
         navigation.navigate('AddProduct', { product });
     };
 
+    const handleDelete = (item: any) => {
+        // Use Platform friendly alert or custom alert
+        if (isWeb) {
+            if (window.confirm(`Delete ${item.name}?`)) {
+                performDelete(item.id);
+            }
+        } else {
+            Alert.alert('Delete Product', `Are you sure you want to delete ${item.name}?`, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: () => performDelete(item.id) }
+            ]);
+        }
+    };
+
+    const performDelete = async (id: number) => {
+        try {
+            setShowLoader(true);
+            const res = await DataService.deleteProduct(id);
+            if (res.success) {
+                setAlertTitle('Success');
+                setAlertMessage('Product deleted');
+                setAlertType('success');
+                setAlertVisible(true);
+                fetchInventory();
+            }
+        } catch (error: any) {
+            setAlertTitle('Error');
+            setAlertMessage('Failed to delete product');
+            setAlertType('error');
+            setAlertVisible(true);
+        } finally {
+            setShowLoader(false);
+        }
+    };
+
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
             {/* Header */}
@@ -89,8 +127,10 @@ const InventoryScreen = ({ navigation }: any) => {
                 <View style={styles.center}><ActivityIndicator size="large" color={theme.text} /></View>
             ) : (
                 <FlatList
+                    key={isWeb ? 'grid' : 'list'}
                     data={products}
                     keyExtractor={(item) => item.id.toString()}
+                    numColumns={isWeb ? 3 : 1}
                     contentContainerStyle={styles.listContent}
                     refreshControl={
                         <RefreshControl
@@ -107,11 +147,15 @@ const InventoryScreen = ({ navigation }: any) => {
                             : null;
 
                         return (
-                            <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
+                            <View style={[
+                                styles.card,
+                                { backgroundColor: theme.cardBg },
+                                isWeb && { flex: 1, flexDirection: 'column', maxWidth: '32%', margin: 5, alignItems: 'flex-start' }
+                            ]}>
                                 {imageUrl ? (
-                                    <Image source={{ uri: imageUrl }} style={styles.image} />
+                                    <Image source={{ uri: imageUrl }} style={[styles.image, isWeb && { width: '100%', height: 150, marginBottom: 10 }]} />
                                 ) : (
-                                    <View style={[styles.imagePlaceholder, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} />
+                                    <View style={[styles.imagePlaceholder, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }, isWeb && { width: '100%', height: 150, marginBottom: 10 }]} />
                                 )}
 
                                 <View style={styles.info}>
@@ -126,13 +170,22 @@ const InventoryScreen = ({ navigation }: any) => {
                                     )}
                                 </View>
 
-                                <TouchableOpacity style={[styles.editButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => handleEditStock(item)}>
-                                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 5 }}>
-                                        <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                        <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                    </Svg>
-                                    <Text style={[styles.editButtonText, { color: theme.text }]}>Edit</Text>
-                                </TouchableOpacity>
+                                <View style={{ flexDirection: 'row', gap: 10, marginTop: isWeb ? 10 : 0 }}>
+                                    <TouchableOpacity style={[styles.editButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => handleEditStock(item)}>
+                                        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 5 }}>
+                                            <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                            <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                        </Svg>
+                                        <Text style={[styles.editButtonText, { color: theme.text }]}>Edit</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity style={[styles.editButton, { backgroundColor: '#FED7D7' }]} onPress={() => handleDelete(item)}>
+                                        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2">
+                                            <Path d="M3 6h18" />
+                                            <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                        </Svg>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         );
                     }}

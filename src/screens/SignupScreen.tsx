@@ -1,10 +1,12 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, StatusBar as RNStatusBar, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, StatusBar as RNStatusBar, ScrollView, Alert, Platform, Image } from 'react-native';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../theme/useTheme';
+import LocalAssets from '../utils/LocalAssets';
 
 const { width, height } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
 
 import CustomAlert from '../components/CustomAlert';
 import TermsModal from '../components/TermsModal';
@@ -84,26 +86,32 @@ const SignupScreen = ({ navigation }: any) => {
         console.log('Google sign up clicked');
     };
 
-    return (
-        <View style={[styles.container, { backgroundColor: theme.authBg }]}>
-            <RNStatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
-
-            <ScrollView contentContainerStyle={styles.contentContainer}>
-                {/* Back Button */}
+    const renderContent = () => (
+        <ScrollView contentContainerStyle={styles.contentContainer}>
+            {/* Back Button */}
+            {!isWeb && (
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                         <Path d="M15 18L9 12L15 6" stroke={theme.iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </Svg>
                 </TouchableOpacity>
+            )}
+            {isWeb && (
+                 <TouchableOpacity style={[styles.backButton, { top: 20 }]} onPress={() => navigation.goBack()}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <Path d="M15 18L9 12L15 6" stroke={theme.iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </Svg>
+                </TouchableOpacity>
+            )}
 
-                <View style={styles.content}>
-                    {/* Welcome Text */}
-                    <View style={styles.welcomeSection}>
-                        <Text style={[styles.welcomeText, { color: theme.text }]}>Let's get{'\n'}started</Text>
-                    </View>
+            <View style={styles.content}>
+                {/* Welcome Text */}
+                <View style={styles.welcomeSection}>
+                    <Text style={[styles.welcomeText, { color: theme.text }]}>Let's get{'\n'}started</Text>
+                </View>
 
-                    {/* Form Section */}
-                    <View style={styles.formSection}>
+                {/* Form Section */}
+                <View style={styles.formSection}>
                         {/* Email Input */}
                         <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
                             <View style={styles.inputIcon}>
@@ -235,6 +243,27 @@ const SignupScreen = ({ navigation }: any) => {
 
                 {/* Bottom Indicator Removed */}
             </ScrollView>
+    );
+
+    return (
+        <View style={[styles.container, { backgroundColor: theme.authBg }]}>
+            <RNStatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+
+            {isWeb ? (
+                 <View style={{ flex: 1, flexDirection: 'row' }}>
+                     <View style={{ flex: 1, backgroundColor: '#00a884', justifyContent: 'center', alignItems: 'center' }}>
+                         <Image
+                             source={LocalAssets['business_startup_growth']}
+                             style={{ width: '80%', height: '80%', resizeMode: 'contain' }}
+                         />
+                     </View>
+                     <View style={{ flex: 1 }}>
+                        {renderContent()}
+                     </View>
+                 </View>
+            ) : (
+                renderContent()
+            )}
 
             <CustomAlert
                 visible={alertConfig.visible}

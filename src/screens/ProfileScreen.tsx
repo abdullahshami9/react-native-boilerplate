@@ -16,6 +16,7 @@ import { useTheme } from '../theme/useTheme';
 import { resolveImage, getDefaultImageForType } from '../utils/ImageHelper';
 
 const { width, height } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
 
 // Calendar Contribution Graph Component
 const ContributionGraph = ({ data, onDateClick, isBusiness }: any) => {
@@ -442,6 +443,34 @@ const ProfileScreen = ({ navigation, route }: any) => {
     };
 
     const handleUploadProfilePic = async () => {
+        if (isWeb) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e: any) => {
+                const file = e.target.files[0];
+                if (file) {
+                    try {
+                        const res = await DataService.uploadProfilePic(userInfo.id, file);
+                        if (res.success) {
+                            setAlertTitle('Success');
+                            setAlertMessage('Profile picture updated!');
+                            setAlertType('success');
+                            setAlertVisible(true);
+                            fetchData();
+                        }
+                    } catch (err: any) {
+                        setAlertTitle('Error');
+                        setAlertMessage('Failed to upload picture.');
+                        setAlertType('error');
+                        setAlertVisible(true);
+                    }
+                }
+            };
+            input.click();
+            return;
+        }
+
         try {
             const result = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1 });
             if (result.assets && result.assets.length > 0) {
@@ -553,9 +582,57 @@ const ProfileScreen = ({ navigation, route }: any) => {
         };
     });
 
-    return (
-        <View style={[styles.container, { backgroundColor: theme.bg }]}>
-            {/* Animated Header */}
+    const renderHeader = () => {
+        if (isWeb) {
+            // Static Header for Web
+            return (
+                <View style={[styles.headerBackground, { position: 'relative', height: 320, backgroundColor: isDarkMode ? 'rgba(32, 44, 51, 0.95)' : 'rgba(217, 225, 235, 0.9)', borderBottomLeftRadius: 40, borderBottomRightRadius: 40 }]}>
+                     <View style={styles.headerTop}>
+                        {isOwnProfile && (
+                             <TouchableOpacity onPress={openModal} style={styles.iconButton}>
+                                 <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? '#fff' : '#2D3748'} strokeWidth="2">
+                                     <Circle cx="12" cy="12" r="3" />
+                                     <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                                 </Svg>
+                             </TouchableOpacity>
+                        )}
+                        {!isOwnProfile && (
+                            <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.iconButton, { marginRight: 'auto' }]}>
+                                <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? '#fff' : '#2D3748'} strokeWidth="2">
+                                    <Path d="M19 12H5M12 19l-7-7 7-7" />
+                                </Svg>
+                            </TouchableOpacity>
+                        )}
+                     </View>
+
+                    <View style={[styles.qrContainer]}>
+                        <TouchableOpacity onPress={() => setBusinessCardVisible(true)}>
+                            <View style={[styles.qrWrapper, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', elevation: isDarkMode ? 0 : 5 }]}>
+                                <QRCode value={`raabtaa://user/${displayedUser?.id}`} size={140} color={isDarkMode ? 'white' : 'black'} backgroundColor={isDarkMode ? '#2D3748' : 'white'} />
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={[styles.avatarContainerAbsolute, { transform: [{ translateY: 0 }] }]}>
+                        <TouchableOpacity onPress={isOwnProfile ? handleUploadProfilePic : undefined} activeOpacity={isOwnProfile ? 0.8 : 1}>
+                            <View style={[styles.avatarWrapper, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', borderColor: isDarkMode ? 'transparent' : '#F7FAFC', elevation: isDarkMode ? 0 : 5 }]}>
+                                <Image source={getProfileSource()} style={styles.avatar} />
+                                {isOwnProfile && (
+                                    <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#4A9EFF', borderRadius: 12, padding: 4 }}>
+                                        <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                                            <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                            <Circle cx="12" cy="13" r="4" />
+                                        </Svg>
+                                    </View>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            );
+        }
+
+        return (
             <Animated.View style={[styles.headerBackground, headerHeightStyle, { backgroundColor: isDarkMode ? 'rgba(32, 44, 51, 0.95)' : 'rgba(217, 225, 235, 0.9)' }]}>
                 <View style={styles.headerTop}>
                     {/* Small Animated QR Icon for Collapsed Header */}
@@ -629,10 +706,16 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     </TouchableOpacity>
                 </Animated.View>
             </Animated.View>
+        );
+    }
+
+    return (
+        <View style={[styles.container, { backgroundColor: theme.bg }]}>
+            {renderHeader()}
 
             <Animated.ScrollView
                 contentContainerStyle={styles.contentContainer}
-                onScroll={scrollHandler}
+                onScroll={isWeb ? undefined : scrollHandler}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
@@ -645,9 +728,20 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     />
                 }
             >
-                <View style={styles.spacer} />
+                {!isWeb && <View style={styles.spacer} />}
 
-                <Animated.View style={[styles.infoSection, bodyInfoOpacity]}>
+                <View style={isWeb ? {} : [styles.infoSection, { opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.5], [1, 0], Extrapolate.CLAMP) } ]}>
+                  {/* On web, opacity logic is removed or simplified. Re-using bodyInfoOpacity but without animation */}
+                  {isWeb ? (
+                     <View style={[styles.infoSection]}>
+                        <Text style={[styles.nameText, { color: theme.text }]}>{displayedUser?.name}</Text>
+                        <Text style={[styles.roleText, { color: theme.subText }]}>{displayedUser?.email}</Text>
+                        <View style={[styles.userTypeBadge, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
+                            <Text style={[styles.userTypeBadgeText, { color: isDarkMode ? '#F7FAFC' : '#4A5568' }]}>{isBusinessUser ? 'Business' : 'Individual'}</Text>
+                        </View>
+                     </View>
+                  ) : (
+                    <Animated.View style={[styles.infoSection, bodyInfoOpacity]}>
                     <Text style={[styles.nameText, { color: theme.text }]}>{displayedUser?.name}</Text>
                     <Text style={[styles.roleText, { color: theme.subText }]}>{displayedUser?.email}</Text>
                     <View style={[styles.userTypeBadge, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
@@ -998,12 +1092,16 @@ const ProfileScreen = ({ navigation, route }: any) => {
             {/* Business Card Modal */}
             <Modal visible={businessCardVisible} transparent animationType="fade" onRequestClose={() => setBusinessCardVisible(false)}>
                 <View style={styles.modalOverlay}>
-                    <BlurView
-                        style={StyleSheet.absoluteFill}
-                        blurType={isDarkMode ? "dark" : "light"}
-                        blurAmount={5}
-                        reducedTransparencyFallbackColor="white"
-                    />
+                    {isWeb ? (
+                        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }]} />
+                    ) : (
+                        <BlurView
+                            style={StyleSheet.absoluteFill}
+                            blurType={isDarkMode ? "dark" : "light"}
+                            blurAmount={5}
+                            reducedTransparencyFallbackColor="white"
+                        />
+                    )}
                     <View style={[styles.businessCardContainer, { backgroundColor: theme.cardBg }]}>
                         <TouchableOpacity style={styles.closeCardButton} onPress={() => setBusinessCardVisible(false)}>
                             <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
@@ -1105,12 +1203,16 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 onRequestClose={closeModal}
             >
                 <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-                    <BlurView
-                        style={StyleSheet.absoluteFill}
-                        blurType={isDarkMode ? "dark" : "light"}
-                        blurAmount={5}
-                        reducedTransparencyFallbackColor="white"
-                    />
+                    {isWeb ? (
+                        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }]} />
+                    ) : (
+                        <BlurView
+                            style={StyleSheet.absoluteFill}
+                            blurType={isDarkMode ? "dark" : "light"}
+                            blurAmount={5}
+                            reducedTransparencyFallbackColor="white"
+                        />
+                    )}
                     <TouchableWithoutFeedback onPress={closeModal}>
                         <View style={styles.dismissArea} />
                     </TouchableWithoutFeedback>
@@ -1178,12 +1280,16 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 onRequestClose={() => setIsEditing(false)}
             >
                 <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-                    <BlurView
-                        style={StyleSheet.absoluteFill}
-                        blurType={isDarkMode ? "dark" : "light"}
-                        blurAmount={3}
-                        reducedTransparencyFallbackColor="white"
-                    />
+                    {isWeb ? (
+                        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }]} />
+                    ) : (
+                        <BlurView
+                            style={StyleSheet.absoluteFill}
+                            blurType={isDarkMode ? "dark" : "light"}
+                            blurAmount={3}
+                            reducedTransparencyFallbackColor="white"
+                        />
+                    )}
                     <TouchableWithoutFeedback onPress={() => setIsEditing(false)}>
                         <View style={styles.dismissArea} />
                     </TouchableWithoutFeedback>

@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, Dimensions, ActivityIndicator, Modal, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, Dimensions, ActivityIndicator, Modal, FlatList, Platform } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { DataService } from '../services/DataService';
@@ -10,6 +10,7 @@ import LocalAssets from '../utils/LocalAssets';
 import { resolveImage } from '../utils/ImageHelper';
 
 const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
 
 import { CONFIG } from '../Config';
 
@@ -56,6 +57,22 @@ const AddProductScreen = ({ navigation, route }: any) => {
     const allAssets = Object.keys(LocalAssets);
 
     const handleGalleryPick = async () => {
+        if (isWeb) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e: any) => {
+                const file = e.target.files[0];
+                if (file) {
+                    setImage(file); // Web File object
+                    setCurrentImageUrl(URL.createObjectURL(file)); // Preview for web
+                    setShowImageOptions(false);
+                }
+            };
+            input.click();
+            return;
+        }
+
         const result = await launchImageLibrary({ mediaType: 'photo' });
         if (result.assets && result.assets.length > 0) {
             setImage(result.assets[0]);

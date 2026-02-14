@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image, Modal, TouchableWithoutFeedback, RefreshControl } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { DataService } from '../../../services/DataService';
 import { useTheme } from '../../../theme/useTheme';
 import Svg, { Path, Circle } from 'react-native-svg';
+import QRCode from 'react-native-qrcode-svg';
+import CustomAlert from '../../../components/CustomAlert';
 import { LineChart } from "react-native-chart-kit";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import SocketService from '../../../services/SocketService';
@@ -38,6 +40,10 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
     const [activeOrdersCount, setActiveOrdersCount] = useState(0);
     const [lowStockCount, setLowStockCount] = useState(0);
     const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+
+    // UI State
+    const [qrVisible, setQrVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'success' as 'success' | 'error' | 'info' });
 
     useEffect(() => {
         fetchDashboardData();
@@ -117,9 +123,9 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
         try {
             await DataService.updateOrderStatus(orderId, 'accepted');
             fetchDashboardData(); // Refresh UI
-            Alert.alert("Success", "Order accepted.");
+            setAlertConfig({ visible: true, title: 'Success', message: 'Order accepted successfully.', type: 'success' });
         } catch (e) {
-            Alert.alert("Error", "Failed to accept order.");
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to accept order.', type: 'error' });
         }
     };
 
@@ -127,9 +133,9 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
         try {
             await DataService.updateOrderStatus(orderId, 'cancelled');
             fetchDashboardData(); // Refresh UI
-            Alert.alert("Success", "Order rejected.");
+            setAlertConfig({ visible: true, title: 'Success', message: 'Order rejected.', type: 'success' });
         } catch (e) {
-            Alert.alert("Error", "Failed to reject order.");
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to reject order.', type: 'error' });
         }
     };
 
@@ -138,7 +144,7 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
             <View style={styles.header}>
                 <Text style={styles.headerLogo}>Junr</Text>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>Dashboard</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('UserProfile')}>
+                <TouchableOpacity onPress={() => setQrVisible(true)}>
                     <Image
                         source={resolveImage(userInfo.profile_pic_url || getDefaultImageForType('business'))}
                         style={styles.headerAvatar}
@@ -177,7 +183,17 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
 
                 {/* Sales Chart */}
                 <View style={[styles.chartCard, { backgroundColor: theme.cardBg }]}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Sales Overview</Text>
+                    <View style={styles.centeredHeader}>
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Sales Overview</Text>
+                        <TouchableOpacity style={{ marginLeft: 8 }}>
+                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
+                                <Path d="M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
+                                <Path d="M16 2v4" />
+                                <Path d="M8 2v4" />
+                                <Path d="M3 10h18" />
+                            </Svg>
+                        </TouchableOpacity>
+                    </View>
                     <LineChart
                         data={salesChartData}
                         width={width - 60}
@@ -200,7 +216,9 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
 
                 {/* Action Center - Pending Orders */}
                 <View style={{ marginTop: 20 }}>
-                    <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 10 }]}>Pending Orders ({pendingOrders.length})</Text>
+                    <View style={styles.centeredHeader}>
+                        <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 10 }]}>Pending Orders ({pendingOrders.length})</Text>
+                    </View>
                     {pendingOrders.length === 0 ? (
                         <View style={[styles.emptyCard, { backgroundColor: theme.cardBg }]}>
                             <Text style={{ color: theme.subText }}>No pending orders.</Text>
@@ -211,12 +229,22 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
                                 <View style={styles.orderHeader}>
                                     <View>
                                         <Text style={[styles.orderId, { color: theme.text }]}>Order #{order.id}</Text>
+                                        <TouchableOpacity onPress={() => navigation.push('UserProfile', { user: { id: order.buyer_id, name: order.buyer_name, email: order.buyer_email, phone: order.buyer_phone, profile_pic_url: order.buyer_profile_pic }, viewAsGuest: true })}>
+                                            <Text style={[styles.orderBuyer, { color: theme.primary }]}>{order.buyer_name || 'Guest Customer'}</Text>
+                                        </TouchableOpacity>
                                         <Text style={[styles.orderTime, { color: theme.subText }]}>{new Date(order.created_at).toLocaleTimeString()}</Text>
                                     </View>
                                     <Text style={[styles.orderAmount, { color: theme.text }]}>${order.total_amount}</Text>
                                 </View>
                                 <View style={styles.orderItems}>
-                                    <Text style={{ color: theme.subText }} numberOfLines={1}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                                        <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2" style={{ marginRight: 4 }}>
+                                            <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                            <Circle cx="12" cy="10" r="3" />
+                                        </Svg>
+                                        <Text style={{ color: theme.subText, fontSize: 12 }} numberOfLines={1}>{order.shipping_address || 'No address provided'}</Text>
+                                    </View>
+                                    <Text style={{ color: theme.text }} numberOfLines={2}>
                                         {order.items.map((i: any) => `${i.quantity}x ${i.product_name}`).join(', ')}
                                     </Text>
                                 </View>
@@ -233,6 +261,45 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
                     )}
                 </View>
             </ScrollView>
+
+            {/* Custom Alert */}
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig({ ...alertConfig, visible: false })}
+            />
+
+            {/* QR Code Modal */}
+            <Modal visible={qrVisible} transparent animationType="fade" onRequestClose={() => setQrVisible(false)}>
+                <View style={styles.modalOverlay}>
+                    <TouchableWithoutFeedback onPress={() => setQrVisible(false)}>
+                        <View style={styles.dismissArea} />
+                    </TouchableWithoutFeedback>
+                    <View style={[styles.qrCard, { backgroundColor: theme.cardBg }]}>
+                        <View style={[styles.qrContainer, { backgroundColor: isDarkMode ? '#2D3748' : '#fff' }]}>
+                            <QRCode
+                                value={`raabtaa://user/${userInfo.id}`}
+                                size={120}
+                                color={isDarkMode ? 'white' : 'black'}
+                                backgroundColor={isDarkMode ? '#2D3748' : 'white'}
+                            />
+                        </View>
+                        <View style={styles.qrInfo}>
+                            <Image
+                                source={resolveImage(userInfo.profile_pic_url || getDefaultImageForType('business'))}
+                                style={styles.qrAvatar}
+                            />
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.qrName, { color: theme.text }]}>{userInfo.name}</Text>
+                                <Text style={[styles.qrRole, { color: theme.subText }]}>{userInfo.email}</Text>
+                                <Text style={{ color: theme.primary, fontSize: 10, marginTop: 4 }}>Scan to connect</Text>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -258,6 +325,7 @@ const styles = StyleSheet.create({
     orderCard: { padding: 15, borderRadius: 12, marginBottom: 10, elevation: 2, shadowOpacity: 0.1 },
     orderHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
     orderId: { fontWeight: 'bold' },
+    orderBuyer: { fontWeight: '600', fontSize: 14, marginVertical: 2, textDecorationLine: 'underline' },
     orderTime: { fontSize: 12 },
     orderAmount: { fontWeight: 'bold', fontSize: 16 },
     orderItems: { marginBottom: 15 },
@@ -267,6 +335,19 @@ const styles = StyleSheet.create({
     rejectText: { color: '#C53030', fontWeight: 'bold' },
     acceptBtn: { backgroundColor: '#C6F6D5' },
     acceptText: { color: '#22543D', fontWeight: 'bold' },
+
+    // Header Centering
+    centeredHeader: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+
+    // Modal
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+    dismissArea: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+    qrCard: { width: '100%', flexDirection: 'row', padding: 20, borderRadius: 20, alignItems: 'center', justifyContent: 'space-between', elevation: 5 },
+    qrContainer: { padding: 10, borderRadius: 10, elevation: 2 },
+    qrInfo: { flex: 1, marginLeft: 20, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    qrAvatar: { width: 50, height: 50, borderRadius: 25 },
+    qrName: { fontSize: 18, fontWeight: 'bold' },
+    qrRole: { fontSize: 12 },
 });
 
 export default BusinessDashboardScreen;

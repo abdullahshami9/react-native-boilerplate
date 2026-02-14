@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Alert, LayoutAnimation, Platform, UIManager, ScrollView } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { DataService } from '../../../services/DataService';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
 import CustomAlert from '../../../components/CustomAlert';
 import { useTheme } from '../../../theme/useTheme';
 import EmptyState from '../../../components/EmptyState';
@@ -11,7 +11,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-import { ScrollView } from 'react-native';
+
 
 const BusinessOrdersScreen = ({ navigation, route }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
@@ -68,7 +68,9 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity onPress={() => toggleExpand(item.id)} style={styles.cardHeader}>
                     <View style={styles.headerInfo}>
                         <Text style={[styles.orderId, { color: theme.subText }]}>Order #{item.id}</Text>
-                        <Text style={[styles.customerName, { color: theme.text }]}>{item.buyer_name || 'Guest Customer'}</Text>
+                        <TouchableOpacity onPress={() => navigation.push('UserProfile', { user: { id: item.buyer_id, name: item.buyer_name, email: item.buyer_email, phone: item.buyer_phone, profile_pic_url: item.buyer_profile_pic }, viewAsGuest: true })}>
+                            <Text style={[styles.customerName, { color: theme.primary, textDecorationLine: 'underline' }]}>{item.buyer_name || 'Guest Customer'}</Text>
+                        </TouchableOpacity>
                         <Text style={[styles.dateText, { color: theme.subText }]}>{dateObj.toLocaleDateString()} • {dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                     </View>
                     <View style={styles.statusCol}>
@@ -86,6 +88,16 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
                 {isExpanded && (
                     <View style={[styles.expandedContent, { backgroundColor: isDarkMode ? '#232936' : '#FAFAFA' }]}>
                         <View style={[styles.divider, { backgroundColor: theme.borderColor }]} />
+
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Shipping Address:</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2" style={{ marginRight: 6 }}>
+                                <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                <Circle cx="12" cy="10" r="3" />
+                            </Svg>
+                            <Text style={{ color: theme.text, fontSize: 14 }}>{item.shipping_address || 'No address provided'}</Text>
+                        </View>
+
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Items:</Text>
                         {(item.items || []).map((prod: any, idx: number) => (
                             <View key={idx} style={styles.itemRow}>

@@ -18,6 +18,8 @@ export interface Product {
     description: string;
     image_url: string;
     stock_quantity: number;
+    unit?: string;
+    variants?: any[];
 }
 
 export interface Service {
@@ -36,6 +38,7 @@ export interface OrderItem {
     product_id: number;
     quantity: number;
     price: number;
+    variant?: any;
     product_name?: string;
     image_url?: string;
 }
@@ -45,10 +48,15 @@ export interface Order {
     seller_id: number;
     buyer_id: number;
     total_amount: number;
-    status: 'pending' | 'completed' | 'cancelled';
+    status: 'pending' | 'accepted' | 'out_for_delivery' | 'completed' | 'cancelled';
+    rating?: number;
+    review?: string;
     created_at: string;
     buyer_name?: string;
     buyer_phone?: string;
+    buyer_email?: string;
+    buyer_profile_pic?: string;
+    shipping_address?: string;
     items?: OrderItem[];
 }
 

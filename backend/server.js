@@ -185,6 +185,7 @@ db.connect(async (err) => {
             description TEXT,
             image_url TEXT,
             stock_quantity INT DEFAULT 0,
+            unit VARCHAR(50),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             FULLTEXT(name, description)
@@ -232,8 +233,10 @@ db.connect(async (err) => {
             seller_id INT NOT NULL,
             buyer_id INT,
             total_amount DECIMAL(10, 2) NOT NULL,
-            status ENUM('pending', 'completed', 'cancelled') DEFAULT 'pending',
+            status ENUM('pending', 'accepted', 'out_for_delivery', 'completed', 'cancelled') DEFAULT 'pending',
             payment_method VARCHAR(50) DEFAULT 'cod',
+            rating INT,
+            review TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (seller_id) REFERENCES users(id)
         );
@@ -244,6 +247,7 @@ db.connect(async (err) => {
             product_id INT NOT NULL,
             quantity INT NOT NULL,
             price DECIMAL(10, 2) NOT NULL,
+            variant TEXT,
             FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
             FOREIGN KEY (product_id) REFERENCES products(id)
         );
@@ -471,6 +475,13 @@ db.connect(async (err) => {
             runMigration("CREATE INDEX idx_users_email ON users(email)", "Index Email");
             runMigration("CREATE INDEX idx_products_user_category ON products(user_id, category)", "Index Products User/Cat");
             runMigration("CREATE FULLTEXT INDEX idx_products_fts ON products(name, description)", "FTS Products");
+
+            // New Migrations for Fish Wala Flow
+            runMigration("ALTER TABLE products ADD COLUMN unit VARCHAR(50)", "Product Unit");
+            runMigration("ALTER TABLE order_items ADD COLUMN variant TEXT", "Order Item Variant");
+            runMigration("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'accepted', 'out_for_delivery', 'completed', 'cancelled') DEFAULT 'pending'", "Order Status Enum");
+            runMigration("ALTER TABLE orders ADD COLUMN rating INT", "Order Rating");
+            runMigration("ALTER TABLE orders ADD COLUMN review TEXT", "Order Review");
 
             // Seed Dummy Data for Location (If empty)
             db.query("SELECT COUNT(*) as count FROM province", (e, r) => {
@@ -1380,10 +1391,10 @@ app.get('/api/product/:id', (req, res) => {
 // --- PRODUCTS & INVENTORY ---
 
 app.post('/api/products', verifyToken, checkSubscription, (req, res) => {
-    const { user_id, name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers } = req.body;
+    const { user_id, name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers, unit } = req.body;
     if (req.user.id != user_id) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
-    const query = 'INSERT INTO products (user_id, name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO products (user_id, name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers, unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
     dbQuery(query, [
         user_id,
         name,
@@ -1394,7 +1405,8 @@ app.post('/api/products', verifyToken, checkSubscription, (req, res) => {
         variants ? JSON.stringify(variants) : null,
         delivery_fee || 0,
         is_returnable !== undefined ? is_returnable : 1,
-        wholesale_tiers ? JSON.stringify(wholesale_tiers) : null
+        wholesale_tiers ? JSON.stringify(wholesale_tiers) : null,
+        unit || null
     ], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, message: 'Product added', id: result.insertId });
@@ -1609,7 +1621,7 @@ app.get('/api/availability/:userId', (req, res) => {
 
 app.post('/api/orders', verifyToken, (req, res) => {
     const { seller_id, buyer_id, items, payment_method } = req.body;
-    // items: [{ product_id, quantity, price }]
+    // items: [{ product_id, quantity, price, variant }]
 
     // Calculate total
     const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -1619,13 +1631,18 @@ app.post('/api/orders', verifyToken, (req, res) => {
         if (err) return res.status(500).json({ success: false, message: 'Failed to create order' });
 
         const orderId = result.insertId;
-        const itemValues = items.map(item => [orderId, item.product_id, item.quantity, item.price]);
+        const itemValues = items.map(item => [
+            orderId,
+            item.product_id,
+            item.quantity,
+            item.price,
+            item.variant ? JSON.stringify(item.variant) : null
+        ]);
 
-        const itemQuery = 'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ?';
+        const itemQuery = 'INSERT INTO order_items (order_id, product_id, quantity, price, variant) VALUES ?';
         db.query(itemQuery, [itemValues], (itemErr) => {
             if (itemErr) {
                 console.error("Order Items Error:", itemErr);
-                // Should rollback, but simple implementation for now
                 return res.status(500).json({ success: false, message: 'Partial failure' });
             }
 
@@ -1635,7 +1652,7 @@ app.post('/api/orders', verifyToken, (req, res) => {
             });
 
             // Notify Seller
-            createNotification(seller_id, 'New Order Received', `You have a new order of ${total} PKR`, 'order', orderId);
+            createNotification_Helper(seller_id, 'New Order Received', `You have a new order of ${total} PKR`, 'order', orderId);
 
             // Emit NEW_ORDER event to seller's room
             if (typeof io !== 'undefined') {
@@ -1675,20 +1692,41 @@ app.get('/api/user/counts/:userId', (req, res) => {
 });
 
 app.put('/api/orders/:orderId/status', (req, res) => {
-    const { status } = req.body; // pending, accepted, completed, cancelled
+    const { status } = req.body; // pending, accepted, out_for_delivery, completed, cancelled
     const query = 'UPDATE orders SET status = ? WHERE id = ?';
     dbQuery(query, [status, req.params.orderId], req, (err) => {
         if (err) return res.status(500).json({ success: false });
 
-        // Notify Buyer if completed
-        if (status === 'completed') {
-            db.query('SELECT buyer_id FROM orders WHERE id = ?', [req.params.orderId], (e, r) => {
-                if (!e && r.length > 0 && r[0].buyer_id) {
-                    createNotification(r[0].buyer_id, 'Order Completed', 'Your order has been marked as completed.', 'order', req.params.orderId);
-                }
-            });
-        }
+        // Notify Buyer
+        db.query('SELECT buyer_id FROM orders WHERE id = ?', [req.params.orderId], (e, r) => {
+            if (!e && r.length > 0 && r[0].buyer_id) {
+                let msg = `Your order status is now: ${status}`;
+                if (status === 'out_for_delivery') msg = 'Your order is out for delivery!';
+                if (status === 'completed') msg = 'Your order has been marked as completed. Please rate your experience!';
+
+                createNotification_Helper(r[0].buyer_id, 'Order Update', msg, 'order', req.params.orderId);
+            }
+        });
+
         res.json({ success: true, message: 'Order status updated' });
+    });
+});
+
+app.post('/api/orders/:id/rate', verifyToken, (req, res) => {
+    const { rating, review } = req.body;
+    const orderId = req.params.id;
+    const userId = req.user.id;
+
+    // Verify ownership
+    dbQuery('SELECT buyer_id FROM orders WHERE id = ?', [orderId], req, (err, results) => {
+        if (err || results.length === 0) return res.status(404).json({ success: false, message: 'Order not found' });
+        if (results[0].buyer_id !== userId) return res.status(403).json({ success: false, message: 'Unauthorized' });
+
+        const query = 'UPDATE orders SET rating = ?, review = ? WHERE id = ?';
+        dbQuery(query, [rating, review, orderId], req, (updateErr) => {
+            if (updateErr) return res.status(500).json({ success: false });
+            res.json({ success: true, message: 'Rating submitted' });
+        });
     });
 });
 
@@ -2073,6 +2111,7 @@ app.put('/api/products/:id', verifyToken, (req, res) => {
         if (err || results.length === 0) return res.status(500).json({ success: false, message: 'Product not found' });
 
         const oldProduct = results[0];
+        const { unit } = req.body;
 
         // Log price change if any
         if (price !== undefined && price != oldProduct.price) {
@@ -2080,7 +2119,7 @@ app.put('/api/products/:id', verifyToken, (req, res) => {
                 [productId, oldProduct.price, price], req, () => { });
         }
 
-        const query = 'UPDATE products SET name = ?, price = ?, description = ?, image_url = ?, stock_quantity = ?, variants = ?, delivery_fee = ?, is_returnable = ?, wholesale_tiers = ? WHERE id = ?';
+        const query = 'UPDATE products SET name = ?, price = ?, description = ?, image_url = ?, stock_quantity = ?, variants = ?, delivery_fee = ?, is_returnable = ?, wholesale_tiers = ?, unit = ? WHERE id = ?';
         dbQuery(query, [
             name,
             price,
@@ -2091,6 +2130,7 @@ app.put('/api/products/:id', verifyToken, (req, res) => {
             delivery_fee || 0,
             is_returnable !== undefined ? is_returnable : 1,
             wholesale_tiers ? JSON.stringify(wholesale_tiers) : null,
+            unit || null,
             productId
         ], req, (updateErr) => {
             if (updateErr) return res.status(500).json({ success: false });

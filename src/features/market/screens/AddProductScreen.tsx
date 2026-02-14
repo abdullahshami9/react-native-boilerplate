@@ -24,6 +24,7 @@ const AddProductScreen = ({ navigation, route }: any) => {
     const [price, setPrice] = useState(editingProduct?.price ? String(editingProduct.price) : '');
     const [description, setDescription] = useState(editingProduct?.description || '');
     const [stock, setStock] = useState(editingProduct?.stock_quantity ? String(editingProduct.stock_quantity) : '');
+    const [unit, setUnit] = useState(editingProduct?.unit || '');
 
     // New Product Features
     const [variants, setVariants] = useState<any[]>(editingProduct?.variants ? (typeof editingProduct.variants === 'string' ? JSON.parse(editingProduct.variants) : editingProduct.variants) : []);
@@ -151,7 +152,8 @@ const AddProductScreen = ({ navigation, route }: any) => {
                 variants,
                 delivery_fee: deliveryFee ? parseFloat(deliveryFee) : 0,
                 is_returnable: isReturnable,
-                wholesale_tiers: wholesaleTiers
+                wholesale_tiers: wholesaleTiers,
+                unit
             };
 
             let success = false;
@@ -255,6 +257,15 @@ const AddProductScreen = ({ navigation, route }: any) => {
                         onChangeText={setStock}
                         keyboardType="numeric"
                         placeholder="0"
+                        placeholderTextColor={theme.subText}
+                    />
+
+                    <Text style={[styles.label, { color: theme.text }]}>Unit (e.g., kg, dozen, pc)</Text>
+                    <TextInput
+                        style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                        value={unit}
+                        onChangeText={setUnit}
+                        placeholder="Enter unit"
                         placeholderTextColor={theme.subText}
                     />
 

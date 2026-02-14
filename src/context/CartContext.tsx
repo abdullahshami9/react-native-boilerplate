@@ -29,23 +29,34 @@ export const CartProvider = ({ children }: any) => {
         }
     };
 
-    const addToCart = (product: any) => {
+    const addToCart = (product: any, variant: any = null) => {
         setCartItems(prev => {
             let newItems;
-            const existing = prev.find(p => p.id === product.id);
-            if (existing) {
-                newItems = prev.map(p => p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p);
+            // Check for existing item with same ID and same Variant
+            const existingIndex = prev.findIndex(p =>
+                p.id === product.id &&
+                JSON.stringify(p.variant) === JSON.stringify(variant)
+            );
+
+            if (existingIndex >= 0) {
+                newItems = [...prev];
+                newItems[existingIndex].quantity += 1;
             } else {
-                newItems = [...prev, { ...product, quantity: 1 }];
+                newItems = [...prev, {
+                    ...product,
+                    variant,
+                    quantity: 1,
+                    cartItemId: Date.now().toString() + Math.random().toString()
+                }];
             }
             saveCart(newItems);
             return newItems;
         });
     };
 
-    const removeFromCart = (productId: number) => {
+    const removeFromCart = (cartItemId: string) => {
         setCartItems(prev => {
-            const newItems = prev.filter(p => p.id !== productId);
+            const newItems = prev.filter(p => p.cartItemId !== cartItemId);
             saveCart(newItems);
             return newItems;
         });

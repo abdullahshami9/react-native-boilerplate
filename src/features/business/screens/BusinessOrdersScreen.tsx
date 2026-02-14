@@ -6,6 +6,7 @@ import Svg, { Path } from 'react-native-svg';
 import CustomAlert from '../../../components/CustomAlert';
 import { useTheme } from '../../../theme/useTheme';
 import EmptyState from '../../../components/EmptyState';
+import SkeletonLoader from '../../../shared/components/SkeletonLoader';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -18,7 +19,7 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
     const theme = useTheme();
     const [orders, setOrders] = useState<any[]>([]);
     const [filterStatus, setFilterStatus] = useState<string>('All');
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'success' as 'success' | 'error' });
 
@@ -30,7 +31,7 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
     }, [route.params?.status]);
 
     const fetchOrders = async () => {
-        setLoading(true);
+        if (orders.length === 0) setLoading(true);
         try {
             const data = await DataService.getBusinessOrders(userInfo.id);
             setOrders(data.orders || []);
@@ -116,6 +117,32 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
             </View>
         );
     };
+
+    if (loading && orders.length === 0) {
+        return (
+            <View style={[styles.container, { backgroundColor: theme.bg }]}>
+                <View style={[styles.header, { backgroundColor: theme.bg, borderColor: theme.borderColor }]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: theme.inputBg }]}>
+                        <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M19 12H5M12 19l-7-7 7-7" /></Svg>
+                    </TouchableOpacity>
+                    <Text style={[styles.headerTitle, { color: theme.text }]}>Incoming Orders</Text>
+                    <View style={{ width: 40 }} />
+                </View>
+                <View style={{ padding: 20 }}>
+                    {[1, 2, 3, 4, 5].map(i => (
+                        <View key={i} style={{ marginBottom: 15, padding: 15, borderRadius: 12, backgroundColor: theme.cardBg }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                                <SkeletonLoader width={100} height={14} />
+                                <SkeletonLoader width={60} height={20} borderRadius={6} />
+                            </View>
+                            <SkeletonLoader width={150} height={18} style={{ marginBottom: 5 }} />
+                            <SkeletonLoader width={120} height={12} />
+                        </View>
+                    ))}
+                </View>
+            </View>
+        );
+    }
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>

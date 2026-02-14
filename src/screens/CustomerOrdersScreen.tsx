@@ -6,11 +6,12 @@ import Svg, { Path } from 'react-native-svg';
 import StandardLoader from '../components/StandardLoader';
 import { useTheme } from '../theme/useTheme';
 import EmptyState from '../components/EmptyState';
+import SkeletonLoader from '../shared/components/SkeletonLoader';
 
 const CustomerOrdersScreen = ({ navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
     const [orders, setOrders] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showLoader, setShowLoader] = useState(false);
 
@@ -21,7 +22,7 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
     }, []);
 
     const fetchOrders = async () => {
-        if (!refreshing) setLoading(true);
+        if (orders.length === 0 && !refreshing) setLoading(true);
         try {
             const data = await DataService.getCustomerOrders(userInfo.id);
             setOrders(data.orders || []);
@@ -34,10 +35,8 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        setShowLoader(true);
         await fetchOrders();
         setRefreshing(false);
-        setShowLoader(false);
     };
 
     const renderItem = ({ item }: any) => {
@@ -65,6 +64,34 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
             </View>
         );
     };
+
+    if (loading && orders.length === 0) {
+        return (
+            <View style={[styles.container, { backgroundColor: theme.bg }]}>
+                <View style={[styles.header, { backgroundColor: theme.bg }]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
+                            <Path d="M19 12H5M12 19l-7-7 7-7" />
+                        </Svg>
+                    </TouchableOpacity>
+                    <Text style={[styles.headerTitle, { color: theme.text }]}>My Orders</Text>
+                    <View style={{ width: 24 }} />
+                </View>
+                <View style={{ padding: 20 }}>
+                    {[1, 2, 3, 4, 5].map(i => (
+                        <View key={i} style={{ marginBottom: 15, padding: 15, borderRadius: 12, backgroundColor: theme.cardBg }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                                <SkeletonLoader width={100} height={14} />
+                                <SkeletonLoader width={60} height={20} borderRadius={6} />
+                            </View>
+                            <SkeletonLoader width={150} height={18} style={{ marginBottom: 5 }} />
+                            <SkeletonLoader width={120} height={12} />
+                        </View>
+                    ))}
+                </View>
+            </View>
+        );
+    }
 
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>

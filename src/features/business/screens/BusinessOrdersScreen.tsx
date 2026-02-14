@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Alert, LayoutAnimation, Platform, UIManager, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Alert, LayoutAnimation, Platform, UIManager, ScrollView, Modal, TextInput } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { DataService } from '../../../services/DataService';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -22,6 +22,12 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'success' as 'success' | 'error' });
 
+    // Rider Assignment Modal
+    const [riderModalVisible, setRiderModalVisible] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+    const [riderName, setRiderName] = useState('');
+    const [riderPhone, setRiderPhone] = useState('');
+
     useEffect(() => {
         if (route.params?.status) {
             setFilterStatus(route.params.status);
@@ -43,21 +49,33 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
 
     const filteredOrders = orders.filter(o => filterStatus === 'All' || o.status === filterStatus);
 
-    const handleUpdateStatus = async (orderId: number, newStatus: string) => {
+    const handleUpdateStatus = async (orderId: number, newStatus: string, riderDetails?: any) => {
         try {
-            await DataService.updateOrderStatus(orderId, newStatus);
+            await DataService.updateOrderStatus(orderId, newStatus, riderDetails);
             // Optimistic update
-            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, ...riderDetails } : o));
             setAlertConfig({ visible: true, title: 'Success', message: `Order marked as ${newStatus}`, type: 'success' });
         } catch (error) {
             setAlertConfig({ visible: true, title: 'Error', message: 'Failed to update status', type: 'error' });
         }
     };
 
+    const handleAssignRider = () => {
+        if (!selectedOrderId || !riderName || !riderPhone) {
+            Alert.alert("Missing Info", "Please enter Rider Name and Phone Number");
+            return;
+        }
+        handleUpdateStatus(selectedOrderId, 'out_for_delivery', { rider_name: riderName, rider_phone: riderPhone });
+        setRiderModalVisible(false);
+        setRiderName('');
+        setRiderPhone('');
+        setSelectedOrderId(null);
+    };
+
     const handleChat = async (buyerId: number, orderId: number) => {
         try {
             setLoading(true);
-            const res = await DataService.initiateChat(userInfo.id, buyerId);
+            const res = await DataService.initiateChat(userInfo.id, buyerId, orderId);
             if (res.success) {
                 // Navigate to Chat
                 navigation.navigate('Chat', { chatId: res.chatId, otherUser: { id: buyerId, name: 'Customer' } });
@@ -114,9 +132,18 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
                             <Text style={{ color: theme.text, fontSize: 14 }}>{item.shipping_address || 'No address provided'}</Text>
                         </View>
 
+                        {item.instructions && (
+                            <View style={{ marginBottom: 16, backgroundColor: theme.inputBg, padding: 10, borderRadius: 8 }}>
+                                <Text style={{ fontSize: 12, color: theme.subText, marginBottom: 4, fontWeight: 'bold' }}>INSTRUCTIONS / NOTES:</Text>
+                                <Text style={{ fontSize: 14, color: theme.text }}>{item.instructions}</Text>
+                            </View>
+                        )}
+
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Items:</Text>
                         {(item.items || []).map((prod: any, idx: number) => {
                             const variant = prod.variant ? (typeof prod.variant === 'string' ? JSON.parse(prod.variant) : prod.variant) : null;
+                            const addons = prod.selected_addons ? (typeof prod.selected_addons === 'string' ? JSON.parse(prod.selected_addons) : prod.selected_addons) : [];
+
                             return (
                                 <View key={idx} style={styles.itemRow}>
                                     <View style={{ flex: 1 }}>
@@ -124,6 +151,11 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
                                         {variant && (
                                             <Text style={{ fontSize: 12, color: theme.subText }}>
                                                 Size: {variant.size} {variant.color ? `/ ${variant.color}` : ''}
+                                            </Text>
+                                        )}
+                                        {addons.length > 0 && (
+                                            <Text style={{ fontSize: 12, color: theme.subText }}>
+                                                + {addons.map((a: any) => a.name).join(', ')}
                                             </Text>
                                         )}
                                     </View>
@@ -150,13 +182,26 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
                         )}
                         {item.status === 'accepted' && (
                             <View style={styles.actionButtons}>
-                                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#FEFCBF' }]} onPress={() => handleUpdateStatus(item.id, 'out_for_delivery')}>
+                                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#E2E8F0' }]} onPress={() => handleUpdateStatus(item.id, 'preparing')}>
+                                    <Text style={{ color: '#2D3748', fontWeight: 'bold' }}>Start Preparing</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                        {item.status === 'preparing' && (
+                            <View style={styles.actionButtons}>
+                                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#FEFCBF' }]} onPress={() => {
+                                    setSelectedOrderId(item.id);
+                                    setRiderModalVisible(true);
+                                }}>
                                     <Text style={{ color: '#744210', fontWeight: 'bold' }}>Out for Delivery</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
-                        {(item.status === 'accepted' || item.status === 'out_for_delivery') && (
+                        {item.status === 'out_for_delivery' && (
                             <View style={styles.actionButtons}>
+                                <View style={{ marginRight: 10 }}>
+                                    <Text style={{ fontSize: 10, color: theme.subText }}>Rider: {item.rider_name}</Text>
+                                </View>
                                 <TouchableOpacity style={[styles.actionBtn, styles.completeBtn]} onPress={() => handleUpdateStatus(item.id, 'completed')}>
                                     <Text style={styles.completeText}>Complete Order</Text>
                                 </TouchableOpacity>
@@ -216,6 +261,40 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
                 refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchOrders} tintColor={theme.text} />}
                 ListEmptyComponent={<EmptyState type="orders" message="No orders received yet." />}
             />
+
+            <Modal visible={riderModalVisible} transparent animationType="slide" onRequestClose={() => setRiderModalVisible(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
+                        <Text style={[styles.modalTitle, { color: theme.text }]}>Assign Rider</Text>
+
+                        <TextInput
+                            style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]}
+                            placeholder="Rider Name"
+                            placeholderTextColor={theme.subText}
+                            value={riderName}
+                            onChangeText={setRiderName}
+                        />
+
+                        <TextInput
+                            style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]}
+                            placeholder="Rider Phone"
+                            placeholderTextColor={theme.subText}
+                            value={riderPhone}
+                            onChangeText={setRiderPhone}
+                            keyboardType="phone-pad"
+                        />
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 15, gap: 10 }}>
+                            <TouchableOpacity onPress={() => setRiderModalVisible(false)} style={{ padding: 10 }}>
+                                <Text style={{ color: theme.subText }}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleAssignRider} style={{ padding: 10, backgroundColor: theme.primary, borderRadius: 8 }}>
+                                <Text style={{ color: 'white', fontWeight: 'bold' }}>Assign & Dispatch</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -255,6 +334,10 @@ const styles = StyleSheet.create({
     emptyText: { textAlign: 'center', color: '#A0AEC0', marginTop: 50 },
     filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
     filterText: { fontWeight: '600', fontSize: 13 },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+    modalContent: { padding: 20, borderRadius: 15, width: '100%' },
+    modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
+    input: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 15, fontSize: 16 },
 });
 
 export default BusinessOrdersScreen;

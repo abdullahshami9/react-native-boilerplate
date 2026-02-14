@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, TextInput } from 'react-native';
 import { CartContext } from '../../../context/CartContext';
 import { AuthContext } from '../../../context/AuthContext';
 import { DataService } from '../../../services/DataService';
@@ -12,6 +12,7 @@ const CheckoutScreen = ({ navigation }: any) => {
     const { cartItems, clearCart, removeFromCart } = useContext(CartContext);
     const { userInfo } = useContext(AuthContext);
     const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
+    const [instructions, setInstructions] = useState('');
     const [loading, setLoading] = useState(false);
     const theme = useTheme();
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
@@ -35,7 +36,8 @@ const CheckoutScreen = ({ navigation }: any) => {
                 product_id: item.id,
                 quantity: item.quantity,
                 price: item.price,
-                variant: item.variant // Pass variant info
+                variant: item.variant, // Pass variant info
+                selected_addons: item.selected_addons // Pass addons
             });
         });
 
@@ -44,7 +46,7 @@ const CheckoutScreen = ({ navigation }: any) => {
 
             // Execute all orders
             const orderPromises = Object.keys(ordersBySeller).map(sellerId =>
-                DataService.createOrder(parseInt(sellerId), ordersBySeller[parseInt(sellerId)], buyerId, paymentMethod)
+                DataService.createOrder(parseInt(sellerId), ordersBySeller[parseInt(sellerId)], buyerId, paymentMethod, instructions)
             );
 
             await Promise.all(orderPromises);
@@ -77,6 +79,11 @@ const CheckoutScreen = ({ navigation }: any) => {
                         Variant: {item.variant.size} {item.variant.color ? `/ ${item.variant.color}` : ''}
                     </Text>
                 )}
+                {item.selected_addons && item.selected_addons.length > 0 && (
+                    <Text style={{ fontSize: 12, color: theme.subText }}>
+                        Add-ons: {item.selected_addons.map((a: any) => a.name).join(', ')}
+                    </Text>
+                )}
                 {item.unit && (
                     <Text style={{ fontSize: 12, color: theme.subText }}>
                         Unit: {item.unit}
@@ -102,13 +109,31 @@ const CheckoutScreen = ({ navigation }: any) => {
                 <View style={{ width: 24 }} />
             </View>
 
-            <FlatList
-                data={validItems}
-                renderItem={renderItem}
-                keyExtractor={(item) => item.id.toString()}
-                contentContainerStyle={styles.list}
-                ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>Your cart is empty.</Text>}
-            />
+            <ScrollView contentContainerStyle={styles.list}>
+                {validItems.length === 0 ? (
+                    <Text style={[styles.emptyText, { color: theme.subText }]}>Your cart is empty.</Text>
+                ) : (
+                    validItems.map((item: any) => (
+                        <View key={item.cartItemId || item.id}>
+                            {renderItem({ item })}
+                        </View>
+                    ))
+                )}
+
+                {validItems.length > 0 && (
+                    <View style={{ marginTop: 20 }}>
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Special Instructions</Text>
+                        <TextInput
+                            style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.borderColor }]}
+                            placeholder="E.g. Less spicy, Cut into 4 pieces, Leave at door"
+                            placeholderTextColor={theme.subText}
+                            value={instructions}
+                            onChangeText={setInstructions}
+                            multiline
+                        />
+                    </View>
+                )}
+            </ScrollView>
 
             {validItems.length > 0 && (
                 <View style={[styles.footer, { backgroundColor: theme.cardBg, borderTopColor: theme.borderColor }]}>
@@ -180,7 +205,8 @@ const styles = StyleSheet.create({
     totalLabel: { fontSize: 18, color: '#2D3748' },
     totalValue: { fontSize: 24, fontWeight: 'bold', color: '#2D3748' },
     placeOrderBtn: { backgroundColor: '#2D3748', padding: 18, borderRadius: 30, alignItems: 'center' },
-    placeOrderText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
+    placeOrderText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+    input: { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 16, height: 100, textAlignVertical: 'top' }
 });
 
 export default CheckoutScreen;

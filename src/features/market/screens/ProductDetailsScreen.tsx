@@ -22,7 +22,24 @@ const ProductDetailsScreen = ({ navigation, route }: any) => {
     const variants = product?.variants ? (typeof product.variants === 'string' ? JSON.parse(product.variants) : product.variants) : [];
     const [selectedVariant, setSelectedVariant] = React.useState<any>(null);
 
+    // Addons handling
+    const addons = product?.addons ? (typeof product.addons === 'string' ? JSON.parse(product.addons) : product.addons) : [];
+    const [selectedAddons, setSelectedAddons] = React.useState<any[]>([]);
+
     const isOwner = userInfo?.id === product?.user_id;
+
+    // Calculate total unit price
+    const basePrice = parseFloat(product.price);
+    const addonsPrice = selectedAddons.reduce((sum, addon) => sum + parseFloat(addon.price), 0);
+    const totalPrice = basePrice + addonsPrice;
+
+    const toggleAddon = (addon: any) => {
+        if (selectedAddons.find(a => a.name === addon.name)) {
+            setSelectedAddons(selectedAddons.filter(a => a.name !== addon.name));
+        } else {
+            setSelectedAddons([...selectedAddons, addon]);
+        }
+    };
 
     const handleAddToCart = () => {
         if (isOwner) {
@@ -33,7 +50,18 @@ const ProductDetailsScreen = ({ navigation, route }: any) => {
             toastRef.current?.show('Please select a variant (Size/Color)');
             return;
         }
-        addToCart(product, selectedVariant);
+
+        // We pass the UPDATED price to addToCart, or we let Cart calculate it.
+        // CartContext uses product.price. Let's override it or store metadata.
+        // It's safer to pass the computed price as the product price for the cart item.
+        const cartItem = {
+            ...product,
+            price: totalPrice,
+            original_price: basePrice, // Keep track
+            selected_addons: selectedAddons
+        };
+
+        addToCart(cartItem, selectedVariant);
         toastRef.current?.show('Added to cart');
     };
 
@@ -93,7 +121,7 @@ const ProductDetailsScreen = ({ navigation, route }: any) => {
                 {/* Info */}
                 <View style={styles.infoContainer}>
                     <Text style={styles.productName}>{product.name}</Text>
-                    <Text style={styles.price}>{product.price} PKR {product.unit ? `/ ${product.unit}` : ''}</Text>
+                    <Text style={styles.price}>{totalPrice} PKR {product.unit ? `/ ${product.unit}` : ''}</Text>
 
                     {/* Variant Selector */}
                     {variants.length > 0 && (
@@ -120,6 +148,29 @@ const ProductDetailsScreen = ({ navigation, route }: any) => {
                                     Stock: {selectedVariant.stock || 'N/A'}
                                 </Text>
                             )}
+                        </View>
+                    )}
+
+                    {/* Addons Selector */}
+                    {addons.length > 0 && (
+                        <View style={styles.variantContainer}>
+                            <Text style={styles.variantTitle}>Add-ons:</Text>
+                            <View style={styles.variantList}>
+                                {addons.map((addon: any, index: number) => {
+                                    const isSelected = selectedAddons.find(a => a.name === addon.name);
+                                    return (
+                                        <TouchableOpacity
+                                            key={index}
+                                            style={[styles.variantChip, isSelected && styles.variantChipSelected]}
+                                            onPress={() => toggleAddon(addon)}
+                                        >
+                                            <Text style={[styles.variantText, isSelected && styles.variantTextSelected]}>
+                                                {addon.name} (+{addon.price})
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
                         </View>
                     )}
 

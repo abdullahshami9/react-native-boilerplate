@@ -6,14 +6,14 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../theme/useTheme';
 
 // Screens
-import DiscoverScreen from '../screens/DiscoverScreen';
-import ConnectionsScreen from '../screens/ConnectionsScreen';
-import ShopScreen from '../screens/ShopScreen';
-import ProfileScreen from '../screens/ProfileScreen';
+import DiscoverScreen from '../features/social/screens/DiscoverScreen';
+import ConnectionsScreen from '../features/social/screens/ConnectionsScreen';
+import ShopScreen from '../features/market/screens/ShopScreen';
+import ProfileScreen from '../features/social/screens/ProfileScreen';
 
 // Business Screens
-import StatsScreen from '../screens/business/StatsScreen';
-import BusinessOrdersScreen from '../screens/business/BusinessOrdersScreen';
+import StatsScreen from '../features/business/screens/StatsScreen';
+import BusinessOrdersScreen from '../features/business/screens/BusinessOrdersScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 
 const Tab = createBottomTabNavigator();

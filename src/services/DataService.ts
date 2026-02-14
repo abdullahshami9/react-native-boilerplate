@@ -2,6 +2,19 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import { CONFIG } from '../Config';
 import LoggerService from './LoggerService';
+import * as NavigationHelper from '../utils/NavigationHelper';
+
+// Add Interceptor for 402 Payment Required
+axios.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.response && error.response.status === 402) {
+            // Navigate to Premium Upgrade Screen
+            NavigationHelper.navigate('PremiumUpgrade' as never);
+        }
+        return Promise.reject(error);
+    }
+);
 
 export const DataService = {
     // --- PROFILE ---
@@ -318,18 +331,18 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
-    discoverUsers: async (search: string, excludeId: number, type: string = 'All') => {
+    discoverUsers: async (search: string, excludeId: number, type: string = 'All', cursor: number = 0, limit: number = 20) => {
         try {
-            const response = await axios.get(`${CONFIG.API_URL}/api/users/discover`, { params: { search, excludeId, type } });
+            const response = await axios.get(`${CONFIG.API_URL}/api/users/discover`, { params: { search, excludeId, type, cursor, limit } });
             return response.data;
         } catch (error: any) {
             LoggerService.error('Discover Users Error:', error, 'DataService');
             throw error.response?.data || { message: 'Network Error' };
         }
     },
-    discoverProducts: async (search: string, type: string = 'All') => {
+    discoverProducts: async (search: string, cursor: number = 0, limit: number = 10, type: string = 'All') => {
         try {
-            const response = await axios.get(`${CONFIG.API_URL}/api/products/discover`, { params: { search, type } });
+            const response = await axios.get(`${CONFIG.API_URL}/api/products/discover`, { params: { search, cursor, limit, type } });
             return response.data;
         } catch (error: any) {
             LoggerService.error('Discover Products Error:', error, 'DataService');
@@ -530,6 +543,15 @@ export const DataService = {
             return response.data;
         } catch (error: any) {
             LoggerService.error('Read Notification Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    subscribeBusiness: async () => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/business/subscribe`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Subscribe Business Error:', error, 'DataService');
             throw error.response?.data || { message: 'Network Error' };
         }
     }

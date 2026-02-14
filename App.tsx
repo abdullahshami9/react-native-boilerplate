@@ -7,32 +7,38 @@ import { Platform } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { ActivityIndicator, View } from 'react-native';
 
+// React Query & Persistence
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import storage from './src/shared/utils/storage';
+
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { CartProvider } from './src/context/CartContext';
 import SocketService from './src/services/SocketService';
 import MiniToast, { MiniToastRef } from './src/components/MiniToast';
-import LoginScreen from './src/screens/LoginScreen';
-import SignupScreen from './src/screens/SignupScreen';
+import LoginScreen from './src/features/auth/screens/LoginScreen';
+import SignupScreen from './src/features/auth/screens/SignupScreen';
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
-import OnboardingScreen from './src/screens/OnboardingScreen';
-import ProductDetailsScreen from './src/screens/ProductDetailsScreen';
-import InventoryScreen from './src/screens/InventoryScreen';
-import AddProductScreen from './src/screens/AddProductScreen';
-import BusinessOnboardingScreen from './src/screens/BusinessOnboardingScreen';
-import ChatListScreen from './src/screens/ChatListScreen';
-import ChatScreen from './src/screens/ChatScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-import ServiceDetailsScreen from './src/screens/ServiceDetailsScreen';
-import BookingScreen from './src/screens/BookingScreen';
-import CheckoutScreen from './src/screens/CheckoutScreen';
-import BusinessCardEditorScreen from './src/screens/BusinessCardEditorScreen';
+import OnboardingScreen from './src/features/auth/screens/OnboardingScreen';
+import ProductDetailsScreen from './src/features/market/screens/ProductDetailsScreen';
+import InventoryScreen from './src/features/market/screens/InventoryScreen';
+import AddProductScreen from './src/features/market/screens/AddProductScreen';
+import BusinessOnboardingScreen from './src/features/business/screens/BusinessOnboardingScreen';
+import ChatListScreen from './src/features/social/screens/ChatListScreen';
+import ChatScreen from './src/features/social/screens/ChatScreen';
+import ProfileScreen from './src/features/social/screens/ProfileScreen';
+import ServiceDetailsScreen from './src/features/services/screens/ServiceDetailsScreen';
+import BookingScreen from './src/features/services/screens/BookingScreen';
+import CheckoutScreen from './src/features/market/screens/CheckoutScreen';
+import BusinessCardEditorScreen from './src/features/business/screens/BusinessCardEditorScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 
 // Business Screens
-import ManageServicesScreen from './src/screens/business/ManageServicesScreen';
-import ServiceAppointmentsScreen from './src/screens/business/ServiceAppointmentsScreen';
-import ProcurementScreen from './src/screens/business/ProcurementScreen';
-import BusinessOrdersScreen from './src/screens/business/BusinessOrdersScreen';
+import ManageServicesScreen from './src/features/business/screens/ManageServicesScreen';
+import ServiceAppointmentsScreen from './src/features/services/screens/ServiceAppointmentsScreen';
+import ProcurementScreen from './src/features/business/screens/ProcurementScreen';
+import BusinessOrdersScreen from './src/features/business/screens/BusinessOrdersScreen';
 import CustomerOrdersScreen from './src/screens/CustomerOrdersScreen';
 import ARCardScannerScreen from './src/screens/ar/ARCardScannerScreen';
 
@@ -47,8 +53,27 @@ import BusinessTypeContactScreen from './src/screens/tunnel/business/BusinessTyp
 import BusinessIndustryScreen from './src/screens/tunnel/business/BusinessIndustryScreen';
 import PaymentIntegrationScreen from './src/screens/tunnel/PaymentIntegrationScreen';
 import IdentityGateScreen from './src/screens/tunnel/IdentityGateScreen';
+import PremiumUpgradeScreen from './src/features/business/screens/PremiumUpgradeScreen';
+import { navigationRef } from './src/utils/NavigationHelper';
 
 const Stack = Platform.OS === 'web' ? createStackNavigator() : createNativeStackNavigator();
+
+// React Query Setup
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours
+    },
+  },
+});
+
+const asyncStoragePersister = createAsyncStoragePersister({
+  storage: {
+    getItem: async (key) => storage.getString(key),
+    setItem: async (key, value) => storage.setString(key, value),
+    removeItem: async (key) => storage.delete(key),
+  },
+});
 
 const AppNav = () => {
   const { isLoading, userToken, userInfo } = useContext(AuthContext);
@@ -81,7 +106,7 @@ const AppNav = () => {
 
   return (
     <>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Stack.Navigator screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
@@ -90,7 +115,6 @@ const AppNav = () => {
         }}>
           {userToken !== null ? (
             // User is logged in
-            // Safe check for is_tunnel_completed to handle 0/1, "0"/"1", true/false
             (Number(userInfo?.is_tunnel_completed) === 1 || userInfo?.is_tunnel_completed === true) ? (
               // Main App Stack
               <>
@@ -117,6 +141,7 @@ const AppNav = () => {
                 <Stack.Screen name="Procurement" component={ProcurementScreen} />
                 <Stack.Screen name="BusinessOrders" component={BusinessOrdersScreen} />
                 <Stack.Screen name="ARCardScanner" component={ARCardScannerScreen} />
+                <Stack.Screen name="PremiumUpgrade" component={PremiumUpgradeScreen} />
               </>
             ) : (
               // Tunnel Stack (Mandatory Onboarding)
@@ -158,11 +183,13 @@ const App = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <AuthProvider>
-          <CartProvider>
-            <AppNav />
-          </CartProvider>
-        </AuthProvider>
+        <PersistQueryClientProvider client={queryClient} persistOptions={{ persister: asyncStoragePersister }}>
+          <AuthProvider>
+            <CartProvider>
+              <AppNav />
+            </CartProvider>
+          </AuthProvider>
+        </PersistQueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

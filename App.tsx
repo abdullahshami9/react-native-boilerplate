@@ -40,6 +40,7 @@ import ServiceAppointmentsScreen from './src/features/services/screens/ServiceAp
 import ProcurementScreen from './src/features/business/screens/ProcurementScreen';
 import BusinessOrdersScreen from './src/features/business/screens/BusinessOrdersScreen';
 import CustomerOrdersScreen from './src/screens/CustomerOrdersScreen';
+import OrderDetailScreen from './src/screens/OrderDetailScreen';
 import ARCardScannerScreen from './src/screens/ar/ARCardScannerScreen';
 
 // Tunnel Screens
@@ -84,13 +85,14 @@ const AppNav = () => {
       SocketService.connect(userInfo.id);
       SocketService.registerUser(userInfo.id);
 
-      SocketService.onNotification((data: any) => {
+      const offNotification = SocketService.onNotification((data: any) => {
         if (toastRef.current) {
           toastRef.current.show(`${data.title}: ${data.message}`);
         }
       });
 
       return () => {
+        offNotification();
         SocketService.disconnect();
       };
     }
@@ -133,6 +135,7 @@ const AppNav = () => {
                 <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
                 <Stack.Screen name="Booking" component={BookingScreen} />
                 <Stack.Screen name="CustomerOrders" component={CustomerOrdersScreen} />
+                <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
                 <Stack.Screen name="Checkout" component={CheckoutScreen} />
 
                 {/* Business Screens */}

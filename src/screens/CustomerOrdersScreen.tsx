@@ -5,10 +5,7 @@ import { DataService } from '../services/DataService';
 import Svg, { Path } from 'react-native-svg';
 import StandardLoader from '../components/StandardLoader';
 import { useTheme } from '../theme/useTheme';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import EmptyState from '../components/EmptyState';
 
 const CustomerOrdersScreen = ({ navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
@@ -16,7 +13,6 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [showLoader, setShowLoader] = useState(false);
-    const [expandedId, setExpandedId] = useState<number | null>(null);
 
     const theme = useTheme();
 
@@ -44,18 +40,12 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
         setShowLoader(false);
     };
 
-    const toggleExpand = (id: number) => {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setExpandedId(expandedId === id ? null : id);
-    };
-
     const renderItem = ({ item }: any) => {
-        const isExpanded = expandedId === item.id;
         const dateObj = new Date(item.created_at);
 
         return (
             <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
-                <TouchableOpacity onPress={() => toggleExpand(item.id)} style={styles.cardHeader}>
+                <TouchableOpacity onPress={() => navigation.navigate('OrderDetail', { order: item })} style={styles.cardHeader}>
                     <View style={styles.headerInfo}>
                         <Text style={[styles.orderId, { color: theme.subText }]}>Order #{item.id}</Text>
                         <Text style={[styles.customerName, { color: theme.text }]}>{item.seller_name || 'Business'}</Text>
@@ -72,19 +62,6 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
                         <Text style={[styles.totalAmount, { color: theme.text }]}>${item.total_amount}</Text>
                     </View>
                 </TouchableOpacity>
-
-                {isExpanded && (
-                    <View style={[styles.expandedContent, { backgroundColor: isDarkMode ? '#232936' : '#FAFAFA' }]}>
-                        <View style={[styles.divider, { backgroundColor: theme.borderColor }]} />
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Items:</Text>
-                        {(item.items || []).map((prod: any, idx: number) => (
-                            <View key={idx} style={styles.itemRow}>
-                                <Text style={[styles.itemName, { color: theme.text }]}>{prod.quantity}x {prod.product_name}</Text>
-                                <Text style={[styles.itemPrice, { color: theme.text }]}>${(prod.price * prod.quantity).toFixed(2)}</Text>
-                            </View>
-                        ))}
-                    </View>
-                )}
             </View>
         );
     };
@@ -115,7 +92,7 @@ const CustomerOrdersScreen = ({ navigation }: any) => {
                         progressBackgroundColor="transparent"
                     />
                 }
-                ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>You haven't placed any orders.</Text>}
+                ListEmptyComponent={<EmptyState type="orders" message="You haven't placed any orders." />}
             />
 
             <StandardLoader visible={showLoader} />
@@ -139,12 +116,6 @@ const styles = StyleSheet.create({
     statusBadge: { paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6, marginBottom: 8 },
     statusText: { fontSize: 12, fontWeight: 'bold' },
     totalAmount: { fontSize: 18, fontWeight: 'bold', color: '#2D3748' },
-    expandedContent: { paddingHorizontal: 16, paddingBottom: 16, backgroundColor: '#FAFAFA' },
-    divider: { height: 1, backgroundColor: '#E2E8F0', marginBottom: 12 },
-    sectionTitle: { fontSize: 14, fontWeight: '600', color: '#4A5568', marginBottom: 8 },
-    itemRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-    itemName: { fontSize: 15, color: '#2D3748' },
-    itemPrice: { fontSize: 15, fontWeight: '600', color: '#4A5568' },
     emptyText: { textAlign: 'center', color: '#A0AEC0', marginTop: 50 },
 });
 

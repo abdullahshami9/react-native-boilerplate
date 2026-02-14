@@ -14,6 +14,7 @@ import CustomAlert from '../../../components/CustomAlert';
 import StandardLoader from '../../../components/StandardLoader';
 import { useTheme } from '../../../theme/useTheme';
 import { resolveImage, getDefaultImageForType } from '../../../utils/ImageHelper';
+import SocketService from '../../../services/SocketService';
 
 const { width, height } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
@@ -129,6 +130,9 @@ const ProfileScreen = ({ navigation, route }: any) => {
     const [businessDetails, setBusinessDetails] = useState<any>(null);
     const [counts, setCounts] = useState<any>({ sales_pending: 0, purchases_pending: 0, appointments_upcoming: 0, messages_active: 0 });
 
+    // Online Status
+    const [isOnline, setIsOnline] = useState(displayedUser?.is_online || false);
+
     // New Input State
     const [newSkill, setNewSkill] = useState('');
     const [newEduSchool, setNewEduSchool] = useState('');
@@ -175,6 +179,21 @@ const ProfileScreen = ({ navigation, route }: any) => {
             setEditName(displayedUser.name);
             setEditPhone(displayedUser.phone);
             setIsPrivateProfile(displayedUser.is_private === 1 || displayedUser.is_private === true);
+
+            let offStatus = () => {};
+            // Listen for online status if viewing another user
+            if (!isOwnProfile) {
+                SocketService.connect(userInfo.id);
+                offStatus = SocketService.onUserStatusChange(({ userId, status }) => {
+                    if (userId === displayedUser.id) {
+                        setIsOnline(status === 'online');
+                    }
+                });
+            }
+
+            return () => {
+                offStatus();
+            }
         }
     }, [displayedUser?.id]);
 
@@ -287,7 +306,18 @@ const ProfileScreen = ({ navigation, route }: any) => {
     };
 
     const handleChatPress = async () => {
-        navigation.navigate('ChatList');
+        if (isOwnProfile) {
+            navigation.navigate('ChatList');
+        } else {
+            try {
+                const res = await DataService.initiateChat(userInfo.id, displayedUser.id);
+                if (res.success) {
+                    navigation.navigate('Chat', { chatId: res.chatId, otherUser: { id: displayedUser.id, name: displayedUser.name, pic: displayedUser.profile_pic_url, is_online: isOnline } });
+                }
+            } catch (e) {
+                console.error("Chat Error", e);
+            }
+        }
     };
 
     const openModal = () => {
@@ -625,6 +655,9 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                         </Svg>
                                     </View>
                                 )}
+                                {!isOwnProfile && (
+                                     <View style={{ position: 'absolute', bottom: 5, right: 5, width: 16, height: 16, borderRadius: 8, backgroundColor: isOnline ? '#48BB78' : '#A0AEC0', borderWidth: 2, borderColor: isDarkMode ? '#2D3748' : '#fff' }} />
+                                )}
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -655,14 +688,14 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                 <Animated.View style={[whiteIconStyle, { position: 'absolute' }]}>
                                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
                                         <Circle cx="12" cy="12" r="3" />
-                                        <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                                        <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                                     </Svg>
                                 </Animated.View>
                                 {/* Dark Icon (Visible on Scroll/White Header, or Dark Header in Dark Mode -> needs to be white if dark mode) */}
                                 <Animated.View style={darkIconStyle}>
                                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? '#fff' : '#2D3748'} strokeWidth="2">
                                         <Circle cx="12" cy="12" r="3" />
-                                        <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                                        <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                                     </Svg>
                                 </Animated.View>
                             </View>
@@ -702,870 +735,13 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                     </Svg>
                                 </View>
                             )}
+                             {!isOwnProfile && (
+                                <View style={{ position: 'absolute', bottom: 5, right: 5, width: 16, height: 16, borderRadius: 8, backgroundColor: isOnline ? '#48BB78' : '#A0AEC0', borderWidth: 2, borderColor: isDarkMode ? '#2D3748' : '#fff' }} />
+                            )}
                         </View>
                     </TouchableOpacity>
                 </Animated.View>
             </Animated.View>
         );
     }
-
-    return (
-        <View style={[styles.container, { backgroundColor: theme.bg }]}>
-            {renderHeader()}
-
-            <Animated.ScrollView
-                contentContainerStyle={styles.contentContainer}
-                onScroll={isWeb ? undefined : scrollHandler}
-                scrollEventThrottle={16}
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={handleRefresh}
-                        colors={['transparent']}
-                        tintColor="transparent"
-                        progressBackgroundColor="transparent"
-                    />
-                }
-            >
-                {!isWeb && <View style={styles.spacer} />}
-
-                <View style={isWeb ? {} : [styles.infoSection, { opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.5], [1, 0], Extrapolate.CLAMP) }]}>
-                    {/* On web, opacity logic is removed or simplified. Re-using bodyInfoOpacity but without animation */}
-                    {isWeb ? (
-                        <View style={[styles.infoSection]}>
-                            <Text style={[styles.nameText, { color: theme.text }]}>{displayedUser?.name}</Text>
-                            <Text style={[styles.roleText, { color: theme.subText }]}>{displayedUser?.email}</Text>
-                            <View style={[styles.userTypeBadge, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
-                                <Text style={[styles.userTypeBadgeText, { color: isDarkMode ? '#F7FAFC' : '#4A5568' }]}>{isBusinessUser ? 'Business' : 'Individual'}</Text>
-                            </View>
-                        </View>
-                    ) : (
-                        <Animated.View style={[styles.infoSection, bodyInfoOpacity]}>
-                            <Text style={[styles.nameText, { color: theme.text }]}>{displayedUser?.name}</Text>
-                            <Text style={[styles.roleText, { color: theme.subText }]}>{displayedUser?.email}</Text>
-                            <View style={[styles.userTypeBadge, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
-                                <Text style={[styles.userTypeBadgeText, { color: isDarkMode ? '#F7FAFC' : '#4A5568' }]}>{isBusinessUser ? 'Business' : 'Individual'}</Text>
-                            </View>
-                        </Animated.View>
-                    )}
-                </View>
-
-                {isRestricted ? (
-                    <View style={{ alignItems: 'center', marginTop: 20 }}>
-                        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7', alignItems: 'center', justifyContent: 'center', marginBottom: 15 }}>
-                            <Svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
-                                <Path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-                                <Path d="M16 11V7a4 4 0 0 0-8 0v4" />
-                                <Path d="M5 11h14v10H5z" />
-                            </Svg>
-                        </View>
-                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.text }}>This Account is Private</Text>
-                        <Text style={{ color: theme.subText, marginTop: 5, textAlign: 'center', paddingHorizontal: 40 }}>
-                            Follow this user to see their profile details, posts, and activities.
-                        </Text>
-
-                        <View style={styles.actionRow}>
-                            <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.buttonBg || (isDarkMode ? '#37404a' : '#EDF2F7'), marginTop: 20 }]} onPress={handleChatPress}>
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                ) : (
-                    <>
-                        <View style={styles.actionRow}>
-                            <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.buttonBg || (isDarkMode ? '#37404a' : '#EDF2F7') }]} onPress={() => Linking.openURL(`tel:${displayedUser?.phone}`)}>
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.12 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></Svg>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.circleBtn, { backgroundColor: theme.buttonBg || (isDarkMode ? '#37404a' : '#EDF2F7') }]} onPress={handleChatPress}>
-                                {counts.messages_active > 0 && (
-                                    <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: '#E53E3E', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, zIndex: 10 }}>
-                                        <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>{counts.messages_active}</Text>
-                                    </View>
-                                )}
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
-                            </TouchableOpacity>
-                            {isBusinessUser && (
-                                <View style={styles.locationSnippet}>
-                                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#718096" strokeWidth="2"><Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><Circle cx="12" cy="10" r="3" /></Svg>
-                                    <Text style={styles.locationText} numberOfLines={1}>Karachi, PK</Text>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Dashboard Section (New) */}
-                        {isOwnProfile && isBusinessUser && (
-                            <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                                <Text style={[styles.sectionTitle, { color: theme.text }]}>Business Dashboard</Text>
-                                <View style={styles.dashboardGrid}>
-                                    {/* Product Biz */}
-                                    {(!businessDetails?.business_type || businessDetails.business_type === 'Product Based') && (
-                                        <>
-                                            <DashboardButton
-                                                icon={<Path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />}
-                                                label="Inventory"
-                                                onPress={() => navigation.navigate('Inventory')}
-                                                theme={theme}
-                                            />
-                                            <DashboardButton
-                                                icon={<Path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />}
-                                                label="Orders"
-                                                onPress={() => navigation.navigate('BusinessOrders')}
-                                                theme={theme}
-                                                badge={counts.sales_pending}
-                                            />
-                                            <DashboardButton
-                                                icon={<Path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z" />}
-                                                label="Procurement"
-                                                onPress={() => navigation.navigate('Procurement')}
-                                                theme={theme}
-                                            />
-                                        </>
-                                    )}
-                                    {/* Service Biz */}
-                                    {(!businessDetails?.business_type || businessDetails.business_type === 'Service Based') && (
-                                        <>
-                                            <DashboardButton
-                                                icon={<Path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />}
-                                                label="My Services"
-                                                onPress={() => navigation.navigate('ManageServices')}
-                                                theme={theme}
-                                            />
-                                            <DashboardButton
-                                                icon={<Path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />}
-                                                label="Bookings"
-                                                onPress={() => navigation.navigate('ServiceAppointments')}
-                                                theme={theme}
-                                                badge={counts.appointments_upcoming}
-                                            />
-                                            <DashboardButton
-                                                icon={<><Path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" /><Path d="M1 10h22" /></>}
-                                                label="My Cards"
-                                                onPress={() => navigation.navigate('BusinessCardEditor')}
-                                                theme={theme}
-                                            />
-                                        </>
-                                    )}
-                                </View>
-                            </View>
-                        )}
-
-                        {/* Customer Dashboard */}
-                        {isOwnProfile && !isBusinessUser && (
-                            <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                                <Text style={[styles.sectionTitle, { color: theme.text }]}>My Activity</Text>
-                                <View style={styles.dashboardGrid}>
-                                    <DashboardButton
-                                        icon={<Path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />}
-                                        label="My Orders"
-                                        onPress={() => navigation.navigate('CustomerOrders')}
-                                        theme={theme}
-                                        badge={counts.purchases_pending}
-                                    />
-                                    <DashboardButton
-                                        icon={<Path d="M9 20a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM20 20a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />}
-                                        label="My Cart"
-                                        onPress={() => navigation.navigate('Checkout')}
-                                        theme={theme}
-                                    />
-                                    <DashboardButton
-                                        icon={<Path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />}
-                                        label="Appointments"
-                                        onPress={() => navigation.navigate('ServiceAppointments')}
-                                        theme={theme}
-                                        badge={counts.appointments_upcoming}
-                                    />
-                                    <DashboardButton
-                                        icon={<><Path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" /><Path d="M1 10h22" /></>}
-                                        label="My Cards"
-                                        onPress={() => navigation.navigate('BusinessCardEditor')}
-                                        theme={theme}
-                                    />
-                                </View>
-                            </View>
-                        )}
-
-                        {/* Calendar (Hide Sales Activity for Customers viewing Business) */}
-                        {(!isBusinessUser || isOwnProfile) && (
-                            <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                                <ContributionGraph data={isBusinessUser ? salesData : appointments} onDateClick={handleDateClick} isBusiness={isBusinessUser} />
-                            </View>
-                        )}
-
-                        {/* Customer View of Business: Grid Layout */}
-                        {isBusinessUser && !isOwnProfile ? (
-                            <View style={{ paddingHorizontal: 20 }}>
-                                {/* Products Grid */}
-                                {products.length > 0 && (
-                                    <>
-                                        <Text style={[styles.sectionTitle, { color: theme.text, textAlign: 'left', marginBottom: 10 }]}>Products</Text>
-                                        <View style={styles.gridContainer}>
-                                            {products.map((item) => (
-                                                <TouchableOpacity
-                                                    key={item.id}
-                                                    style={[styles.productCard, { backgroundColor: theme.cardBg }]}
-                                                    onPress={() => navigation.navigate('ProductDetails', { product: item })}
-                                                >
-                                                    <Image source={resolveImage(item.image_url || getDefaultImageForType('product', item.name))} style={styles.productImage} />
-                                                    <View style={styles.productInfo}>
-                                                        <Text style={[styles.productName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
-                                                        <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price} PKR</Text>
-                                                    </View>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </View>
-                                    </>
-                                )}
-
-                                {/* Services Grid */}
-                                {services.length > 0 && (
-                                    <>
-                                        <Text style={[styles.sectionTitle, { color: theme.text, textAlign: 'left', marginBottom: 10, marginTop: 10 }]}>Services</Text>
-                                        <View style={styles.gridContainer}>
-                                            {services.map((item) => (
-                                                <TouchableOpacity
-                                                    key={item.id}
-                                                    style={[styles.productCard, { backgroundColor: theme.cardBg }]}
-                                                    onPress={() => navigation.navigate('ServiceDetails', { service: item })}
-                                                >
-                                                    <Image source={resolveImage(item.image_url || getDefaultImageForType('service', item.name))} style={styles.productImage} />
-                                                    <View style={styles.productInfo}>
-                                                        <Text style={[styles.productName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
-                                                        <Text style={[styles.productPrice, { color: theme.subText }]}>{item.price} PKR • {item.duration_mins}m</Text>
-                                                    </View>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </View>
-                                    </>
-                                )}
-
-                                {products.length === 0 && services.length === 0 && (
-                                    <Text style={{ textAlign: 'center', color: theme.subText, marginTop: 20 }}>No items available.</Text>
-                                )}
-                            </View>
-                        ) : (
-                            /* Original Skills/Product List for Own Profile or Individual */
-                            <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 15, position: 'relative' }}>
-                                    <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>{isBusinessUser ? 'Product Catalog' : 'Professional Skills'}</Text>
-                                    {isOwnProfile && !isBusinessUser && (
-                                        <TouchableOpacity onPress={() => setAddSkillVisible(true)} style={{ position: 'absolute', right: 0, padding: 5 }}>
-                                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M12 5v14M5 12h14" /></Svg>
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
-                                {!isBusinessUser && (
-                                    <View style={styles.tagsContainer}>
-                                        {skills.map((s, i) => (
-                                            <View key={i} style={[styles.tag, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7', flexDirection: 'row', alignItems: 'center', gap: 5 }]}>
-                                                <Text style={[styles.tagText, { color: theme.text }]}>{s.skill_name}</Text>
-                                                {isOwnProfile && (
-                                                    <TouchableOpacity onPress={() => handleDeleteSkill(s.id)}>
-                                                        <Svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
-                                                    </TouchableOpacity>
-                                                )}
-                                            </View>
-                                        ))}
-                                    </View>
-                                )}
-                                {isBusinessUser && (
-                                    <View>
-                                        {products.length === 0 && <Text style={{ color: '#aaa' }}>No products found.</Text>}
-                                        {products.slice(0, 3).map((p, i) => (
-                                            <View key={i} style={styles.prodRow}>
-                                                <Text style={[styles.prodName, { color: theme.text }]}>{p.name}</Text>
-                                                <Text style={styles.prodPrice}>{p.price} PKR</Text>
-                                            </View>
-                                        ))}
-                                    </View>
-                                )}
-                            </View>
-                        )}
-
-                        {/* Education Section (Individual) */}
-                        {!isBusinessUser && (
-                            <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 15, position: 'relative' }}>
-                                    <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>Education</Text>
-                                    {isOwnProfile && (
-                                        <TouchableOpacity onPress={() => setAddEduVisible(true)} style={{ position: 'absolute', right: 0, padding: 5 }}>
-                                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M12 5v14M5 12h14" /></Svg>
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
-                                {education.length === 0 ? (
-                                    <Text style={{ textAlign: 'center', color: theme.subText }}>No education added.</Text>
-                                ) : (
-                                    education.map((edu, index) => (
-                                        <View key={index} style={[styles.eduCard, { backgroundColor: theme.cardBg, borderBottomColor: theme.borderColor }]}>
-                                            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: isDarkMode ? '#2D3748' : '#EDF2F7', alignItems: 'center', justifyContent: 'center', marginRight: 15 }}>
-                                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
-                                                    {edu.type === 'Certificate' ? (
-                                                        <Path d="M20.2 18.1L20.2 18.1c.3.4.6.8.8 1.2s.3.9.3 1.4c0 1.2-.5 2.3-1.4 3.1L19 24l-5-3.6L9 24l-.9-.2c-.9-.8-1.4-1.9-1.4-3.1 0-.5.1-.9.3-1.4l.8-1.2" />
-                                                    ) : edu.type === 'Diploma' ? (
-                                                        <Path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-                                                    ) : (
-                                                        <>
-                                                            <Path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                                                            <Path d="M6 12v5c3 3 9 3 12 0v-5" />
-                                                        </>
-                                                    )}
-                                                </Svg>
-                                            </View>
-                                            <View>
-                                                <Text style={[styles.eduSchool, { color: theme.text }]}>{edu.institution}</Text>
-                                                <Text style={[styles.eduDegree, { color: theme.subText }]}>{edu.type === 'Degree' ? edu.degree : `${edu.type} in ${edu.degree}`}</Text>
-                                                <Text style={[styles.eduYear, { color: theme.subText }]}>{edu.year}</Text>
-                                            </View>
-                                            {isOwnProfile && (
-                                                <TouchableOpacity onPress={() => promptDeleteEdu(edu.id)} style={{ padding: 10, marginLeft: 'auto' }}>
-                                                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2">
-                                                        <Path d="M3 6h18" />
-                                                        <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                                    </Svg>
-                                                </TouchableOpacity>
-                                            )}
-                                        </View>
-                                    ))
-                                )}
-                            </View>
-                        )}
-                    </>
-                )}
-
-                {/* Resume Section (Individual) */}
-                {!isBusinessUser && (
-                    <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Resume</Text>
-                        {displayedUser?.resume_url ? (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7', padding: 15, borderRadius: 10 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 10 }}>
-                                        <Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                        <Path d="M14 2v6h6" />
-                                        <Path d="M16 13H8" />
-                                        <Path d="M16 17H8" />
-                                        <Path d="M10 9H8" />
-                                    </Svg>
-                                    <Text style={{ color: theme.text, fontWeight: '600' }}>Uploaded Resume</Text>
-                                </View>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
-                                    <TouchableOpacity onPress={() => Linking.openURL(getResumeUrl())} style={{ alignItems: 'center' }}>
-                                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A9EFF" strokeWidth="2">
-                                            <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                            <Circle cx="12" cy="12" r="3" />
-                                        </Svg>
-                                        <Text style={{ color: '#4A9EFF', fontSize: 10, marginTop: 2 }}>View</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => Linking.openURL(getResumeUrl())} style={{ alignItems: 'center' }}>
-                                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38A169" strokeWidth="2">
-                                            <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                            <Path d="M7 10l5 5 5-5" />
-                                            <Path d="M12 15V3" />
-                                        </Svg>
-                                        <Text style={{ color: '#38A169', fontSize: 10, marginTop: 2 }}>Download</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        ) : (
-                            <Text style={{ textAlign: 'center', color: theme.subText, marginBottom: 10 }}>No resume uploaded.</Text>
-                        )}
-
-                        {isOwnProfile && (
-                            <TouchableOpacity
-                                style={{ marginTop: 15, backgroundColor: theme.buttonBg || (isDarkMode ? '#37404a' : '#EDF2F7'), padding: 12, borderRadius: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
-                                onPress={handleUploadResume}
-                                disabled={uploadingResume}
-                            >
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 8 }}>
-                                    <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                    <Path d="M17 8l-5-5-5 5" />
-                                    <Path d="M12 3v12" />
-                                </Svg>
-                                <Text style={{ color: theme.text, fontWeight: 'bold' }}>{uploadingResume ? 'Uploading...' : 'Upload Resume'}</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                )}
-
-            </Animated.ScrollView>
-
-            {/* Modals ... (Keeping same modals) */}
-            {/* Business Card Modal */}
-            <Modal visible={businessCardVisible} transparent animationType="fade" onRequestClose={() => setBusinessCardVisible(false)}>
-                <View style={styles.modalOverlay}>
-                    {isWeb ? (
-                        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }]} />
-                    ) : (
-                        <BlurView
-                            style={StyleSheet.absoluteFill}
-                            blurType={isDarkMode ? "dark" : "light"}
-                            blurAmount={5}
-                            reducedTransparencyFallbackColor="white"
-                        />
-                    )}
-                    <View style={[styles.businessCardContainer, { backgroundColor: theme.cardBg }]}>
-                        <TouchableOpacity style={styles.closeCardButton} onPress={() => setBusinessCardVisible(false)}>
-                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
-                        </TouchableOpacity>
-
-                        {/* Tabs */}
-                        <View style={{ flexDirection: 'row', marginBottom: 15, backgroundColor: isDarkMode ? '#2D3748' : '#F7FAFC', borderRadius: 30, padding: 4, borderWidth: 1, borderColor: theme.borderColor, alignSelf: 'center' }}>
-                            <TouchableOpacity
-                                style={{ paddingVertical: 6, paddingHorizontal: 20, borderRadius: 25, backgroundColor: qrTab === 'my' ? (isDarkMode ? '#4A5568' : '#FFFFFF') : 'transparent', elevation: qrTab === 'my' ? 2 : 0 }}
-                                onPress={() => setQrTab('my')}
-                            >
-                                <Text style={{ fontWeight: '700', fontSize: 12, color: qrTab === 'my' ? theme.text : theme.subText }}>My QR</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={{ paddingVertical: 6, paddingHorizontal: 20, borderRadius: 25, backgroundColor: qrTab === 'scan' ? (isDarkMode ? '#4A5568' : '#FFFFFF') : 'transparent', elevation: qrTab === 'scan' ? 2 : 0 }}
-                                onPress={() => setQrTab('scan')}
-                            >
-                                <Text style={{ fontWeight: '700', fontSize: 12, color: qrTab === 'scan' ? theme.text : theme.subText }}>Scan QR</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {qrTab === 'my' ? (
-                            <View style={styles.landscapeCard}>
-                                {/* Left Side: QR */}
-                                <View style={[styles.landscapeQrSection, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', borderColor: theme.borderColor }]}>
-                                    <QRCode
-                                        value={`raabtaa://user/${displayedUser?.id}`}
-                                        size={110}
-                                        backgroundColor={isDarkMode ? '#2D3748' : 'white'}
-                                        color={isDarkMode ? 'white' : 'black'}
-                                    />
-                                </View>
-
-                                {/* Right Side: Info */}
-                                <View style={styles.landscapeInfoSection}>
-                                    <Image source={getProfileSource()} style={styles.landscapeAvatar} />
-                                    <View>
-                                        <Text style={[styles.cardName, { color: theme.text, fontSize: 18 }]}>{displayedUser?.name}</Text>
-                                        <Text style={[styles.cardRole, { color: theme.subText, fontSize: 12 }]} numberOfLines={1}>{displayedUser?.email}</Text>
-                                        <Text style={{ color: theme.primary, fontSize: 10, marginTop: 5, fontWeight: '600' }}>Scan to connect</Text>
-                                    </View>
-                                </View>
-                            </View>
-                        ) : (
-                            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 10, width: '100%' }}>
-                                <TouchableOpacity
-                                    style={{
-                                        width: '100%',
-                                        height: 130,
-                                        borderWidth: 2,
-                                        borderColor: '#4A9EFF',
-                                        borderRadius: 15,
-                                        borderStyle: 'dashed',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        backgroundColor: isDarkMode ? '#2D3748' : '#EBF8FF',
-                                        flexDirection: 'row',
-                                        gap: 15
-                                    }}
-                                    onPress={() => {
-                                        setBusinessCardVisible(false);
-                                        navigation.navigate('ARCardScanner');
-                                    }}
-                                >
-                                    <Svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4A9EFF" strokeWidth="2">
-                                        <Path d="M2 12V7a5 5 0 0 1 5-5h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5h-5" />
-                                        <Path d="M2 12l5 5 5-5" />
-                                        <Path d="M2 12v5" />
-                                    </Svg>
-                                    <Text style={{ color: '#4A9EFF', fontWeight: 'bold', fontSize: 16 }}>Launch Scanner</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </View>
-                </View>
-            </Modal>
-
-            <CustomAlert
-                visible={alertVisible}
-                title={alertTitle}
-                message={alertMessage}
-                type={alertType}
-                onDismiss={() => {
-                    setAlertVisible(false);
-                    setConfirmAction(null);
-                }}
-                onConfirm={confirmAction ? () => {
-                    confirmAction();
-                    setConfirmAction(null);
-                } : undefined}
-                confirmText="Delete"
-                cancelText="Cancel"
-            />
-            {/* ... other modals code ... */}
-            <Modal
-                visible={modalVisible}
-                transparent
-                animationType="slide"
-                onRequestClose={closeModal}
-            >
-                <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-                    {isWeb ? (
-                        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }]} />
-                    ) : (
-                        <BlurView
-                            style={StyleSheet.absoluteFill}
-                            blurType={isDarkMode ? "dark" : "light"}
-                            blurAmount={5}
-                            reducedTransparencyFallbackColor="white"
-                        />
-                    )}
-                    <TouchableWithoutFeedback onPress={closeModal}>
-                        <View style={styles.dismissArea} />
-                    </TouchableWithoutFeedback>
-                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
-                        <View style={styles.menuContainer}>
-                            <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}><Text style={[styles.menuItemText, { color: theme.text }]}>Edit Profile</Text></TouchableOpacity>
-                            <TouchableOpacity style={styles.menuItem} onPress={() => { closeModal(); navigation.navigate('BusinessCardEditor'); }}>
-                                <Text style={[styles.menuItemText, { color: theme.text }]}>Business Card</Text>
-                            </TouchableOpacity>
-
-                            {/* View As Public (Business Only) */}
-                            {isBusinessUser && (
-                                <TouchableOpacity
-                                    style={styles.menuItem}
-                                    onPress={() => {
-                                        closeModal();
-                                        // Push a new instance of ProfileScreen (UserProfile) with viewAsGuest=true
-                                        // We pass userInfo as the 'user' param so it renders our data
-                                        navigation.push('UserProfile', { user: userInfo, viewAsGuest: true });
-                                    }}
-                                >
-                                    <Text style={[styles.menuItemText, { color: theme.text }]}>View as Public</Text>
-                                </TouchableOpacity>
-                            )}
-
-                            <View style={[styles.menuItem, { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 }]}>
-                                <Text style={[styles.menuItemText, { color: theme.text }]}>Dark Mode</Text>
-                                <Switch
-                                    value={isDarkMode}
-                                    onValueChange={toggleTheme}
-                                    trackColor={{ false: "#E2E8F0", true: "#4A9EFF" }}
-                                    thumbColor={"#fff"}
-                                />
-                            </View>
-
-                            <View style={[styles.menuItem, { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 }]}>
-                                <Text style={[styles.menuItemText, { color: theme.text }]}>Private Profile</Text>
-                                <Switch
-                                    value={isPrivateProfile}
-                                    onValueChange={async (val) => {
-                                        setIsPrivateProfile(val);
-                                        try {
-                                            await DataService.updatePrivacySettings(val);
-                                            // Refresh local user state silently or wait for next fetch
-                                            setLocalUser(prev => ({ ...prev, is_private: val ? 1 : 0 }));
-                                        } catch (e) {
-                                            setIsPrivateProfile(!val); // Revert
-                                            console.error("Failed to update privacy");
-                                        }
-                                    }}
-                                    trackColor={{ false: "#E2E8F0", true: "#E53E3E" }} // Red for private/warning
-                                    thumbColor={"#fff"}
-                                />
-                            </View>
-
-                            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}><Text style={[styles.menuItemText, { color: 'red' }]}>Logout</Text></TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal >
-            <Modal
-                visible={isEditing}
-                transparent
-                animationType="slide"
-                onRequestClose={() => setIsEditing(false)}
-            >
-                <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-                    {isWeb ? (
-                        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }]} />
-                    ) : (
-                        <BlurView
-                            style={StyleSheet.absoluteFill}
-                            blurType={isDarkMode ? "dark" : "light"}
-                            blurAmount={3}
-                            reducedTransparencyFallbackColor="white"
-                        />
-                    )}
-                    <TouchableWithoutFeedback onPress={() => setIsEditing(false)}>
-                        <View style={styles.dismissArea} />
-                    </TouchableWithoutFeedback>
-                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Edit Profile</Text>
-
-                        <View style={{ marginBottom: 15 }}>
-                            <Text style={{ color: theme.subText, marginBottom: 5 }}>Full Name</Text>
-                            <TextInput
-                                value={editName}
-                                onChangeText={setEditName}
-                                style={{
-                                    borderWidth: 1,
-                                    borderColor: theme.borderColor,
-                                    borderRadius: 10,
-                                    padding: 10,
-                                    color: theme.text,
-                                    backgroundColor: theme.bg
-                                }}
-                            />
-                        </View>
-
-                        <View style={{ marginBottom: 20 }}>
-                            <Text style={{ color: theme.subText, marginBottom: 5 }}>Phone</Text>
-                            <TextInput
-                                value={editPhone}
-                                onChangeText={setEditPhone}
-                                keyboardType="phone-pad"
-                                style={{
-                                    borderWidth: 1,
-                                    borderColor: theme.borderColor,
-                                    borderRadius: 10,
-                                    padding: 10,
-                                    color: theme.text,
-                                    backgroundColor: theme.bg
-                                }}
-                            />
-                        </View>
-
-                        <TouchableOpacity
-                            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 10, marginBottom: 20, backgroundColor: theme.inputBg, borderRadius: 10 }}
-                            onPress={handleUploadProfilePic}
-                        >
-                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 10 }}>
-                                <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                                <Circle cx="12" cy="13" r="4" />
-                            </Svg>
-                            <Text style={{ color: theme.text }}>Change Profile Picture</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={{ backgroundColor: theme.buttonBg || '#4A9EFF', padding: 15, borderRadius: 12, alignItems: 'center' }}
-                            onPress={handleSaveProfile}
-                        >
-                            <Text style={{ color: isDarkMode ? 'white' : '#2D3748', fontWeight: 'bold' }}>Save Changes</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={{ marginTop: 10, padding: 10, alignItems: 'center' }}
-                            onPress={() => setIsEditing(false)}
-                        >
-                            <Text style={{ color: theme.subText }}>Cancel</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Add Skill Modal - Bottom Sheet */}
-            <Modal visible={addSkillVisible} transparent animationType="slide" onRequestClose={() => setAddSkillVisible(false)}>
-                <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'transparent' }}>
-                    <TouchableWithoutFeedback onPress={() => setAddSkillVisible(false)}>
-                        <View style={styles.dismissArea} />
-                    </TouchableWithoutFeedback>
-                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Add Skill</Text>
-                        <TextInput
-                            placeholder="Skill Name (e.g. React Native)"
-                            placeholderTextColor={theme.subText}
-                            value={newSkill}
-                            onChangeText={setNewSkill}
-                            style={{
-                                borderWidth: 1,
-                                borderColor: theme.borderColor,
-                                borderRadius: 10,
-                                padding: 10,
-                                color: theme.text,
-                                marginBottom: 20,
-                                backgroundColor: theme.inputBg
-                            }}
-                        />
-                        <TouchableOpacity style={{ backgroundColor: theme.buttonBg || (isDarkMode ? '#37404a' : '#EDF2F7'), padding: 15, borderRadius: 12, alignItems: 'center' }} onPress={handleAddSkill}>
-                            <Text style={{ color: theme.text, fontWeight: 'bold' }}>Add Skill</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={{ marginTop: 15, alignItems: 'center' }} onPress={() => setAddSkillVisible(false)}>
-                            <Text style={{ color: theme.subText }}>Cancel</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-            {/* Add Education Modal - Bottom Sheet */}
-            <Modal visible={addEduVisible} transparent animationType="slide" onRequestClose={() => setAddEduVisible(false)}>
-                <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'transparent' }}>
-                    <TouchableWithoutFeedback onPress={() => setAddEduVisible(false)}>
-                        <View style={styles.dismissArea} />
-                    </TouchableWithoutFeedback>
-                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Add Education</Text>
-
-                        <View style={{ flexDirection: 'row', marginBottom: 15, gap: 10 }}>
-                            {['Degree', 'Diploma', 'Certificate'].map((t) => (
-                                <TouchableOpacity
-                                    key={t}
-                                    style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, backgroundColor: newEduType === t ? (theme.buttonBg || '#4A9EFF') : theme.inputBg }}
-                                    onPress={() => setNewEduType(t)}
-                                >
-                                    <Text style={{ color: newEduType === t ? 'white' : theme.text, fontWeight: '600', fontSize: 12 }}>{t}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        <TextInput
-                            placeholder="School / University"
-                            placeholderTextColor={theme.subText}
-                            value={newEduSchool}
-                            onChangeText={setNewEduSchool}
-                            style={{ borderWidth: 1, borderColor: theme.borderColor, borderRadius: 10, padding: 10, color: theme.text, marginBottom: 15, backgroundColor: theme.inputBg }}
-                        />
-                        <TextInput
-                            placeholder={newEduType === 'Degree' ? "Degree (e.g. Bachelors CS)" : "Field of Study"}
-                            placeholderTextColor={theme.subText}
-                            value={newEduDegree}
-                            onChangeText={setNewEduDegree}
-                            style={{ borderWidth: 1, borderColor: theme.borderColor, borderRadius: 10, padding: 10, color: theme.text, marginBottom: 15, backgroundColor: theme.inputBg }}
-                        />
-                        <TextInput
-                            placeholder="Year (e.g. 2019 - 2023)"
-                            placeholderTextColor={theme.subText}
-                            value={newEduYear}
-                            onChangeText={setNewEduYear}
-                            style={{ borderWidth: 1, borderColor: theme.borderColor, borderRadius: 10, padding: 10, color: theme.text, marginBottom: 20, backgroundColor: theme.inputBg }}
-                        />
-                        <TouchableOpacity style={{ backgroundColor: theme.buttonBg || (isDarkMode ? '#37404a' : '#EDF2F7'), padding: 15, borderRadius: 12, alignItems: 'center' }} onPress={handleAddEducation}>
-                            <Text style={{ color: theme.text, fontWeight: 'bold' }}>Add Education</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={{ marginTop: 15, alignItems: 'center' }} onPress={() => setAddEduVisible(false)}>
-                            <Text style={{ color: theme.subText }}>Cancel</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-            <Modal visible={bookApptVisible} transparent animationType="fade" onRequestClose={() => setBookApptVisible(false)}>
-                <View style={styles.settingsModalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Book Appointment</Text>
-                        <Text style={{ color: theme.subText, marginBottom: 5 }}>Date (YYYY-MM-DD)</Text>
-                        <TextInput
-                            placeholder="2026-05-20"
-                            placeholderTextColor={theme.subText}
-                            value={apptDate}
-                            onChangeText={setApptDate}
-                            style={{ borderWidth: 1, borderColor: theme.borderColor, borderRadius: 10, padding: 10, color: theme.text, marginBottom: 15 }}
-                        />
-                        <Text style={{ color: theme.subText, marginBottom: 5 }}>Time (HH:MM)</Text>
-                        <TextInput
-                            placeholder="14:30"
-                            placeholderTextColor={theme.subText}
-                            value={apptTime}
-                            onChangeText={setApptTime}
-                            style={{ borderWidth: 1, borderColor: theme.borderColor, borderRadius: 10, padding: 10, color: theme.text, marginBottom: 20 }}
-                        />
-                        <TouchableOpacity style={{ backgroundColor: '#4A9EFF', padding: 15, borderRadius: 12, alignItems: 'center' }} onPress={handleBookAppointment}>
-                            <Text style={{ color: 'white', fontWeight: 'bold' }}>Confirm Booking</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={{ marginTop: 15, alignItems: 'center' }} onPress={() => setBookApptVisible(false)}>
-                            <Text style={{ color: theme.subText }}>Cancel</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-
-            <StandardLoader visible={showLoader} />
-        </View >
-    );
-};
-
-const styles = StyleSheet.create({
-    container: { flex: 1 },
-    headerBackground: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, alignItems: 'center' },
-    headerTop: { width: '100%', paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'flex-end', marginTop: Platform.OS === 'ios' ? 50 : 30, zIndex: 20 },
-    iconButton: { padding: 5 },
-    headerInfoContainer: { position: 'absolute', top: 50, left: 0, right: 0, alignItems: 'center' },
-    headerNameText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-    headerEmailText: { color: '#CBD5E0', fontSize: 10 },
-
-    qrContainer: { marginTop: 20, alignItems: 'center', justifyContent: 'center', zIndex: 25 },
-    qrWrapper: { padding: 10, backgroundColor: '#fff', borderRadius: 20, elevation: 5 },
-
-    avatarContainerAbsolute: { position: 'absolute', top: 240, left: 0, right: 0, alignItems: 'center', zIndex: 30 },
-    avatarWrapper: { width: 100, height: 100, borderRadius: 50, borderWidth: 4, borderColor: '#F7FAFC', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', elevation: 5 },
-    avatar: { width: 92, height: 92, borderRadius: 46 },
-
-    contentContainer: { paddingBottom: 50 },
-    spacer: { height: 320 },
-
-    infoSection: { alignItems: 'center', marginBottom: 20, marginTop: 20 },
-    nameText: { fontSize: 24, fontWeight: 'bold', marginBottom: 5 },
-    roleText: { fontSize: 14 },
-    userTypeBadge: { marginTop: 5, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
-    userTypeBadgeText: { fontSize: 12, fontWeight: '600' },
-
-    actionRow: { flexDirection: 'row', justifyContent: 'center', gap: 15, marginBottom: 20, alignItems: 'center' },
-    circleBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#007BFF', alignItems: 'center', justifyContent: 'center', elevation: 3 },
-    locationSnippet: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EDF2F7', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 15, gap: 5 },
-    locationText: { color: '#718096', fontSize: 12, maxWidth: 100 },
-
-    sectionContainer: { width: '90%', alignSelf: 'center', borderRadius: 20, padding: 20, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
-    tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    tag: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
-    tagText: { fontSize: 14, fontWeight: '500' },
-
-    prodRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#eee' },
-    prodName: { fontSize: 16 },
-    prodPrice: { fontWeight: 'bold', color: '#718096' },
-    seeMore: { color: '#007BFF', marginTop: 10, fontWeight: '600' },
-
-    // Dashboard
-    dashboardGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 },
-    dashboardBtn: { width: '48%', padding: 15, borderRadius: 12, alignItems: 'center', marginBottom: 10 },
-    dashboardIcon: { marginBottom: 8 },
-    dashboardLabel: { fontSize: 14, fontWeight: '600' },
-
-    // Calendar
-    calendarContainer: { width: '100%' },
-    calendarTitle: { fontSize: 16, fontWeight: 'bold', color: '#2D3748', marginBottom: 10, textAlign: 'center' },
-    calendarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-    calendarCell: { width: (width * 0.9 - 40 - (12 * 4)) / 12, height: 15, borderRadius: 3, marginBottom: 4 },
-
-    // Modal
-    dismissArea: { flex: 1 },
-    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-    settingsModalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-    modalContent: { borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, elevation: 20, paddingBottom: 50 },
-    menuContainer: { gap: 15 },
-    menuItem: { paddingVertical: 10, alignItems: 'center' },
-    menuItemText: { fontSize: 18, fontWeight: '600', textAlign: 'center' },
-
-    // Education
-    eduCard: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1 },
-    eduSchool: { fontSize: 16, fontWeight: '600', marginBottom: 2 },
-    eduDegree: { fontSize: 14, marginBottom: 2 },
-    eduYear: { fontSize: 12 },
-
-    // Business Card Modal
-    cardQrBody: { alignItems: 'center', marginVertical: 10 },
-    cardQrWrapper: { padding: 15, backgroundColor: '#fff', borderRadius: 20, elevation: 3, borderWidth: 1, borderColor: '#EDF2F7' },
-    scanText: { marginTop: 15, color: '#A0AEC0', fontSize: 14 },
-    cardName: { fontSize: 20, fontWeight: 'bold', color: '#2D3748' },
-    cardRole: { fontSize: 14, color: '#718096', marginTop: 2 },
-    closeCardButton: { position: 'absolute', top: 15, right: 15, padding: 5, zIndex: 10 },
-    cardHeader: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginBottom: 20 },
-    cardAvatar: { width: 60, height: 60, borderRadius: 30 },
-    landscapeCard: { flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10 },
-    landscapeQrSection: { padding: 8, borderRadius: 10, borderWidth: 1, elevation: 1 },
-    landscapeInfoSection: { flex: 1, marginLeft: 15, justifyContent: 'center' },
-    landscapeAvatar: { width: 40, height: 40, borderRadius: 20, marginBottom: 5 },
-    businessCardContainer: { width: '90%', borderRadius: 20, padding: 20, alignItems: 'center', elevation: 10, maxHeight: 400 }, // limited height for landscape feel
-
-    // Grid Styles
-    gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-    productCard: { width: (width - 60) / 2, borderRadius: 15, marginBottom: 15, overflow: 'hidden', elevation: 2 },
-    productImage: { width: '100%', height: 120, backgroundColor: '#EDF2F7' },
-    productInfo: { padding: 10 },
-    productName: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
-    productPrice: { fontSize: 12, fontWeight: 'bold' },
-});
-
-export default ProfileScreen;
+// ... rest of the file

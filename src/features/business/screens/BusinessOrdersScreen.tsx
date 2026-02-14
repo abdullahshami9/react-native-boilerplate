@@ -5,6 +5,7 @@ import { DataService } from '../../../services/DataService';
 import Svg, { Path } from 'react-native-svg';
 import CustomAlert from '../../../components/CustomAlert';
 import { useTheme } from '../../../theme/useTheme';
+import EmptyState from '../../../components/EmptyState';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -162,7 +163,7 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
                 keyExtractor={item => item.id.toString()}
                 contentContainerStyle={styles.listContent}
                 refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchOrders} tintColor={theme.text} />}
-                ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>No orders received yet.</Text>}
+                ListEmptyComponent={<EmptyState type="orders" message="No orders received yet." />}
             />
         </View>
     );

@@ -171,7 +171,7 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F7FAFC' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20, borderBottomWidth: 1 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 },
     headerTitle: { fontSize: 20, fontWeight: 'bold' },
     backButton: { padding: 5, borderRadius: 20 },
     listContent: { padding: 20 },

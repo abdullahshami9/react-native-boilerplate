@@ -135,8 +135,8 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
-            <View style={[styles.header, { borderBottomColor: theme.borderColor }]}>
-                <View style={{ width: 40 }} />
+            <View style={styles.header}>
+                <Text style={styles.headerLogo}>Junr</Text>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>Dashboard</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('UserProfile')}>
                     <Image
@@ -239,8 +239,9 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1 },
-    headerTitle: { fontSize: 24, fontWeight: 'bold' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 },
+    headerLogo: { fontSize: 20, fontWeight: 'bold', color: '#A0AEC0' }, // Gray/Dim white
+    headerTitle: { fontSize: 20, fontWeight: 'bold' },
     headerAvatar: { width: 40, height: 40, borderRadius: 20 },
     content: { padding: 20 },
 

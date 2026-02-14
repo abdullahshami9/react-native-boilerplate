@@ -136,6 +136,7 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
             <View style={[styles.header, { borderBottomColor: theme.borderColor }]}>
+                <View style={{ width: 40 }} />
                 <Text style={[styles.headerTitle, { color: theme.text }]}>Dashboard</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('UserProfile')}>
                     <Image

@@ -71,8 +71,8 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
                 const last7 = daily.slice(-7);
                 for (let d of last7) {
                     labels.push(new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' }));
-                    data.push(d.total);
-                    if (d.date.startsWith(today)) todayTotal = d.total;
+                    data.push(Number(d.total));
+                    if (d.date.startsWith(today)) todayTotal = Number(d.total);
                 }
 
                 // If no data, keep defaults

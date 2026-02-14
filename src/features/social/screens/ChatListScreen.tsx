@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import axios from 'axios';
-import { CONFIG } from '../Config';
+import { CONFIG } from '../../../Config';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../../theme/useTheme';
 import { FlashList } from '@shopify/flash-list';

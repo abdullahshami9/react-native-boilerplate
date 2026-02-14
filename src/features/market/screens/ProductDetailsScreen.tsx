@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions
 import Svg, { Path, Circle } from 'react-native-svg';
 
 import { CartContext } from '../../../context/CartContext';
-import { CONFIG } from '../Config';
+import { CONFIG } from '../../../Config';
 import MiniToast, { MiniToastRef } from '../../../components/MiniToast';
 
 const { width } = Dimensions.get('window');

@@ -12,7 +12,7 @@ import { resolveImage } from '../../../utils/ImageHelper';
 const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 
-import { CONFIG } from '../Config';
+import { CONFIG } from '../../../Config';
 
 
 const AddProductScreen = ({ navigation, route }: any) => {

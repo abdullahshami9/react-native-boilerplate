@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, ActivityIndicator, ScrollView } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { DataService } from '../../../services/DataService';
 import { AuthContext } from '../../../context/AuthContext';
@@ -88,8 +88,8 @@ const DiscoverScreen = ({ navigation }: any) => {
 
     const renderHeader = () => (
         <View>
-             {/* Filter Chips */}
-             <View style={[styles.filterContainer, { marginTop: 10 }]}>
+            {/* Filter Chips */}
+            <View style={[styles.filterContainer, { marginTop: 10 }]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     {['All', 'Skills', 'Location'].map((f) => (
                         <TouchableOpacity
@@ -150,7 +150,7 @@ const DiscoverScreen = ({ navigation }: any) => {
                         onRefresh={refetch}
                         refreshing={isLoading}
                         ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 50, color: theme.subText }}>No users found.</Text>}
-                        ListFooterComponent={isFetchingNextPage ? <ActivityIndicator color={theme.text} /> : <View style={{height: 100}}/>}
+                        ListFooterComponent={isFetchingNextPage ? <ActivityIndicator color={theme.text} /> : <View style={{ height: 100 }} />}
                     />
                 </View>
             )}

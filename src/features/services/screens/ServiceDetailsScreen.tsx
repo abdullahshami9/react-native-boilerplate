@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
-import { CONFIG } from '../Config';
+import { CONFIG } from '../../../Config';
 import Svg, { Path, Circle } from 'react-native-svg';
 import CustomAlert from '../../../components/CustomAlert';
 

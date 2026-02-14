@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput, A
 import Svg, { Path } from 'react-native-svg';
 import { DataService } from '../../../services/DataService';
 import { AuthContext } from '../../../context/AuthContext';
-import { CONFIG } from '../Config';
+import { CONFIG } from '../../../Config';
 import CustomAlert from '../../../components/CustomAlert';
 import StandardLoader from '../../../components/StandardLoader';
 

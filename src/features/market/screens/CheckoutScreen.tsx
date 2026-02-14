@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ScrollView }
 import { CartContext } from '../../../context/CartContext';
 import { AuthContext } from '../../../context/AuthContext';
 import { DataService } from '../../../services/DataService';
-import { CONFIG } from '../Config';
+import { CONFIG } from '../../../Config';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useTheme } from '../../../theme/useTheme';
 import CustomAlert from '../../../components/CustomAlert';

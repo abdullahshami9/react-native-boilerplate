@@ -3,7 +3,7 @@ import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Keyboard
 import { AuthContext } from '../../../context/AuthContext';
 import SocketService from '../../../services/SocketService';
 import axios from 'axios';
-import { CONFIG } from '../Config';
+import { CONFIG } from '../../../Config';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { launchImageLibrary } from 'react-native-image-picker';

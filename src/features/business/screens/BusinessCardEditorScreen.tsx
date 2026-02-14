@@ -5,7 +5,7 @@ import RNPrint from 'react-native-print';
 import Svg, { Path } from 'react-native-svg';
 import { AuthContext } from '../../../context/AuthContext';
 import { useTheme } from '../../../theme/useTheme';
-import { CONFIG } from '../Config';
+import { CONFIG } from '../../../Config';
 import axios from 'axios';
 import CustomAlert from '../../../components/CustomAlert';
 import { WebView } from 'react-native-webview';

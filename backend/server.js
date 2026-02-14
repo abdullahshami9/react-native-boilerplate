@@ -16,6 +16,7 @@ const BusinessDetails = require('./models/BusinessDetails');
 const IdentityScan = require('./models/IdentityScan');
 const axios = require('axios');
 const { createClient } = require('redis');
+const { RedisMemoryServer } = require('redis-memory-server');
 
 const app = express();
 const PORT = 3000;
@@ -46,14 +47,31 @@ const USE_REDIS = process.env.USE_REDIS !== 'false';
 
 if (USE_REDIS) {
     (async () => {
-        redisClient = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
-        redisClient.on('error', (err) => console.log('Redis Client Error (Fallback to Memory/DirectDB):', err.message));
-        try {
-            await redisClient.connect();
-            console.log('Connected to Redis');
-        } catch (e) {
-            console.log('Redis Connection Failed, proceeding without cache.');
-            redisClient = null;
+        let redisUrl = process.env.REDIS_URL;
+
+        if (!redisUrl) {
+            console.log('No REDIS_URL found, starting in-memory Redis server...');
+            try {
+                const redisServer = new RedisMemoryServer();
+                const host = await redisServer.getHost();
+                const port = await redisServer.getPort();
+                redisUrl = `redis://${host}:${port}`;
+                console.log(`In-memory Redis started at ${redisUrl}`);
+            } catch (err) {
+                console.error('Failed to start in-memory Redis:', err);
+            }
+        }
+
+        if (redisUrl) {
+            redisClient = createClient({ url: redisUrl });
+            redisClient.on('error', (err) => console.log('Redis Client Error (Fallback to Memory/DirectDB):', err.message));
+            try {
+                await redisClient.connect();
+                console.log('Connected to Redis');
+            } catch (e) {
+                console.log('Redis Connection Failed, proceeding without cache.');
+                redisClient = null;
+            }
         }
     })();
 }
@@ -659,9 +677,9 @@ app.get('/api/products/discover', async (req, res) => {
     }
 
     if (type === 'Location') {
-         // Join logic
-         query = `SELECT p.* FROM products p JOIN users u ON p.user_id = u.id WHERE p.id > ? AND u.address LIKE ?`;
-         params = [cursor, `%${search}%`];
+        // Join logic
+        query = `SELECT p.* FROM products p JOIN users u ON p.user_id = u.id WHERE p.id > ? AND u.address LIKE ?`;
+        params = [cursor, `%${search}%`];
     }
 
     query += ' ORDER BY id ASC LIMIT ?';

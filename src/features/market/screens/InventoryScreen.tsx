@@ -6,6 +6,8 @@ import { AuthContext } from '../../../context/AuthContext';
 import { CONFIG } from '../../../Config';
 import CustomAlert from '../../../components/CustomAlert';
 import StandardLoader from '../../../components/StandardLoader';
+import SkeletonLoader from '../../../shared/components/SkeletonLoader';
+import EmptyState from '../../../components/EmptyState';
 
 const isWeb = Platform.OS === 'web';
 const { width } = Dimensions.get('window');
@@ -13,7 +15,7 @@ const { width } = Dimensions.get('window');
 const InventoryScreen = ({ navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
     const [products, setProducts] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showLoader, setShowLoader] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -46,7 +48,7 @@ const InventoryScreen = ({ navigation }: any) => {
 
     const fetchInventory = async () => {
         // Only set loading if not refreshing (to avoid double spinner or jarring effect if we want custom loader)
-        if (!refreshing) setLoading(true);
+        if (products.length === 0 && !refreshing) setLoading(true);
         try {
             const res = await DataService.getProducts(userInfo.id);
             if (res.success) {
@@ -61,10 +63,8 @@ const InventoryScreen = ({ navigation }: any) => {
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        setShowLoader(true);
         await fetchInventory();
         setRefreshing(false);
-        setShowLoader(false);
     };
 
     const handleEditStock = (product: any) => {
@@ -106,96 +106,111 @@ const InventoryScreen = ({ navigation }: any) => {
         }
     };
 
+    const renderHeader = () => (
+        <View style={[styles.header, { backgroundColor: theme.headerBg }]}>
+            <TouchableOpacity style={[styles.backButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.goBack()}>
+                <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
+                    <Path d="M19 12H5M12 19l-7-7 7-7" />
+                </Svg>
+            </TouchableOpacity>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>Inventory Management</Text>
+            <TouchableOpacity style={[styles.addButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.navigate('AddProduct')}>
+                 <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
+                    <Path d="M12 5v14M5 12h14" />
+                 </Svg>
+            </TouchableOpacity>
+        </View>
+    );
+
+    if (loading && products.length === 0) {
+        return (
+            <View style={[styles.container, { backgroundColor: theme.bg }]}>
+                {renderHeader()}
+                <View style={{ padding: 20 }}>
+                     {[1, 2, 3, 4, 5].map(i => (
+                         <View key={i} style={{ flexDirection: 'row', marginBottom: 15, alignItems: 'center' }}>
+                             <SkeletonLoader width={80} height={80} borderRadius={10} />
+                             <View style={{ marginLeft: 15, flex: 1 }}>
+                                 <SkeletonLoader width="60%" height={20} style={{ marginBottom: 8 }} />
+                                 <SkeletonLoader width="40%" height={16} style={{ marginBottom: 8 }} />
+                                 <SkeletonLoader width="30%" height={16} />
+                             </View>
+                         </View>
+                     ))}
+                </View>
+            </View>
+        );
+    }
+
     return (
         <View style={[styles.container, { backgroundColor: theme.bg }]}>
-            {/* Header */}
-            <View style={[styles.header, { backgroundColor: theme.headerBg }]}>
-                <TouchableOpacity style={[styles.backButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.goBack()}>
-                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
-                        <Path d="M19 12H5M12 19l-7-7 7-7" />
-                    </Svg>
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Inventory Management</Text>
-                <TouchableOpacity style={[styles.addButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.navigate('AddProduct')}>
-                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
-                        <Path d="M12 5v14M5 12h14" />
-                     </Svg>
-                </TouchableOpacity>
-            </View>
+            {renderHeader()}
 
-            {loading ? (
-                <View style={styles.center}><ActivityIndicator size="large" color={theme.text} /></View>
-            ) : (
-                <FlatList
-                    key={isWeb ? 'grid' : 'list'}
-                    data={products}
-                    keyExtractor={(item) => item.id.toString()}
-                    numColumns={isWeb ? 3 : 1}
-                    contentContainerStyle={styles.listContent}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={handleRefresh}
-                            colors={['transparent']}
-                            tintColor="transparent"
-                            progressBackgroundColor="transparent"
-                        />
-                    }
-                    renderItem={({ item }) => {
-                        const imageUrl = item.image_url
-                            ? `${CONFIG.API_URL}/${item.image_url}?t=${new Date().getTime()}`
-                            : null;
+            <FlatList
+                key={isWeb ? 'grid' : 'list'}
+                data={products}
+                keyExtractor={(item) => item.id.toString()}
+                numColumns={isWeb ? 3 : 1}
+                contentContainerStyle={styles.listContent}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        colors={['transparent']}
+                        tintColor="transparent"
+                        progressBackgroundColor="transparent"
+                    />
+                }
+                renderItem={({ item }) => {
+                    const imageUrl = item.image_url
+                        ? `${CONFIG.API_URL}/${item.image_url}?t=${new Date().getTime()}`
+                        : null;
 
-                        return (
-                            <View style={[
-                                styles.card,
-                                { backgroundColor: theme.cardBg },
-                                isWeb && { flex: 1, flexDirection: 'column', maxWidth: '32%', margin: 5, alignItems: 'flex-start' }
-                            ]}>
-                                {imageUrl ? (
-                                    <Image source={{ uri: imageUrl }} style={[styles.image, isWeb && { width: '100%', height: 150, marginBottom: 10 }]} />
-                                ) : (
-                                    <View style={[styles.imagePlaceholder, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }, isWeb && { width: '100%', height: 150, marginBottom: 10 }]} />
+                    return (
+                        <View style={[
+                            styles.card,
+                            { backgroundColor: theme.cardBg },
+                            isWeb && { flex: 1, flexDirection: 'column', maxWidth: '32%', margin: 5, alignItems: 'flex-start' }
+                        ]}>
+                            {imageUrl ? (
+                                <Image source={{ uri: imageUrl }} style={[styles.image, isWeb && { width: '100%', height: 150, marginBottom: 10 }]} />
+                            ) : (
+                                <View style={[styles.imagePlaceholder, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }, isWeb && { width: '100%', height: 150, marginBottom: 10 }]} />
+                            )}
+
+                            <View style={styles.info}>
+                                <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
+                                <Text style={[styles.price, { color: theme.subText }]}>{item.price} PKR</Text>
+
+                                <Text style={[styles.stock, item.stock_quantity < 5 ? { color: '#E53E3E', fontWeight: 'bold' } : { color: theme.subText }]}>
+                                    Stock: {item.stock_quantity || 0} {item.stock_quantity < 5 ? '(Low)' : ''}
+                                </Text>
+                                {item.wholesale_tiers && JSON.parse(item.wholesale_tiers).length > 0 && (
+                                    <Text style={{ color: theme.primary, fontSize: 10, marginTop: 2 }}>Wholesale Available</Text>
                                 )}
-
-                                <View style={styles.info}>
-                                    <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
-                                    <Text style={[styles.price, { color: theme.subText }]}>{item.price} PKR</Text>
-
-                                    <Text style={[styles.stock, item.stock_quantity < 5 ? { color: '#E53E3E', fontWeight: 'bold' } : { color: theme.subText }]}>
-                                        Stock: {item.stock_quantity || 0} {item.stock_quantity < 5 ? '(Low)' : ''}
-                                    </Text>
-                                    {item.wholesale_tiers && JSON.parse(item.wholesale_tiers).length > 0 && (
-                                        <Text style={{ color: theme.primary, fontSize: 10, marginTop: 2 }}>Wholesale Available</Text>
-                                    )}
-                                </View>
-
-                                <View style={{ flexDirection: 'row', gap: 10, marginTop: isWeb ? 10 : 0 }}>
-                                    <TouchableOpacity style={[styles.editButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => handleEditStock(item)}>
-                                        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 5 }}>
-                                            <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                            <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                        </Svg>
-                                        <Text style={[styles.editButtonText, { color: theme.text }]}>Edit</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity style={[styles.editButton, { backgroundColor: '#FED7D7' }]} onPress={() => handleDelete(item)}>
-                                        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2">
-                                            <Path d="M3 6h18" />
-                                            <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                        </Svg>
-                                    </TouchableOpacity>
-                                </View>
                             </View>
-                        );
-                    }}
-                    ListEmptyComponent={
-                        <View style={styles.center}>
-                            <Text style={{ color: '#A0AEC0' }}>No products found. Add products to start selling.</Text>
+
+                            <View style={{ flexDirection: 'row', gap: 10, marginTop: isWeb ? 10 : 0 }}>
+                                <TouchableOpacity style={[styles.editButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => handleEditStock(item)}>
+                                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2" style={{ marginRight: 5 }}>
+                                        <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                    </Svg>
+                                    <Text style={[styles.editButtonText, { color: theme.text }]}>Edit</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={[styles.editButton, { backgroundColor: '#FED7D7' }]} onPress={() => handleDelete(item)}>
+                                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2">
+                                        <Path d="M3 6h18" />
+                                        <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </Svg>
+                                </TouchableOpacity>
+                            </View>
                         </View>
-                    }
-                />
-            )}
+                    );
+                }}
+                ListEmptyComponent={<EmptyState type="inventory" message="Your inventory is empty. Add products to start selling." />}
+            />
 
             <CustomAlert
                 visible={alertVisible}

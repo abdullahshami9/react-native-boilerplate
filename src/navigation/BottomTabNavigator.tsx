@@ -12,6 +12,7 @@ import ShopScreen from '../features/market/screens/ShopScreen';
 import ProfileScreen from '../features/social/screens/ProfileScreen';
 
 // Business Screens
+import BusinessDashboardScreen from '../features/business/screens/BusinessDashboardScreen';
 import StatsScreen from '../features/business/screens/StatsScreen';
 import BusinessOrdersScreen from '../features/business/screens/BusinessOrdersScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
@@ -89,26 +90,13 @@ const BottomTabNavigator = () => {
                     // BUSINESS TABS
                     <>
                         <Tab.Screen
-                            name="ProfileTab"
-                            component={ProfileScreen}
+                            name="Dashboard"
+                            component={BusinessDashboardScreen}
                             options={{
                                 tabBarIcon: ({ color, focused }) => (
                                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={focused ? "2.5" : "2"}>
                                         <Path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                                         <Path d="M9 22V12h6v10" />
-                                    </Svg>
-                                )
-                            }}
-                        />
-                        <Tab.Screen
-                            name="Stats"
-                            component={StatsScreen}
-                            options={{
-                                tabBarIcon: ({ color, focused }) => (
-                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={focused ? "2.5" : "2"}>
-                                        <Line x1="18" y1="20" x2="18" y2="10" />
-                                        <Line x1="12" y1="20" x2="12" y2="4" />
-                                        <Line x1="6" y1="20" x2="6" y2="14" />
                                     </Svg>
                                 )
                             }}
@@ -127,13 +115,26 @@ const BottomTabNavigator = () => {
                             }}
                         />
                         <Tab.Screen
-                            name="Notifications"
-                            component={NotificationsScreen}
+                            name="Stats"
+                            component={StatsScreen}
                             options={{
                                 tabBarIcon: ({ color, focused }) => (
                                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={focused ? "2.5" : "2"}>
-                                        <Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                        <Path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                        <Line x1="18" y1="20" x2="18" y2="10" />
+                                        <Line x1="12" y1="20" x2="12" y2="4" />
+                                        <Line x1="6" y1="20" x2="6" y2="14" />
+                                    </Svg>
+                                )
+                            }}
+                        />
+                         <Tab.Screen
+                            name="ProfileTab"
+                            component={ProfileScreen}
+                            options={{
+                                tabBarIcon: ({ color, focused }) => (
+                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={focused ? "2.5" : "2"}>
+                                        <Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                        <Circle cx="12" cy="7" r="4" />
                                     </Svg>
                                 )
                             }}

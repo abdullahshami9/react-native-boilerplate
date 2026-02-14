@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, ActivityIndicator, ScrollView } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { DataService } from '../../../services/DataService';
@@ -12,6 +12,7 @@ import Img from '../../../shared/components/Img';
 import SkeletonLoader from '../../../shared/components/SkeletonLoader';
 import AnimatedButton from '../../../shared/components/AnimatedButton';
 import FadeInList from '../../../shared/components/FadeInList';
+import SocketService from '../../../services/SocketService';
 
 const { width } = Dimensions.get('window');
 
@@ -32,6 +33,24 @@ const DiscoverScreen = ({ navigation }: any) => {
     const [filterType, setFilterType] = useState('All'); // 'All', 'Skills', 'Location'
     const { userInfo, isDarkMode } = React.useContext(AuthContext);
     const theme = useTheme();
+    const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        SocketService.connect(userInfo.id);
+
+        const offStatus = SocketService.onUserStatusChange(({ userId, status }) => {
+            setOnlineUsers(prev => {
+                const newSet = new Set(prev);
+                if (status === 'online') newSet.add(userId);
+                else newSet.delete(userId);
+                return newSet;
+            });
+        });
+
+        return () => {
+            offStatus();
+        };
+    }, []);
 
     // Infinite Query for Users (Main Feed)
     const {
@@ -44,11 +63,18 @@ const DiscoverScreen = ({ navigation }: any) => {
     } = useInfiniteQuery({
         queryKey: ['users', search, filterType],
         queryFn: async ({ pageParam = 0 }) => {
-            // Note: DataService needs to be updated to support cursor pagination for users
-            // For now, we are simulating or assuming backend support will come in next step or using limit
-            // Current DataService.discoverUsers doesn't take cursor/limit args explicitly in signature
-            // Updating call signature here assuming DataService update
-            return await DataService.discoverUsers(search, userInfo?.id || 0, filterType, pageParam as number);
+            const res = await DataService.discoverUsers(search, userInfo?.id || 0, filterType, pageParam as number);
+            // Optimistically update online users if API provides it
+            if (res.users) {
+                setOnlineUsers(prev => {
+                    const newSet = new Set(prev);
+                    res.users.forEach((u: any) => {
+                         if (u.is_online) newSet.add(u.id);
+                    });
+                    return newSet;
+                });
+            }
+            return res;
         },
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
@@ -56,35 +82,42 @@ const DiscoverScreen = ({ navigation }: any) => {
 
     const flattenedUsers = data?.pages.flatMap(page => page.users || []) || [];
 
-    const renderItem = ({ item, index }: any) => (
-        <FadeInList index={index % 10} style={{ flex: 1 }}>
-            <View style={[styles.card, styles.gridCard, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}>
-                <Img source={resolveImage(item.profile_pic_url || getDefaultImageForType(item.user_type === 'business' ? 'business' : 'customer'))} style={styles.cardImage} />
-                <Text style={[styles.cardName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
-                <Text style={[styles.cardRole, { color: theme.subText }]}>{item.user_type}</Text>
-                <View style={styles.actionButtons}>
-                    <AnimatedButton style={[styles.connectButton, { backgroundColor: isDarkMode ? '#4A5568' : '#2D3748' }]}>
-                        <Text style={styles.connectButtonText}>Connect</Text>
-                    </AnimatedButton>
-                    <AnimatedButton
-                        style={[styles.messageButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]}
-                        onPress={async () => {
-                            try {
-                                const res = await DataService.initiateChat(userInfo.id, item.id);
-                                if (res.success) {
-                                    navigation.navigate('Chat', { chatId: res.chatId, otherUser: { id: item.id, name: item.name, pic: item.profile_pic_url } });
+    const renderItem = ({ item, index }: any) => {
+        const isOnline = onlineUsers.has(item.id);
+
+        return (
+            <FadeInList index={index % 10} style={{ flex: 1 }}>
+                <View style={[styles.card, styles.gridCard, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}>
+                    <View>
+                        <Img source={resolveImage(item.profile_pic_url || getDefaultImageForType(item.user_type === 'business' ? 'business' : 'customer'))} style={styles.cardImage} />
+                        <View style={[styles.statusDot, { backgroundColor: isOnline ? '#48BB78' : '#CBD5E0', borderColor: theme.cardBg }]} />
+                    </View>
+                    <Text style={[styles.cardName, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
+                    <Text style={[styles.cardRole, { color: theme.subText }]}>{item.user_type}</Text>
+                    <View style={styles.actionButtons}>
+                        <AnimatedButton style={[styles.connectButton, { backgroundColor: isDarkMode ? '#4A5568' : '#2D3748' }]}>
+                            <Text style={styles.connectButtonText}>Connect</Text>
+                        </AnimatedButton>
+                        <AnimatedButton
+                            style={[styles.messageButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]}
+                            onPress={async () => {
+                                try {
+                                    const res = await DataService.initiateChat(userInfo.id, item.id);
+                                    if (res.success) {
+                                        navigation.navigate('Chat', { chatId: res.chatId, otherUser: { id: item.id, name: item.name, pic: item.profile_pic_url, is_online: isOnline } });
+                                    }
+                                } catch (e) {
+                                    console.error("Chat Error", e);
                                 }
-                            } catch (e) {
-                                console.error("Chat Error", e);
-                            }
-                        }}
-                    >
-                        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
-                    </AnimatedButton>
+                            }}
+                        >
+                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>
+                        </AnimatedButton>
+                    </View>
                 </View>
-            </View>
-        </FadeInList>
-    );
+            </FadeInList>
+        );
+    };
 
     const renderHeader = () => (
         <View>
@@ -218,6 +251,15 @@ const styles = StyleSheet.create({
         height: 60,
         borderRadius: 30,
         marginBottom: 10,
+    },
+    statusDot: {
+        position: 'absolute',
+        bottom: 10, // Adjusted to sit on the image nicely
+        right: 0,
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        borderWidth: 2,
     },
     cardName: {
         fontSize: 16,

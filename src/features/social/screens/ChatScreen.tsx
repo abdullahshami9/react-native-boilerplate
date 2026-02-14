@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image, Animated } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import SocketService from '../../../services/SocketService';
 import axios from 'axios';
@@ -9,11 +9,20 @@ import Svg, { Path } from 'react-native-svg';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useTheme } from '../../../theme/useTheme';
 
+const DoubleTick = ({ read }: { read: boolean }) => (
+    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={read ? "#34B7F1" : "#A0AEC0"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <Path d="M18 6L7 17l-5-5" />
+        <Path d="M23 6l-11 11" />
+    </Svg>
+);
+
 export default function ChatScreen({ route, navigation }: any) {
     const { chatId, otherUser } = route.params;
     const { userInfo } = useContext(AuthContext);
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const [isOnline, setIsOnline] = useState(otherUser.is_online || false);
     const flatListRef = useRef<FlatList>(null);
     const theme = useTheme();
 
@@ -25,16 +34,52 @@ export default function ChatScreen({ route, navigation }: any) {
         // Fetch History
         fetchMessages();
 
+        // Mark as read immediately
+        SocketService.markMessagesRead(chatId, userInfo.id);
+
         // Listen for new messages
-        SocketService.onMessage((msg) => {
+        const offMessage = SocketService.onMessage((msg) => {
             if (msg.chat_id === chatId) {
                 setMessages(prev => [...prev, msg]);
                 scrollToBottom();
+
+                // If message is from other user, mark as read
+                if (msg.sender_id !== userInfo.id) {
+                     SocketService.markMessagesRead(chatId, userInfo.id);
+                }
+            }
+        });
+
+        // Listen for typing
+        const offTyping = SocketService.onTyping((data) => {
+            if (data.chatId === chatId && data.userId !== userInfo.id) {
+                setIsTyping(true);
+                // Clear typing after 3 seconds of no activity
+                const timeout = setTimeout(() => setIsTyping(false), 3000);
+            }
+        });
+
+        // Listen for read receipts
+        const offRead = SocketService.onMessagesRead((data) => {
+             // If the other user read my messages
+             if (data.chatId === chatId && data.userId !== userInfo.id) {
+                 setMessages(prev => prev.map(m => m.sender_id === userInfo.id ? { ...m, is_read: true } : m));
+             }
+        });
+
+        // Listen for online status
+        const offStatus = SocketService.onUserStatusChange((data) => {
+            if (data.userId === otherUser.id) {
+                setIsOnline(data.status === 'online');
             }
         });
 
         return () => {
-            SocketService.disconnect();
+            offMessage();
+            offTyping();
+            offRead();
+            offStatus();
+            // Do NOT disconnect socket here as it's shared
         };
     }, [chatId]);
 
@@ -54,8 +99,12 @@ export default function ChatScreen({ route, navigation }: any) {
         if (!input.trim()) return;
 
         SocketService.sendMessage(chatId, userInfo.id, input);
-        // Optimistic update handled by socket listener usually, but can add here if delay is high
         setInput('');
+    };
+
+    const handleInputChange = (text: string) => {
+        setInput(text);
+        SocketService.sendTyping(chatId, userInfo.id);
     };
 
     const handlePickImage = async () => {
@@ -125,20 +174,31 @@ export default function ChatScreen({ route, navigation }: any) {
                     ) : (
                         <Text style={[styles.msgText, isMe ? { color: '#fff' } : { color: theme.text }]}>{item.content}</Text>
                     )}
-                    <Text style={[styles.timeText, { color: isMe ? 'rgba(255,255,255,0.7)' : theme.subText }]}>{new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                    <View style={styles.metaRow}>
+                        <Text style={[styles.timeText, { color: isMe ? 'rgba(255,255,255,0.7)' : theme.subText }]}>
+                            {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                        {isMe && (
+                             <View style={{ marginLeft: 4 }}>
+                                 <DoubleTick read={item.is_read} />
+                             </View>
+                        )}
+                    </View>
                 </View>
             </View>
         );
     };
 
-    // Need to use manual styles for container background as SafeAreaView doesn't support style prop update easily sometimes or just standard
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
             <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.navBorder }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M15 18l-6-6 6-6" /></Svg>
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>{otherUser.name}</Text>
+                <View>
+                    <Text style={[styles.headerTitle, { color: theme.text }]}>{otherUser.name}</Text>
+                    {isOnline && <Text style={{ fontSize: 12, color: '#48BB78' }}>Online</Text>}
+                </View>
             </View>
 
             <FlatList
@@ -149,6 +209,12 @@ export default function ChatScreen({ route, navigation }: any) {
                 contentContainerStyle={styles.list}
             />
 
+            {isTyping && (
+                <View style={[styles.typingIndicator, { backgroundColor: theme.cardBg }]}>
+                     <Text style={{ color: theme.subText, fontSize: 12, fontStyle: 'italic' }}>Typing...</Text>
+                </View>
+            )}
+
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={10}>
                 <View style={[styles.inputContainer, { borderTopColor: theme.navBorder, backgroundColor: theme.headerBg }]}>
                     <TouchableOpacity onPress={handlePickImage} style={styles.attachBtn}>
@@ -157,7 +223,7 @@ export default function ChatScreen({ route, navigation }: any) {
                     <TextInput
                         style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text }]}
                         value={input}
-                        onChangeText={setInput}
+                        onChangeText={handleInputChange}
                         placeholder="Type a message..."
                         placeholderTextColor={theme.subText}
                     />
@@ -181,9 +247,11 @@ const styles = StyleSheet.create({
     otherMsgContainer: { justifyContent: 'flex-start' },
     bubble: { maxWidth: '80%', padding: 12, borderRadius: 16 },
     msgText: { fontSize: 16 },
-    timeText: { fontSize: 10, marginTop: 4, alignSelf: 'flex-end' },
+    metaRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 4 },
+    timeText: { fontSize: 10 },
     inputContainer: { flexDirection: 'row', padding: 10, borderTopWidth: 1, alignItems: 'center' },
     attachBtn: { marginRight: 10, padding: 5 },
     input: { flex: 1, borderRadius: 20, paddingHorizontal: 15, paddingVertical: 10, fontSize: 16, marginRight: 10 },
-    sendBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' }
+    sendBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+    typingIndicator: { padding: 10, marginLeft: 20, borderRadius: 10, alignSelf: 'flex-start', marginBottom: 10 }
 });

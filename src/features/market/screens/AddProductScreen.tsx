@@ -31,6 +31,7 @@ const AddProductScreen = ({ navigation, route }: any) => {
     const [deliveryFee, setDeliveryFee] = useState(editingProduct?.delivery_fee ? String(editingProduct.delivery_fee) : '');
     const [isReturnable, setIsReturnable] = useState(editingProduct?.is_returnable !== undefined ? Boolean(editingProduct.is_returnable) : true);
     const [wholesaleTiers, setWholesaleTiers] = useState<any[]>(editingProduct?.wholesale_tiers ? (typeof editingProduct.wholesale_tiers === 'string' ? JSON.parse(editingProduct.wholesale_tiers) : editingProduct.wholesale_tiers) : []);
+    const [addons, setAddons] = useState<any[]>(editingProduct?.addons ? (typeof editingProduct.addons === 'string' ? JSON.parse(editingProduct.addons) : editingProduct.addons) : []);
 
     // Helper State for adding variants/tiers
     const [newVarSize, setNewVarSize] = useState('');
@@ -39,6 +40,9 @@ const AddProductScreen = ({ navigation, route }: any) => {
 
     const [newTierMin, setNewTierMin] = useState('');
     const [newTierPrice, setNewTierPrice] = useState('');
+
+    const [newAddonName, setNewAddonName] = useState('');
+    const [newAddonPrice, setNewAddonPrice] = useState('');
 
     // Image State
     const [image, setImage] = useState<any>(null); // File object for upload
@@ -122,6 +126,17 @@ const AddProductScreen = ({ navigation, route }: any) => {
         setWholesaleTiers(wholesaleTiers.filter((_, i) => i !== index));
     };
 
+    const handleAddAddon = () => {
+        if (!newAddonName || !newAddonPrice) return;
+        setAddons([...addons, { name: newAddonName, price: newAddonPrice }]);
+        setNewAddonName('');
+        setNewAddonPrice('');
+    };
+
+    const handleRemoveAddon = (index: number) => {
+        setAddons(addons.filter((_, i) => i !== index));
+    };
+
     const handleSave = async () => {
         if (!name || !price || !stock) {
             setAlertTitle("Missing Fields");
@@ -153,7 +168,8 @@ const AddProductScreen = ({ navigation, route }: any) => {
                 delivery_fee: deliveryFee ? parseFloat(deliveryFee) : 0,
                 is_returnable: isReturnable,
                 wholesale_tiers: wholesaleTiers,
-                unit
+                unit,
+                addons
             };
 
             let success = false;
@@ -296,6 +312,26 @@ const AddProductScreen = ({ navigation, route }: any) => {
                             <TextInput style={[styles.smallInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Color" placeholderTextColor={theme.subText} value={newVarColor} onChangeText={setNewVarColor} />
                             <TextInput style={[styles.smallInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Stock" placeholderTextColor={theme.subText} keyboardType="numeric" value={newVarStock} onChangeText={setNewVarStock} />
                             <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.secondary }]} onPress={handleAddVariant}>
+                                <Text style={{ color: 'white', fontWeight: 'bold' }}>+</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* Add-ons (Restaurant / Extra) */}
+                    <Text style={[styles.sectionHeader, { color: theme.text }]}>Add-ons (e.g. Raita, Salad)</Text>
+                    <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
+                        {addons.map((a, i) => (
+                            <View key={i} style={styles.listItem}>
+                                <Text style={{ color: theme.text, flex: 1 }}>{a.name} (+{a.price} PKR)</Text>
+                                <TouchableOpacity onPress={() => handleRemoveAddon(i)}>
+                                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="red" strokeWidth="2"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                        <View style={styles.addRow}>
+                            <TextInput style={[styles.smallInput, { flex: 2, backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Add-on Name" placeholderTextColor={theme.subText} value={newAddonName} onChangeText={setNewAddonName} />
+                            <TextInput style={[styles.smallInput, { flex: 1, backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.inputBorder }]} placeholder="Price" placeholderTextColor={theme.subText} keyboardType="numeric" value={newAddonPrice} onChangeText={setNewAddonPrice} />
+                            <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.secondary }]} onPress={handleAddAddon}>
                                 <Text style={{ color: 'white', fontWeight: 'bold' }}>+</Text>
                             </TouchableOpacity>
                         </View>

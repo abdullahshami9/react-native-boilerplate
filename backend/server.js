@@ -483,6 +483,18 @@ db.connect(async (err) => {
             runMigration("ALTER TABLE orders ADD COLUMN rating INT", "Order Rating");
             runMigration("ALTER TABLE orders ADD COLUMN review TEXT", "Order Review");
 
+            // Migrations for Restaurant Flow (V3)
+            runMigration("ALTER TABLE products ADD COLUMN addons JSON", "Product Addons");
+            runMigration("ALTER TABLE order_items ADD COLUMN selected_addons JSON", "Order Item Addons");
+            runMigration("ALTER TABLE business_details ADD COLUMN operating_hours JSON", "Business Operating Hours");
+            runMigration("ALTER TABLE business_details ADD COLUMN delivery_radius DECIMAL(10,2)", "Business Delivery Radius");
+            runMigration("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'accepted', 'preparing', 'out_for_delivery', 'completed', 'cancelled') DEFAULT 'pending'", "Order Status Update");
+            runMigration("ALTER TABLE orders ADD COLUMN rider_name VARCHAR(255)", "Order Rider Name");
+            runMigration("ALTER TABLE orders ADD COLUMN rider_phone VARCHAR(50)", "Order Rider Phone");
+            runMigration("ALTER TABLE orders ADD COLUMN delivery_fee DECIMAL(10,2) DEFAULT 0.00", "Order Delivery Fee");
+            runMigration("ALTER TABLE chats ADD COLUMN order_id INT", "Chat Order ID");
+            runMigration("ALTER TABLE chats ADD CONSTRAINT fk_chats_order FOREIGN KEY (order_id) REFERENCES orders(id)", "Chat Order FK");
+
             // Seed Dummy Data for Location (If empty)
             db.query("SELECT COUNT(*) as count FROM province", (e, r) => {
                 if (r && r[0].count === 0) {
@@ -1106,15 +1118,17 @@ app.post('/api/socials', (req, res) => {
 // --- BUSINESS ONBOARDING ---
 
 app.post('/api/business/onboarding', (req, res) => {
-    const { user_id, description, industry, category, location_lat, location_lng, address, payment_methods, socials } = req.body;
+    const { user_id, description, industry, category, location_lat, location_lng, address, payment_methods, socials, operating_hours, delivery_radius } = req.body;
 
     // Save business details
-    const bizQuery = `INSERT INTO business_details (user_id, description, industry, category, location_lat, location_lng, address)
-                      VALUES (?, ?, ?, ?, ?, ?, ?)
-                      ON DUPLICATE KEY UPDATE description=?, industry=?, category=?, location_lat=?, location_lng=?, address=?`;
+    const bizQuery = `INSERT INTO business_details (user_id, description, industry, category, location_lat, location_lng, address, operating_hours, delivery_radius)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                      ON DUPLICATE KEY UPDATE description=?, industry=?, category=?, location_lat=?, location_lng=?, address=?, operating_hours=?, delivery_radius=?`;
 
-    dbQuery(bizQuery, [user_id, description, industry, category, location_lat, location_lng, address,
-        description, industry, category, location_lat, location_lng, address], req, (err, result) => {
+    dbQuery(bizQuery, [
+        user_id, description, industry, category, location_lat, location_lng, address, operating_hours ? JSON.stringify(operating_hours) : null, delivery_radius || null,
+        description, industry, category, location_lat, location_lng, address, operating_hours ? JSON.stringify(operating_hours) : null, delivery_radius || null
+    ], req, (err, result) => {
             if (err) return res.status(500).json({ success: false, message: 'Failed to save business details' });
 
             // Save Payment Methods if any
@@ -1158,8 +1172,23 @@ app.post('/api/business/subscribe', verifyToken, (req, res) => {
 // --- CHAT API ---
 
 app.post('/api/chats/initiate', (req, res) => {
-    const { user1_id, user2_id } = req.body;
-    // Check if chat exists
+    const { user1_id, user2_id, order_id } = req.body;
+
+    // If order_id is provided, check for existing chat for this order
+    if (order_id) {
+        const checkOrderChat = 'SELECT * FROM chats WHERE order_id = ?';
+        dbQuery(checkOrderChat, [order_id], req, (err, results) => {
+             if (err) return res.status(500).json({ success: false });
+             if (results.length > 0) {
+                 return res.json({ success: true, chatId: results[0].id });
+             }
+             // Create new chat linked to order
+             createChat(user1_id, user2_id, order_id);
+        });
+        return;
+    }
+
+    // Fallback: Check if generic chat exists
     const checkQuery = 'SELECT * FROM chats WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)';
     dbQuery(checkQuery, [user1_id, user2_id, user2_id, user1_id], req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
@@ -1167,13 +1196,17 @@ app.post('/api/chats/initiate', (req, res) => {
         if (results.length > 0) {
             res.json({ success: true, chatId: results[0].id });
         } else {
-            const createQuery = 'INSERT INTO chats (user1_id, user2_id) VALUES (?, ?)';
-            dbQuery(createQuery, [user1_id, user2_id], req, (err2, result) => {
-                if (err2) return res.status(500).json({ success: false });
-                res.json({ success: true, chatId: result.insertId });
-            });
+            createChat(user1_id, user2_id, null);
         }
     });
+
+    function createChat(u1, u2, oId) {
+        const createQuery = 'INSERT INTO chats (user1_id, user2_id, order_id) VALUES (?, ?, ?)';
+        dbQuery(createQuery, [u1, u2, oId], req, (err2, result) => {
+            if (err2) return res.status(500).json({ success: false });
+            res.json({ success: true, chatId: result.insertId });
+        });
+    }
 });
 
 app.get('/api/chats/:userId', (req, res) => {
@@ -1391,10 +1424,10 @@ app.get('/api/product/:id', (req, res) => {
 // --- PRODUCTS & INVENTORY ---
 
 app.post('/api/products', verifyToken, checkSubscription, (req, res) => {
-    const { user_id, name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers, unit } = req.body;
+    const { user_id, name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers, unit, addons } = req.body;
     if (req.user.id != user_id) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
-    const query = 'INSERT INTO products (user_id, name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers, unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO products (user_id, name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers, unit, addons) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
     dbQuery(query, [
         user_id,
         name,
@@ -1406,7 +1439,8 @@ app.post('/api/products', verifyToken, checkSubscription, (req, res) => {
         delivery_fee || 0,
         is_returnable !== undefined ? is_returnable : 1,
         wholesale_tiers ? JSON.stringify(wholesale_tiers) : null,
-        unit || null
+        unit || null,
+        addons ? JSON.stringify(addons) : null
     ], req, (err, result) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, message: 'Product added', id: result.insertId });
@@ -1620,14 +1654,15 @@ app.get('/api/availability/:userId', (req, res) => {
 // --- ORDERS & REPORTS ---
 
 app.post('/api/orders', verifyToken, (req, res) => {
-    const { seller_id, buyer_id, items, payment_method } = req.body;
-    // items: [{ product_id, quantity, price, variant }]
+    const { seller_id, buyer_id, items, payment_method, delivery_fee } = req.body;
+    // items: [{ product_id, quantity, price, variant, selected_addons }]
 
     // Calculate total
-    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const itemsTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const total = itemsTotal + (delivery_fee || 0);
 
-    const orderQuery = 'INSERT INTO orders (seller_id, buyer_id, total_amount, status, payment_method) VALUES (?, ?, ?, "pending", ?)';
-    dbQuery(orderQuery, [seller_id, buyer_id || null, total, payment_method || 'cod'], req, (err, result) => {
+    const orderQuery = 'INSERT INTO orders (seller_id, buyer_id, total_amount, status, payment_method, delivery_fee) VALUES (?, ?, ?, "pending", ?, ?)';
+    dbQuery(orderQuery, [seller_id, buyer_id || null, total, payment_method || 'cod', delivery_fee || 0], req, (err, result) => {
         if (err) return res.status(500).json({ success: false, message: 'Failed to create order' });
 
         const orderId = result.insertId;
@@ -1636,10 +1671,11 @@ app.post('/api/orders', verifyToken, (req, res) => {
             item.product_id,
             item.quantity,
             item.price,
-            item.variant ? JSON.stringify(item.variant) : null
+            item.variant ? JSON.stringify(item.variant) : null,
+            item.selected_addons ? JSON.stringify(item.selected_addons) : null
         ]);
 
-        const itemQuery = 'INSERT INTO order_items (order_id, product_id, quantity, price, variant) VALUES ?';
+        const itemQuery = 'INSERT INTO order_items (order_id, product_id, quantity, price, variant, selected_addons) VALUES ?';
         db.query(itemQuery, [itemValues], (itemErr) => {
             if (itemErr) {
                 console.error("Order Items Error:", itemErr);
@@ -1662,6 +1698,7 @@ app.post('/api/orders', verifyToken, (req, res) => {
                     total_amount: total,
                     status: 'pending',
                     payment_method: payment_method || 'cod',
+                    delivery_fee: delivery_fee || 0,
                     created_at: new Date()
                 });
             }
@@ -1692,16 +1729,32 @@ app.get('/api/user/counts/:userId', (req, res) => {
 });
 
 app.put('/api/orders/:orderId/status', (req, res) => {
-    const { status } = req.body; // pending, accepted, out_for_delivery, completed, cancelled
-    const query = 'UPDATE orders SET status = ? WHERE id = ?';
-    dbQuery(query, [status, req.params.orderId], req, (err) => {
+    const { status, rider_name, rider_phone } = req.body; // pending, accepted, preparing, out_for_delivery, completed, cancelled
+
+    let query = 'UPDATE orders SET status = ?';
+    const params = [status];
+
+    if (rider_name) {
+        query += ', rider_name = ?';
+        params.push(rider_name);
+    }
+    if (rider_phone) {
+        query += ', rider_phone = ?';
+        params.push(rider_phone);
+    }
+
+    query += ' WHERE id = ?';
+    params.push(req.params.orderId);
+
+    dbQuery(query, params, req, (err) => {
         if (err) return res.status(500).json({ success: false });
 
         // Notify Buyer
         db.query('SELECT buyer_id FROM orders WHERE id = ?', [req.params.orderId], (e, r) => {
             if (!e && r.length > 0 && r[0].buyer_id) {
                 let msg = `Your order status is now: ${status}`;
-                if (status === 'out_for_delivery') msg = 'Your order is out for delivery!';
+                if (status === 'preparing') msg = 'Your order is being prepared.';
+                if (status === 'out_for_delivery') msg = `Your order is out for delivery! Rider: ${rider_name || 'Assigned'}`;
                 if (status === 'completed') msg = 'Your order has been marked as completed. Please rate your experience!';
 
                 createNotification_Helper(r[0].buyer_id, 'Order Update', msg, 'order', req.params.orderId);
@@ -2103,7 +2156,7 @@ app.get('/api/streets/:sublocationId', (req, res) => {
 // --- PRODUCT LOGS & FULL UPDATE ---
 
 app.put('/api/products/:id', verifyToken, (req, res) => {
-    const { name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers } = req.body;
+    const { name, price, description, image_url, stock_quantity, variants, delivery_fee, is_returnable, wholesale_tiers, unit, addons } = req.body;
     const productId = req.params.id;
 
     // First get old values for logging
@@ -2111,7 +2164,6 @@ app.put('/api/products/:id', verifyToken, (req, res) => {
         if (err || results.length === 0) return res.status(500).json({ success: false, message: 'Product not found' });
 
         const oldProduct = results[0];
-        const { unit } = req.body;
 
         // Log price change if any
         if (price !== undefined && price != oldProduct.price) {
@@ -2119,7 +2171,7 @@ app.put('/api/products/:id', verifyToken, (req, res) => {
                 [productId, oldProduct.price, price], req, () => { });
         }
 
-        const query = 'UPDATE products SET name = ?, price = ?, description = ?, image_url = ?, stock_quantity = ?, variants = ?, delivery_fee = ?, is_returnable = ?, wholesale_tiers = ?, unit = ? WHERE id = ?';
+        const query = 'UPDATE products SET name = ?, price = ?, description = ?, image_url = ?, stock_quantity = ?, variants = ?, delivery_fee = ?, is_returnable = ?, wholesale_tiers = ?, unit = ?, addons = ? WHERE id = ?';
         dbQuery(query, [
             name,
             price,
@@ -2131,6 +2183,7 @@ app.put('/api/products/:id', verifyToken, (req, res) => {
             is_returnable !== undefined ? is_returnable : 1,
             wholesale_tiers ? JSON.stringify(wholesale_tiers) : null,
             unit || null,
+            addons ? JSON.stringify(addons) : null,
             productId
         ], req, (updateErr) => {
             if (updateErr) return res.status(500).json({ success: false });

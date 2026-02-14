@@ -7,12 +7,14 @@ import Svg, { Path, Circle, Check } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { resolveImage, getDefaultImageForType } from '../utils/ImageHelper';
 
+import { DataService } from '../services/DataService';
+
 const STEPS = [
     { key: 'pending', label: 'Order Placed', desc: 'Your order has been received.' },
-    { key: 'accepted', label: 'Confirmed', desc: 'Seller has accepted your order.' },
-    { key: 'shipped', label: 'Shipped', desc: 'Your package is on the way.' },
-    { key: 'delivered', label: 'Delivered', desc: 'Package has been delivered.' },
-    { key: 'completed', label: 'Completed', desc: 'Order transaction completed.' }
+    { key: 'accepted', label: 'Confirmed', desc: 'Restaurant has accepted your order.' },
+    { key: 'preparing', label: 'Preparing', desc: 'Your food is being prepared.' },
+    { key: 'out_for_delivery', label: 'Out for Delivery', desc: 'Rider is on the way.' },
+    { key: 'completed', label: 'Completed', desc: 'Order delivered & completed.' }
 ];
 
 const OrderDetailScreen = ({ route, navigation }: any) => {
@@ -28,7 +30,7 @@ const OrderDetailScreen = ({ route, navigation }: any) => {
         // Listen for updates
         const offOrder = SocketService.onOrderUpdate((updatedOrder) => {
             if (updatedOrder.id === currentOrder.id) {
-                setCurrentOrder(updatedOrder);
+                setCurrentOrder(prev => ({ ...prev, ...updatedOrder }));
             }
         });
 
@@ -37,10 +39,28 @@ const OrderDetailScreen = ({ route, navigation }: any) => {
         };
     }, [currentOrder.id]);
 
+    const handleChat = async () => {
+        try {
+            const res = await DataService.initiateChat(userInfo.id, currentOrder.seller_id, currentOrder.id);
+            if (res.success) {
+                navigation.navigate('Chat', { chatId: res.chatId, otherUser: { id: currentOrder.seller_id, name: currentOrder.seller_name || 'Restaurant' } });
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     const getCurrentStepIndex = () => {
         if (currentOrder.status === 'cancelled') return -1;
+        // Map backend status to step index if exact match fails or for flexibility
         const index = STEPS.findIndex(s => s.key === currentOrder.status);
-        return index === -1 ? 0 : index;
+        if (index !== -1) return index;
+
+        // Fallback mapping
+        if (currentOrder.status === 'shipped') return 3; // treat as out_for_delivery if old status
+        if (currentOrder.status === 'delivered') return 4;
+
+        return 0;
     };
 
     const currentStepIndex = getCurrentStepIndex();
@@ -67,9 +87,23 @@ const OrderDetailScreen = ({ route, navigation }: any) => {
                          <Text style={[styles.totalValue, { color: theme.text }]}>${currentOrder.total_amount}</Text>
                      </View>
                      <View style={styles.orderInfoRow}>
-                         <Text style={[styles.label, { color: theme.subText }]}>Seller</Text>
+                         <Text style={[styles.label, { color: theme.subText }]}>Restaurant</Text>
                          <Text style={[styles.value, { color: theme.text }]}>{currentOrder.seller_name || 'Business'}</Text>
                      </View>
+
+                     {(currentOrder.status === 'out_for_delivery' || currentOrder.rider_name) && (
+                         <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.borderColor }}>
+                             <Text style={[styles.label, { color: theme.subText, marginBottom: 5 }]}>Delivery Rider</Text>
+                             <Text style={{ fontWeight: 'bold', color: theme.text }}>{currentOrder.rider_name || 'Assigned Rider'}</Text>
+                             {currentOrder.rider_phone && (
+                                 <Text style={{ color: theme.primary }}>{currentOrder.rider_phone}</Text>
+                             )}
+                         </View>
+                     )}
+
+                     <TouchableOpacity onPress={handleChat} style={{ marginTop: 15, padding: 10, backgroundColor: theme.inputBg, borderRadius: 8, alignItems: 'center' }}>
+                         <Text style={{ color: theme.primary, fontWeight: '600' }}>Chat with Restaurant</Text>
+                     </TouchableOpacity>
                 </View>
 
                 {/* Timeline */}
@@ -129,16 +163,24 @@ const OrderDetailScreen = ({ route, navigation }: any) => {
                 {/* Items */}
                 <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
                     <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 15 }]}>Items</Text>
-                    {(currentOrder.items || []).map((item: any, idx: number) => (
-                        <View key={idx} style={[styles.itemRow, { borderBottomColor: theme.borderColor, borderBottomWidth: idx === (currentOrder.items.length - 1) ? 0 : 1 }]}>
-                             <Image source={resolveImage(item.image_url || getDefaultImageForType('product', item.product_name))} style={styles.itemImage} />
-                             <View style={{ flex: 1, marginLeft: 15 }}>
-                                 <Text style={[styles.itemName, { color: theme.text }]}>{item.product_name}</Text>
-                                 <Text style={[styles.itemQty, { color: theme.subText }]}>Qty: {item.quantity}</Text>
-                             </View>
-                             <Text style={[styles.itemPrice, { color: theme.text }]}>${(item.price * item.quantity).toFixed(2)}</Text>
-                        </View>
-                    ))}
+                    {(currentOrder.items || []).map((item: any, idx: number) => {
+                        const addons = item.selected_addons ? (typeof item.selected_addons === 'string' ? JSON.parse(item.selected_addons) : item.selected_addons) : [];
+                        return (
+                            <View key={idx} style={[styles.itemRow, { borderBottomColor: theme.borderColor, borderBottomWidth: idx === (currentOrder.items.length - 1) ? 0 : 1 }]}>
+                                <Image source={resolveImage(item.image_url || getDefaultImageForType('product', item.product_name))} style={styles.itemImage} />
+                                <View style={{ flex: 1, marginLeft: 15 }}>
+                                    <Text style={[styles.itemName, { color: theme.text }]}>{item.product_name}</Text>
+                                    <Text style={[styles.itemQty, { color: theme.subText }]}>Qty: {item.quantity}</Text>
+                                    {addons.length > 0 && (
+                                        <Text style={{ fontSize: 12, color: theme.subText, marginTop: 2 }}>
+                                            + {addons.map((a: any) => a.name).join(', ')}
+                                        </Text>
+                                    )}
+                                </View>
+                                <Text style={[styles.itemPrice, { color: theme.text }]}>${(item.price * item.quantity).toFixed(2)}</Text>
+                            </View>
+                        );
+                    })}
                 </View>
             </ScrollView>
         </SafeAreaView>

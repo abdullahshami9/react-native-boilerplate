@@ -35,7 +35,8 @@ const CheckoutScreen = ({ navigation }: any) => {
                 product_id: item.id,
                 quantity: item.quantity,
                 price: item.price,
-                variant: item.variant // Pass variant info
+                variant: item.variant, // Pass variant info
+                selected_addons: item.selected_addons // Pass addons
             });
         });
 
@@ -75,6 +76,11 @@ const CheckoutScreen = ({ navigation }: any) => {
                 {item.variant && (
                     <Text style={{ fontSize: 12, color: theme.subText }}>
                         Variant: {item.variant.size} {item.variant.color ? `/ ${item.variant.color}` : ''}
+                    </Text>
+                )}
+                {item.selected_addons && item.selected_addons.length > 0 && (
+                    <Text style={{ fontSize: 12, color: theme.subText }}>
+                        Add-ons: {item.selected_addons.map((a: any) => a.name).join(', ')}
                     </Text>
                 )}
                 {item.unit && (

@@ -132,6 +132,13 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
                             <Text style={{ color: theme.text, fontSize: 14 }}>{item.shipping_address || 'No address provided'}</Text>
                         </View>
 
+                        {item.instructions && (
+                            <View style={{ marginBottom: 16, backgroundColor: theme.inputBg, padding: 10, borderRadius: 8 }}>
+                                <Text style={{ fontSize: 12, color: theme.subText, marginBottom: 4, fontWeight: 'bold' }}>INSTRUCTIONS / NOTES:</Text>
+                                <Text style={{ fontSize: 14, color: theme.text }}>{item.instructions}</Text>
+                            </View>
+                        )}
+
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Items:</Text>
                         {(item.items || []).map((prod: any, idx: number) => {
                             const variant = prod.variant ? (typeof prod.variant === 'string' ? JSON.parse(prod.variant) : prod.variant) : null;

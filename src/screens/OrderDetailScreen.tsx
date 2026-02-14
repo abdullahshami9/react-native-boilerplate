@@ -86,6 +86,12 @@ const OrderDetailScreen = ({ route, navigation }: any) => {
                          <Text style={[styles.label, { color: theme.subText }]}>Total Amount</Text>
                          <Text style={[styles.totalValue, { color: theme.text }]}>${currentOrder.total_amount}</Text>
                      </View>
+                     {currentOrder.instructions && (
+                         <View style={{ marginTop: 10, padding: 10, backgroundColor: theme.inputBg, borderRadius: 8 }}>
+                             <Text style={{ fontSize: 12, color: theme.subText, fontWeight: 'bold' }}>INSTRUCTIONS:</Text>
+                             <Text style={{ fontSize: 14, color: theme.text }}>{currentOrder.instructions}</Text>
+                         </View>
+                     )}
                      <View style={styles.orderInfoRow}>
                          <Text style={[styles.label, { color: theme.subText }]}>Restaurant</Text>
                          <Text style={[styles.value, { color: theme.text }]}>{currentOrder.seller_name || 'Business'}</Text>

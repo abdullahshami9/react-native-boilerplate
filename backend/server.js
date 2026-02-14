@@ -495,6 +495,9 @@ db.connect(async (err) => {
             runMigration("ALTER TABLE chats ADD COLUMN order_id INT", "Chat Order ID");
             runMigration("ALTER TABLE chats ADD CONSTRAINT fk_chats_order FOREIGN KEY (order_id) REFERENCES orders(id)", "Chat Order FK");
 
+            // Migration V4: Order Instructions (Generic Notes)
+            runMigration("ALTER TABLE orders ADD COLUMN instructions TEXT", "Order Instructions");
+
             // Seed Dummy Data for Location (If empty)
             db.query("SELECT COUNT(*) as count FROM province", (e, r) => {
                 if (r && r[0].count === 0) {
@@ -1654,15 +1657,15 @@ app.get('/api/availability/:userId', (req, res) => {
 // --- ORDERS & REPORTS ---
 
 app.post('/api/orders', verifyToken, (req, res) => {
-    const { seller_id, buyer_id, items, payment_method, delivery_fee } = req.body;
+    const { seller_id, buyer_id, items, payment_method, delivery_fee, instructions } = req.body;
     // items: [{ product_id, quantity, price, variant, selected_addons }]
 
     // Calculate total
     const itemsTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const total = itemsTotal + (delivery_fee || 0);
 
-    const orderQuery = 'INSERT INTO orders (seller_id, buyer_id, total_amount, status, payment_method, delivery_fee) VALUES (?, ?, ?, "pending", ?, ?)';
-    dbQuery(orderQuery, [seller_id, buyer_id || null, total, payment_method || 'cod', delivery_fee || 0], req, (err, result) => {
+    const orderQuery = 'INSERT INTO orders (seller_id, buyer_id, total_amount, status, payment_method, delivery_fee, instructions) VALUES (?, ?, ?, "pending", ?, ?, ?)';
+    dbQuery(orderQuery, [seller_id, buyer_id || null, total, payment_method || 'cod', delivery_fee || 0, instructions || ''], req, (err, result) => {
         if (err) return res.status(500).json({ success: false, message: 'Failed to create order' });
 
         const orderId = result.insertId;

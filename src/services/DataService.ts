@@ -27,6 +27,15 @@ export const DataService = {
             throw error.response?.data || { message: 'Network Error' };
         }
     },
+    rateOrder: async (orderId: number, rating: number, review: string) => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/orders/${orderId}/rate`, { rating, review });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Rate Order Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
     updateProduct: async (productId: number, data: any) => {
         try {
             const response = await axios.put(`${CONFIG.API_URL}/api/products/${productId}`, data);

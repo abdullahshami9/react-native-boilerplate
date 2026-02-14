@@ -54,6 +54,22 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
         }
     };
 
+    const handleChat = async (buyerId: number, orderId: number) => {
+        try {
+            setLoading(true);
+            const res = await DataService.initiateChat(userInfo.id, buyerId);
+            if (res.success) {
+                // Navigate to Chat
+                navigation.navigate('Chat', { chatId: res.chatId, otherUser: { id: buyerId, name: 'Customer' } });
+            }
+        } catch (error) {
+            console.error(error);
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to start chat', type: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const toggleExpand = (id: number) => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setExpandedId(expandedId === id ? null : id);
@@ -99,12 +115,28 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
                         </View>
 
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Items:</Text>
-                        {(item.items || []).map((prod: any, idx: number) => (
-                            <View key={idx} style={styles.itemRow}>
-                                <Text style={[styles.itemName, { color: theme.text }]}>{prod.quantity}x {prod.product_name}</Text>
-                                <Text style={[styles.itemPrice, { color: theme.text }]}>${(prod.price * prod.quantity).toFixed(2)}</Text>
-                            </View>
-                        ))}
+                        {(item.items || []).map((prod: any, idx: number) => {
+                            const variant = prod.variant ? (typeof prod.variant === 'string' ? JSON.parse(prod.variant) : prod.variant) : null;
+                            return (
+                                <View key={idx} style={styles.itemRow}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={[styles.itemName, { color: theme.text }]}>{prod.quantity}x {prod.product_name}</Text>
+                                        {variant && (
+                                            <Text style={{ fontSize: 12, color: theme.subText }}>
+                                                Size: {variant.size} {variant.color ? `/ ${variant.color}` : ''}
+                                            </Text>
+                                        )}
+                                    </View>
+                                    <Text style={[styles.itemPrice, { color: theme.text }]}>${(prod.price * prod.quantity).toFixed(2)}</Text>
+                                </View>
+                            );
+                        })}
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'flex-start', marginTop: 10 }}>
+                             <TouchableOpacity style={[styles.chatBtn, { borderColor: theme.borderColor }]} onPress={() => handleChat(item.buyer_id, item.id)}>
+                                <Text style={{ color: theme.text, fontWeight: '600' }}>Chat with Customer</Text>
+                            </TouchableOpacity>
+                        </View>
 
                         {item.status === 'pending' && (
                             <View style={styles.actionButtons}>
@@ -117,6 +149,13 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
                             </View>
                         )}
                         {item.status === 'accepted' && (
+                            <View style={styles.actionButtons}>
+                                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#FEFCBF' }]} onPress={() => handleUpdateStatus(item.id, 'out_for_delivery')}>
+                                    <Text style={{ color: '#744210', fontWeight: 'bold' }}>Out for Delivery</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                        {(item.status === 'accepted' || item.status === 'out_for_delivery') && (
                             <View style={styles.actionButtons}>
                                 <TouchableOpacity style={[styles.actionBtn, styles.completeBtn]} onPress={() => handleUpdateStatus(item.id, 'completed')}>
                                     <Text style={styles.completeText}>Complete Order</Text>
@@ -204,6 +243,7 @@ const styles = StyleSheet.create({
     itemRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
     itemName: { fontSize: 15, color: '#2D3748' },
     itemPrice: { fontSize: 15, fontWeight: '600', color: '#4A5568' },
+    chatBtn: { padding: 8, borderWidth: 1, borderRadius: 8, alignItems: 'center', marginTop: 5 },
     actionButtons: { flexDirection: 'row', marginTop: 16, justifyContent: 'flex-end', gap: 10 },
     actionBtn: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, minWidth: 100, alignItems: 'center' },
     cancelBtn: { backgroundColor: '#FED7D7' },

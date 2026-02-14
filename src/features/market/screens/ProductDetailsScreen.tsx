@@ -18,6 +18,10 @@ const ProductDetailsScreen = ({ navigation, route }: any) => {
     const { userInfo } = React.useContext(AuthContext);
     const toastRef = useRef<MiniToastRef>(null);
 
+    // Variants handling
+    const variants = product?.variants ? (typeof product.variants === 'string' ? JSON.parse(product.variants) : product.variants) : [];
+    const [selectedVariant, setSelectedVariant] = React.useState<any>(null);
+
     const isOwner = userInfo?.id === product?.user_id;
 
     const handleAddToCart = () => {
@@ -25,7 +29,11 @@ const ProductDetailsScreen = ({ navigation, route }: any) => {
             toastRef.current?.show('You cannot buy your own product');
             return;
         }
-        addToCart(product);
+        if (variants.length > 0 && !selectedVariant) {
+            toastRef.current?.show('Please select a variant (Size/Color)');
+            return;
+        }
+        addToCart(product, selectedVariant);
         toastRef.current?.show('Added to cart');
     };
 
@@ -85,7 +93,35 @@ const ProductDetailsScreen = ({ navigation, route }: any) => {
                 {/* Info */}
                 <View style={styles.infoContainer}>
                     <Text style={styles.productName}>{product.name}</Text>
-                    <Text style={styles.price}>{product.price} PKR</Text>
+                    <Text style={styles.price}>{product.price} PKR {product.unit ? `/ ${product.unit}` : ''}</Text>
+
+                    {/* Variant Selector */}
+                    {variants.length > 0 && (
+                        <View style={styles.variantContainer}>
+                            <Text style={styles.variantTitle}>Select Option:</Text>
+                            <View style={styles.variantList}>
+                                {variants.map((v: any, index: number) => {
+                                    const isSelected = selectedVariant === v;
+                                    return (
+                                        <TouchableOpacity
+                                            key={index}
+                                            style={[styles.variantChip, isSelected && styles.variantChipSelected]}
+                                            onPress={() => setSelectedVariant(v)}
+                                        >
+                                            <Text style={[styles.variantText, isSelected && styles.variantTextSelected]}>
+                                                {v.size || ''} {v.color ? `/ ${v.color}` : ''}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                            {selectedVariant && (
+                                <Text style={{ marginTop: 5, color: '#718096' }}>
+                                    Stock: {selectedVariant.stock || 'N/A'}
+                                </Text>
+                            )}
+                        </View>
+                    )}
 
                     <Text style={styles.descriptionTitle}>Description</Text>
                     <Text style={styles.descriptionText}>
@@ -202,6 +238,40 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#2D3748',
         marginBottom: 8,
+    },
+    variantContainer: {
+        marginBottom: 20,
+    },
+    variantTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#2D3748',
+        marginBottom: 10,
+    },
+    variantList: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    variantChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#CBD5E0',
+        backgroundColor: '#fff',
+    },
+    variantChipSelected: {
+        borderColor: '#2D3748',
+        backgroundColor: '#2D3748',
+    },
+    variantText: {
+        fontSize: 14,
+        color: '#4A5568',
+    },
+    variantTextSelected: {
+        color: '#fff',
+        fontWeight: 'bold',
     },
     descriptionText: {
         fontSize: 14,

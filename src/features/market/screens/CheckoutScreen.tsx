@@ -34,7 +34,8 @@ const CheckoutScreen = ({ navigation }: any) => {
             ordersBySeller[sellerId].push({
                 product_id: item.id,
                 quantity: item.quantity,
-                price: item.price
+                price: item.price,
+                variant: item.variant // Pass variant info
             });
         });
 
@@ -71,9 +72,19 @@ const CheckoutScreen = ({ navigation }: any) => {
             <Image source={{ uri: item.image_url ? `${CONFIG.API_URL}/${item.image_url}` : 'https://via.placeholder.com/80' }} style={styles.itemImage} />
             <View style={styles.itemInfo}>
                 <Text style={[styles.itemName, { color: theme.text }]}>{item.name}</Text>
+                {item.variant && (
+                    <Text style={{ fontSize: 12, color: theme.subText }}>
+                        Variant: {item.variant.size} {item.variant.color ? `/ ${item.variant.color}` : ''}
+                    </Text>
+                )}
+                {item.unit && (
+                    <Text style={{ fontSize: 12, color: theme.subText }}>
+                        Unit: {item.unit}
+                    </Text>
+                )}
                 <Text style={[styles.itemPrice, { color: theme.subText }]}>{item.price} PKR x {item.quantity}</Text>
             </View>
-            <TouchableOpacity onPress={() => removeFromCart(item.id)} style={styles.removeBtn}>
+            <TouchableOpacity onPress={() => removeFromCart(item.cartItemId || item.id)} style={styles.removeBtn}>
                 <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2">
                     <Path d="M18 6L6 18M6 6l12 12" />
                 </Svg>

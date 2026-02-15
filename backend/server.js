@@ -484,9 +484,9 @@ db.connect(async (err) => {
             runMigration("ALTER TABLE orders ADD COLUMN review TEXT", "Order Review");
 
             // Migrations for Restaurant Flow (V3)
-            runMigration("ALTER TABLE products ADD COLUMN addons JSON", "Product Addons");
-            runMigration("ALTER TABLE order_items ADD COLUMN selected_addons JSON", "Order Item Addons");
-            runMigration("ALTER TABLE business_details ADD COLUMN operating_hours JSON", "Business Operating Hours");
+            runMigration("ALTER TABLE products ADD COLUMN addons LONGTEXT", "Product Addons");
+            runMigration("ALTER TABLE order_items ADD COLUMN selected_addons LONGTEXT", "Order Item Addons");
+            runMigration("ALTER TABLE business_details ADD COLUMN operating_hours LONGTEXT", "Business Operating Hours");
             runMigration("ALTER TABLE business_details ADD COLUMN delivery_radius DECIMAL(10,2)", "Business Delivery Radius");
             runMigration("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'accepted', 'preparing', 'out_for_delivery', 'completed', 'cancelled') DEFAULT 'pending'", "Order Status Update");
             runMigration("ALTER TABLE orders ADD COLUMN rider_name VARCHAR(255)", "Order Rider Name");
@@ -1132,26 +1132,26 @@ app.post('/api/business/onboarding', (req, res) => {
         user_id, description, industry, category, location_lat, location_lng, address, operating_hours ? JSON.stringify(operating_hours) : null, delivery_radius || null,
         description, industry, category, location_lat, location_lng, address, operating_hours ? JSON.stringify(operating_hours) : null, delivery_radius || null
     ], req, (err, result) => {
-            if (err) return res.status(500).json({ success: false, message: 'Failed to save business details' });
+        if (err) return res.status(500).json({ success: false, message: 'Failed to save business details' });
 
-            // Save Payment Methods if any
-            if (payment_methods && payment_methods.length > 0) {
-                const payValues = payment_methods.map(p => [user_id, p.provider, p.account_number, p.account_title]);
-                db.query('INSERT INTO payment_methods (user_id, provider, account_number, account_title) VALUES ?', [payValues], (e) => {
-                    if (e) console.error("Payment methods save error", e);
-                });
-            }
+        // Save Payment Methods if any
+        if (payment_methods && payment_methods.length > 0) {
+            const payValues = payment_methods.map(p => [user_id, p.provider, p.account_number, p.account_title]);
+            db.query('INSERT INTO payment_methods (user_id, provider, account_number, account_title) VALUES ?', [payValues], (e) => {
+                if (e) console.error("Payment methods save error", e);
+            });
+        }
 
-            // Save Socials if any (and passed here)
-            if (socials && socials.length > 0) {
-                const socValues = socials.map(s => [user_id, s.platform, s.url]);
-                db.query('INSERT INTO social_links (user_id, platform, url) VALUES ?', [socValues], (e) => {
-                    if (e) console.error("Socials save error", e);
-                });
-            }
+        // Save Socials if any (and passed here)
+        if (socials && socials.length > 0) {
+            const socValues = socials.map(s => [user_id, s.platform, s.url]);
+            db.query('INSERT INTO social_links (user_id, platform, url) VALUES ?', [socValues], (e) => {
+                if (e) console.error("Socials save error", e);
+            });
+        }
 
-            res.json({ success: true, message: 'Onboarding complete' });
-        });
+        res.json({ success: true, message: 'Onboarding complete' });
+    });
 });
 
 app.post('/api/business/subscribe', verifyToken, (req, res) => {
@@ -1181,12 +1181,12 @@ app.post('/api/chats/initiate', (req, res) => {
     if (order_id) {
         const checkOrderChat = 'SELECT * FROM chats WHERE order_id = ?';
         dbQuery(checkOrderChat, [order_id], req, (err, results) => {
-             if (err) return res.status(500).json({ success: false });
-             if (results.length > 0) {
-                 return res.json({ success: true, chatId: results[0].id });
-             }
-             // Create new chat linked to order
-             createChat(user1_id, user2_id, order_id);
+            if (err) return res.status(500).json({ success: false });
+            if (results.length > 0) {
+                return res.json({ success: true, chatId: results[0].id });
+            }
+            // Create new chat linked to order
+            createChat(user1_id, user2_id, order_id);
         });
         return;
     }

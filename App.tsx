@@ -6,9 +6,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Platform } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { ActivityIndicator, View } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
+import DeviceInfo from 'react-native-device-info';
+import axios from 'axios';
+import { CONFIG } from './src/Config';
 
 // React Query & Persistence
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, onlineManager } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import storage from './src/shared/utils/storage';
@@ -63,9 +67,22 @@ const Stack = Platform.OS === 'web' ? createStackNavigator() : createNativeStack
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      gcTime: 1000 * 60 * 60 * 24, // 24 hours
+      gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days cache for offline support
+      staleTime: 1000 * 60 * 5, // Data is fresh for 5 minutes
+      retry: 2
     },
+    mutations: {
+      networkMode: 'offlineFirst', // Allow mutations to fire when offline
+      retry: 3,
+    }
   },
+});
+
+// Configure Online Status Manager for React Query
+onlineManager.setEventListener((setOnline) => {
+  return NetInfo.addEventListener((state) => {
+    setOnline(!!state.isConnected);
+  });
 });
 
 const asyncStoragePersister = createAsyncStoragePersister({
@@ -79,6 +96,53 @@ const asyncStoragePersister = createAsyncStoragePersister({
 const AppNav = () => {
   const { isLoading, userToken, userInfo } = useContext(AuthContext);
   const toastRef = useRef<MiniToastRef>(null);
+
+  // Connection & Metadata Handling
+  useEffect(() => {
+    // 1. Monitor Internet Connection
+    const unsubscribeNetInfo = NetInfo.addEventListener(state => {
+      if (state.isConnected === false) {
+        toastRef.current?.show('No Internet Connection', 'error');
+      } else if (state.isConnected === true) {
+        // Optional: toastRef.current?.show('Back Online', 'success');
+      }
+    });
+
+    // 2. Sync Metadata (Once per session if user is logged in)
+    const syncMetadata = async () => {
+       if (userInfo?.id) {
+           try {
+             const ip = await NetInfo.fetch().then(state => state.details && 'ipAddress' in state.details ? String(state.details.ipAddress) : '0.0.0.0');
+             const metadata = {
+                user_id: userInfo.id,
+                device_model: DeviceInfo.getModel(),
+                os_version: DeviceInfo.getSystemVersion(),
+                app_version: DeviceInfo.getVersion(),
+                ip_address: ip,
+                // Location could be added here if permission granted
+                meta_data: {
+                    brand: DeviceInfo.getBrand(),
+                    manufacturer: DeviceInfo.getManufacturer(),
+                    isEmulator: await DeviceInfo.isEmulator(),
+                    tablet: DeviceInfo.isTablet()
+                }
+             };
+             // Fire and forget
+             await axios.post(`${CONFIG.API_URL}/api/metadata`, metadata).catch(err => console.log("Meta sync fail", err.message));
+           } catch (e) {
+             console.log("Metadata collection failed", e);
+           }
+       }
+    };
+
+    if (userInfo?.id) {
+        syncMetadata();
+    }
+
+    return () => {
+      unsubscribeNetInfo();
+    };
+  }, [userInfo?.id]);
 
   useEffect(() => {
     if (userInfo?.id) {
@@ -186,7 +250,25 @@ const App = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <PersistQueryClientProvider client={queryClient} persistOptions={{ persister: asyncStoragePersister }}>
+        {/* resumePausedMutations: true ensures offline mutations retry on reconnect */}
+        <PersistQueryClientProvider
+            client={queryClient}
+            persistOptions={{
+                persister: asyncStoragePersister,
+                dehydrateOptions: {
+                    shouldDehydrateMutation: (mutation: any) => true, // Persist all mutations for offline support
+                    shouldDehydrateQuery: (query: any) => {
+                        // Default logic + ensure we persist critical data
+                        return true;
+                    }
+                }
+            }}
+            onSuccess={() => {
+                queryClient.resumePausedMutations().then(() => {
+                   // console.log("Paused mutations resumed");
+                });
+            }}
+        >
           <AuthProvider>
             <CartProvider>
               <AppNav />

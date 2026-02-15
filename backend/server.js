@@ -187,7 +187,7 @@ db.connect(async (err) => {
             stock_quantity INT DEFAULT 0,
             unit VARCHAR(50),
             category VARCHAR(100),
-            attributes JSON,
+            attributes LONGTEXT,
             addons LONGTEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -493,7 +493,7 @@ db.connect(async (err) => {
             // Product Schema Updates
             runMigration("ALTER TABLE products ADD COLUMN unit VARCHAR(50)", "Product Unit");
             runMigration("ALTER TABLE products ADD COLUMN category VARCHAR(100)", "Product Category");
-            runMigration("ALTER TABLE products ADD COLUMN attributes JSON", "Product Attributes");
+            runMigration("ALTER TABLE products ADD COLUMN attributes LONGTEXT", "Product Attributes");
             runMigration("ALTER TABLE order_items ADD COLUMN variant TEXT", "Order Item Variant");
 
             runMigration("CREATE INDEX idx_users_email ON users(email)", "Index Email");

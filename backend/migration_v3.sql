@@ -1,7 +1,7 @@
 -- Migration V3: Restaurant Features (Addons, Delivery, Rider, Chat Scope)
 
 -- 1. Add Addons to Products
-ALTER TABLE products ADD COLUMN addons JSON;
+ALTER TABLE products ADD COLUMN addons LONGTEXT;
 
 -- 2. Add Selected Addons to Order Items
 ALTER TABLE order_items ADD COLUMN selected_addons JSON;

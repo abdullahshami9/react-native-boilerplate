@@ -186,6 +186,9 @@ db.connect(async (err) => {
             image_url TEXT,
             stock_quantity INT DEFAULT 0,
             unit VARCHAR(50),
+            category VARCHAR(100),
+            attributes JSON,
+            addons LONGTEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             FULLTEXT(name, description)
@@ -486,13 +489,18 @@ db.connect(async (err) => {
 
             runMigration("ALTER TABLE business_details ADD COLUMN subscription_expiry_date DATETIME DEFAULT NULL", "Subscription Expiry");
             runMigration("ALTER TABLE business_details ADD COLUMN is_premium BOOLEAN DEFAULT 0", "Is Premium");
+
+            // Product Schema Updates
+            runMigration("ALTER TABLE products ADD COLUMN unit VARCHAR(50)", "Product Unit");
+            runMigration("ALTER TABLE products ADD COLUMN category VARCHAR(100)", "Product Category");
+            runMigration("ALTER TABLE products ADD COLUMN attributes JSON", "Product Attributes");
+            runMigration("ALTER TABLE order_items ADD COLUMN variant TEXT", "Order Item Variant");
+
             runMigration("CREATE INDEX idx_users_email ON users(email)", "Index Email");
             runMigration("CREATE INDEX idx_products_user_category ON products(user_id, category)", "Index Products User/Cat");
             runMigration("CREATE FULLTEXT INDEX idx_products_fts ON products(name, description)", "FTS Products");
 
             // New Migrations for Fish Wala Flow
-            runMigration("ALTER TABLE products ADD COLUMN unit VARCHAR(50)", "Product Unit");
-            runMigration("ALTER TABLE order_items ADD COLUMN variant TEXT", "Order Item Variant");
             runMigration("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'accepted', 'out_for_delivery', 'completed', 'cancelled') DEFAULT 'pending'", "Order Status Enum");
             runMigration("ALTER TABLE orders ADD COLUMN rating INT", "Order Rating");
             runMigration("ALTER TABLE orders ADD COLUMN review TEXT", "Order Review");

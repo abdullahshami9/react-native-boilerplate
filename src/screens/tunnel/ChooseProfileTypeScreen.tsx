@@ -9,7 +9,7 @@ import { useTheme } from '../../theme/useTheme';
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 const ChooseProfileTypeScreen = ({ navigation }: any) => {
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, updateProfileLocal } = useContext(AuthContext);
     const [loading, setLoading] = useState(false);
     const theme = useTheme();
 
@@ -44,6 +44,11 @@ const ChooseProfileTypeScreen = ({ navigation }: any) => {
                 Animated.timing(individualOpacity, { toValue: 0.5, duration: 200, useNativeDriver: true }),
                 Animated.spring(businessScale, { toValue: 1.05, useNativeDriver: true })
             ]).start();
+        }
+
+        // Optimistically update local context so subsequent screens and App navigation know the type
+        if (updateProfileLocal) {
+            updateProfileLocal({ ...userInfo, user_type: type });
         }
 
         // Fire and Forget API call - don't block navigation

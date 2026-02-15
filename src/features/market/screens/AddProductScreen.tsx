@@ -25,6 +25,10 @@ const AddProductScreen = ({ navigation, route }: any) => {
     const [description, setDescription] = useState(editingProduct?.description || '');
     const [stock, setStock] = useState(editingProduct?.stock_quantity ? String(editingProduct.stock_quantity) : '');
     const [unit, setUnit] = useState(editingProduct?.unit || '');
+    const [category, setCategory] = useState(editingProduct?.category || '');
+    const [attributes, setAttributes] = useState<any>(editingProduct?.attributes ? (typeof editingProduct.attributes === 'string' ? JSON.parse(editingProduct.attributes) : editingProduct.attributes) : {});
+    const [industry, setIndustry] = useState('');
+    const [bizCategory, setBizCategory] = useState('');
 
     // New Product Features
     const [variants, setVariants] = useState<any[]>(editingProduct?.variants ? (typeof editingProduct.variants === 'string' ? JSON.parse(editingProduct.variants) : editingProduct.variants) : []);
@@ -32,6 +36,21 @@ const AddProductScreen = ({ navigation, route }: any) => {
     const [isReturnable, setIsReturnable] = useState(editingProduct?.is_returnable !== undefined ? Boolean(editingProduct.is_returnable) : true);
     const [wholesaleTiers, setWholesaleTiers] = useState<any[]>(editingProduct?.wholesale_tiers ? (typeof editingProduct.wholesale_tiers === 'string' ? JSON.parse(editingProduct.wholesale_tiers) : editingProduct.wholesale_tiers) : []);
     const [addons, setAddons] = useState<any[]>(editingProduct?.addons ? (typeof editingProduct.addons === 'string' ? JSON.parse(editingProduct.addons) : editingProduct.addons) : []);
+
+    // Fetch Business Industry
+    React.useEffect(() => {
+        if (userInfo?.user_type === 'Business' || userInfo?.user_type === 'business') {
+            DataService.getProfile(userInfo.id).then(res => {
+                if (res.success && res.business) {
+                    setIndustry(res.business.industry || '');
+                    setBizCategory(res.business.category || '');
+                }
+            }).catch(console.error);
+        }
+    }, [userInfo]);
+
+    const isRestaurant = (industry === 'Food' && (bizCategory === 'Restaurant' || bizCategory === 'Online Food')) || industry === 'Restaurant';
+    const isFishMarket = (industry === 'Food' && bizCategory === 'Fish Market') || industry === 'Fish Market';
 
     // Helper State for adding variants/tiers
     const [newVarSize, setNewVarSize] = useState('');
@@ -138,9 +157,9 @@ const AddProductScreen = ({ navigation, route }: any) => {
     };
 
     const handleSave = async () => {
-        if (!name || !price || !stock) {
+        if (!name || !price || !stock || !unit) {
             setAlertTitle("Missing Fields");
-            setAlertMessage("Please fill in Name, Price, and Stock Quantity.");
+            setAlertMessage("Please fill in Name, Price, Stock Quantity, and Unit.");
             setAlertType("error");
             setAlertVisible(true);
             return;
@@ -169,6 +188,8 @@ const AddProductScreen = ({ navigation, route }: any) => {
                 is_returnable: isReturnable,
                 wholesale_tiers: wholesaleTiers,
                 unit,
+                category,
+                attributes,
                 addons
             };
 
@@ -276,14 +297,65 @@ const AddProductScreen = ({ navigation, route }: any) => {
                         placeholderTextColor={theme.subText}
                     />
 
-                    <Text style={[styles.label, { color: theme.text }]}>Unit (e.g., kg, dozen, pc)</Text>
-                    <TextInput
-                        style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
-                        value={unit}
-                        onChangeText={setUnit}
-                        placeholder="Enter unit"
-                        placeholderTextColor={theme.subText}
-                    />
+                    <Text style={[styles.label, { color: theme.text }]}>Unit (Mandatory)</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                        {['kg', 'dozen', 'pc', 'liter', 'plate', 'meter', 'gram'].map(u => (
+                            <TouchableOpacity
+                                key={u}
+                                style={[styles.chip, unit === u && { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                                onPress={() => setUnit(u)}
+                            >
+                                <Text style={[styles.chipText, unit === u && { color: 'white' }, { color: theme.text }]}>{u}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    {/* Category Selector */}
+                    <Text style={[styles.label, { color: theme.text }]}>Category</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+                        {(isRestaurant ? ['Starters', 'Main Course', 'BBQ', 'Beverages', 'Desserts', 'Snacks'] :
+                            (isFishMarket ? ['Whole Fish', 'Fillet', 'Steaks', 'Shellfish', 'Frozen'] : ['General', 'New Arrival', 'Best Seller'])
+                        ).map(c => (
+                            <TouchableOpacity
+                                key={c}
+                                style={[styles.chip, category === c && { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                                onPress={() => setCategory(c)}
+                            >
+                                <Text style={[styles.chipText, category === c && { color: 'white' }, { color: theme.text }]}>{c}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+
+                    {/* Fish Market Attributes */}
+                    {(isFishMarket || category === 'Fish' || (industry === 'Food' && !isRestaurant)) && (
+                        <>
+                            <Text style={[styles.label, { color: theme.text }]}>Cut Type (Fish/Meat)</Text>
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                                {['Whole', 'Slices', 'Boneless', 'Fillet', 'Pieces'].map(t => (
+                                    <TouchableOpacity
+                                        key={t}
+                                        style={[styles.chip, attributes?.cutType === t && { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                                        onPress={() => setAttributes({ ...attributes, cutType: t })}
+                                    >
+                                        <Text style={[styles.chipText, attributes?.cutType === t && { color: 'white' }, { color: theme.text }]}>{t}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <Text style={[styles.label, { color: theme.text }]}>Cleaning</Text>
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                                {['Cleaned', 'Uncleaned', 'Skinless'].map(t => (
+                                    <TouchableOpacity
+                                        key={t}
+                                        style={[styles.chip, attributes?.cleaning === t && { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                                        onPress={() => setAttributes({ ...attributes, cleaning: t })}
+                                    >
+                                        <Text style={[styles.chipText, attributes?.cleaning === t && { color: 'white' }, { color: theme.text }]}>{t}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </>
+                    )}
 
                     <Text style={[styles.label, { color: theme.text }]}>Description</Text>
                     <TextInput
@@ -320,6 +392,24 @@ const AddProductScreen = ({ navigation, route }: any) => {
                     {/* Add-ons (Restaurant / Extra) */}
                     <Text style={[styles.sectionHeader, { color: theme.text }]}>Add-ons (e.g. Raita, Salad)</Text>
                     <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
+                        {/* Quick Add for Restaurant */}
+                        {isRestaurant && (
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 15 }}>
+                                {['Salad', 'Raita', 'Green Tea', 'Naan', 'Rice', 'Cold Drink', 'Fries'].map(addonName => (
+                                    <TouchableOpacity
+                                        key={addonName}
+                                        style={[styles.chip, addons.some(a => a.name === addonName) && { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                                        onPress={() => {
+                                            if (addons.some(a => a.name === addonName)) return;
+                                            setAddons([...addons, { name: addonName, price: '0' }]);
+                                        }}
+                                    >
+                                        <Text style={[styles.chipText, addons.some(a => a.name === addonName) && { color: 'white' }, { color: theme.text }]}>+ {addonName}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
+
                         {addons.map((a, i) => (
                             <View key={i} style={styles.listItem}>
                                 <Text style={{ color: theme.text, flex: 1 }}>{a.name} (+{a.price} PKR)</Text>
@@ -615,6 +705,25 @@ const styles = StyleSheet.create({
     assetImage: {
         width: '100%',
         height: '100%'
+    },
+    chip: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        backgroundColor: 'transparent',
+        marginRight: 8,
+    },
+    chipActive: {
+        // Handled inline via theme
+    },
+    chipText: {
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    chipTextActive: {
+        color: 'white'
     }
 });
 

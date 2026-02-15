@@ -7,10 +7,13 @@ import { CONFIG } from '../../../Config';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useTheme } from '../../../theme/useTheme';
 import CustomAlert from '../../../components/CustomAlert';
+import { useMutation } from '@tanstack/react-query';
+import { useNetInfo } from '@react-native-community/netinfo';
 
 const CheckoutScreen = ({ navigation }: any) => {
     const { cartItems, clearCart, removeFromCart } = useContext(CartContext);
     const { userInfo } = useContext(AuthContext);
+    const { isConnected } = useNetInfo();
     const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
     const [instructions, setInstructions] = useState('');
     const [loading, setLoading] = useState(false);
@@ -19,6 +22,10 @@ const CheckoutScreen = ({ navigation }: any) => {
 
     const validItems = cartItems.filter((item: any) => item.user_id !== userInfo.id);
     const total = validItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+
+    const createOrderMutation = useMutation({
+        mutationFn: (variables: any) => DataService.createOrder(variables.sellerId, variables.items, variables.buyerId, variables.paymentMethod, variables.instructions),
+    });
 
     const handlePlaceOrder = async () => {
         if (validItems.length === 0) {
@@ -43,24 +50,55 @@ const CheckoutScreen = ({ navigation }: any) => {
 
         try {
             const buyerId = userInfo.id;
+            const sellerIds = Object.keys(ordersBySeller);
 
-            // Execute all orders
-            const orderPromises = Object.keys(ordersBySeller).map(sellerId =>
-                DataService.createOrder(parseInt(sellerId), ordersBySeller[parseInt(sellerId)], buyerId, paymentMethod, instructions)
-            );
+            if (isConnected === false) {
+                 // Offline Mode: Fire and forget (will be queued by React Query offlineFirst mode)
+                 sellerIds.forEach(sellerId => {
+                     createOrderMutation.mutate({
+                         sellerId: parseInt(sellerId),
+                         items: ordersBySeller[parseInt(sellerId)],
+                         buyerId,
+                         paymentMethod,
+                         instructions
+                     });
+                 });
 
-            await Promise.all(orderPromises);
+                 setAlertConfig({
+                    visible: true,
+                    title: 'Offline',
+                    message: 'You are offline. Your order has been saved and will be sent automatically when internet is restored.',
+                    type: 'info',
+                    onConfirm: () => {
+                        clearCart();
+                        navigation.navigate('CustomerOrders');
+                    }
+                });
+            } else {
+                // Online Mode: Await confirmation
+                const orderPromises = sellerIds.map(sellerId =>
+                    createOrderMutation.mutateAsync({
+                         sellerId: parseInt(sellerId),
+                         items: ordersBySeller[parseInt(sellerId)],
+                         buyerId,
+                         paymentMethod,
+                         instructions
+                    })
+                );
 
-            setAlertConfig({
-                visible: true,
-                title: 'Success',
-                message: 'Your order has been placed!',
-                type: 'success',
-                onConfirm: () => {
-                    clearCart();
-                    navigation.navigate('CustomerOrders');
-                }
-            });
+                await Promise.all(orderPromises);
+
+                setAlertConfig({
+                    visible: true,
+                    title: 'Success',
+                    message: 'Your order has been placed!',
+                    type: 'success',
+                    onConfirm: () => {
+                        clearCart();
+                        navigation.navigate('CustomerOrders');
+                    }
+                });
+            }
         } catch (error) {
             console.error(error);
             setAlertConfig({ visible: true, title: 'Error', message: 'Failed to place order. Please try again.', type: 'error', onConfirm: undefined });

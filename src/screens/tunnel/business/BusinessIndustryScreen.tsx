@@ -26,6 +26,7 @@ const BusinessIndustryScreen = ({ navigation, route }: any) => {
         { name: 'Healthcare', children: ['Hospital', 'Clinic', 'Pharmacy'] },
         { name: 'Retail', children: ['E-commerce', 'Store', 'Wholesale'] },
         { name: 'Education', children: ['School', 'University', 'Online Course'] },
+        { name: 'Food', children: ['Restaurant', 'Fish Market', 'Online Food'] },
         { name: 'Other', children: [] }
     ];
 

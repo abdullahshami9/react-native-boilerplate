@@ -58,8 +58,10 @@ const SignupScreen = ({ navigation }: any) => {
             showAlert('Error', 'Please enter a valid phone number (digits only)', 'error');
             return;
         }
-        if (password.length < 6) {
-            showAlert('Error', 'Password must be at least 6 characters long', 'error');
+        // Strict Password Validation: Min 8 chars, 1 Upper, 1 Lower, 1 Special, 1 Number
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+        if (!passwordRegex.test(password)) {
+            showAlert('Error', 'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.', 'error');
             return;
         }
 

@@ -73,6 +73,17 @@ export const DataService = {
         }
     },
 
+    // --- METADATA ---
+    sendMetadata: async (metadata: any) => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/metadata`, metadata);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Send Metadata Error:', error, 'DataService');
+            // Fail silently
+        }
+    },
+
     // --- SKILLS ---
     addSkill: async (userId: number, skillName: string) => {
         try {

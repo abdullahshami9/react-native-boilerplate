@@ -452,6 +452,20 @@ db.connect(async (err) => {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS user_metadata (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT,
+            device_model VARCHAR(255),
+            os_version VARCHAR(255),
+            app_version VARCHAR(50),
+            ip_address VARCHAR(50),
+            location_lat DECIMAL(10, 8),
+            location_lng DECIMAL(11, 8),
+            meta_data TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
     `;
 
     db.query(initQuery, (err, result) => {
@@ -786,6 +800,15 @@ app.put('/api/notifications/:id/read', verifyToken, (req, res) => {
 app.post('/register', (req, res) => {
     const { email, password, name, phone, mac_address } = req.body;
     if (!email || !password) return res.status(400).json({ success: false, message: 'Required fields missing' });
+
+    // Password Validation: Min 8 chars, 1 Upper, 1 Lower, 1 Special
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.'
+        });
+    }
 
     // Default user_type to 'Individual', will be updated in Tunnel
     const query = 'INSERT INTO users (email, password, name, phone, user_type, mac_address, is_tunnel_completed) VALUES (?, ?, ?, ?, ?, ?, 0)';
@@ -2255,6 +2278,32 @@ app.post('/api/logs', (req, res) => {
     }
 
     res.json({ success: true });
+});
+
+app.post('/api/metadata', (req, res) => {
+    const { user_id, device_model, os_version, app_version, ip_address, location_lat, location_lng, meta_data } = req.body;
+
+    // Store metadata silently
+    const query = `INSERT INTO user_metadata (user_id, device_model, os_version, app_version, ip_address, location_lat, location_lng, meta_data)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    dbQuery(query, [
+        user_id || null,
+        device_model || 'Unknown',
+        os_version || 'Unknown',
+        app_version || '1.0.0',
+        ip_address || req.ip,
+        location_lat || null,
+        location_lng || null,
+        meta_data ? JSON.stringify(meta_data) : null
+    ], req, (err) => {
+        if (err) {
+            // Silently fail but log error
+            console.error("Metadata Save Error:", err.message);
+            return res.status(500).json({ success: false });
+        }
+        res.json({ success: true });
+    });
 });
 
 app.post('/api/raast', async (req, res) => {

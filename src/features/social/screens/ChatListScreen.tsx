@@ -6,6 +6,7 @@ import { CONFIG } from '../../../Config';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../../theme/useTheme';
 import { FlashList } from '@shopify/flash-list';
+import Svg, { Path } from 'react-native-svg';
 import Img from '../../../shared/components/Img';
 import SocketService from '../../../services/SocketService';
 import EmptyState from '../../../components/EmptyState';
@@ -113,8 +114,12 @@ export default function ChatListScreen({ navigation }: any) {
     if (loading && chats.length === 0) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
-                <View style={[styles.header, { borderBottomColor: theme.divider, backgroundColor: theme.headerBg }]}>
+                <View style={[styles.header, { borderBottomColor: theme.divider, backgroundColor: theme.bg }]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: theme.inputBg }]}>
+                        <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M19 12H5M12 19l-7-7 7-7" /></Svg>
+                    </TouchableOpacity>
                     <Text style={[styles.headerTitle, { color: theme.text }]}>Messages</Text>
+                    <View style={{ width: 40 }} />
                 </View>
                 <View style={{ padding: 10 }}>
                     {[1, 2, 3, 4, 5, 6].map(i => (
@@ -133,8 +138,12 @@ export default function ChatListScreen({ navigation }: any) {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
-            <View style={[styles.header, { borderBottomColor: theme.divider, backgroundColor: theme.headerBg }]}>
+            <View style={[styles.header, { borderBottomColor: theme.divider, backgroundColor: theme.bg }]}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: theme.inputBg }]}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2"><Path d="M19 12H5M12 19l-7-7 7-7" /></Svg>
+                </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>Messages</Text>
+                <View style={{ width: 40 }} />
             </View>
             <View style={{ flex: 1 }}>
                 <FlashList
@@ -159,9 +168,10 @@ export default function ChatListScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: { padding: 20, borderBottomWidth: 1 },
-    headerTitle: { fontSize: 24, fontWeight: 'bold' },
-    list: { padding: 10 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 20, borderBottomWidth: 1 },
+    headerTitle: { fontSize: 20, fontWeight: 'bold' },
+    backButton: { padding: 5, borderRadius: 20 },
+    listContent: { padding: 10 },
     chatItem: { flexDirection: 'row', padding: 15, alignItems: 'center', borderBottomWidth: 1 },
     avatar: { width: 50, height: 50, borderRadius: 25 },
     statusDot: {

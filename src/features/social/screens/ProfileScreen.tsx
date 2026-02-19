@@ -20,7 +20,8 @@ const { width, height } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 
 // Calendar Contribution Graph Component
-const ContributionGraph = ({ data, onDateClick, isBusiness }: any) => {
+// Calendar Contribution Graph Component
+const ContributionGraph = ({ data, onDateClick, isBusiness, blockedDates = [] }: any) => {
     // Generate dates for the last month to next month (approx 60 days)
     const today = new Date();
     const days = [];
@@ -31,6 +32,11 @@ const ContributionGraph = ({ data, onDateClick, isBusiness }: any) => {
     }
 
     const getColor = (dateStr: string) => {
+        // Check if date is blocked
+        if (blockedDates.includes(dateStr)) {
+            return '#FC8181'; // Red for blocked
+        }
+
         let count = 0;
         if (isBusiness) {
             // Data is sales report array [{ date: 'YYYY-MM-DD', count: N, total: M }]
@@ -57,7 +63,14 @@ const ContributionGraph = ({ data, onDateClick, isBusiness }: any) => {
 
     return (
         <View style={styles.calendarContainer}>
-            <Text style={[styles.calendarTitle, { color: theme.text }]}>{isBusiness ? 'Sales Activity' : 'Appointment Activity'}</Text>
+            <Text style={[styles.calendarTitle, { color: theme.text }]}>
+                {isBusiness ? 'Sales Activity' : 'Appointment Activity'}
+                <View style={{ width: 10 }} />
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ width: 10, height: 10, backgroundColor: '#FC8181', marginRight: 4, borderRadius: 2 }} />
+                    <Text style={{ fontSize: 10, color: theme.subText, fontWeight: 'normal' }}>Blocked</Text>
+                </View>
+            </Text>
             <View style={styles.calendarGrid}>
                 {days.map((date, index) => {
                     const dateStr = date.toISOString().split('T')[0];
@@ -99,16 +112,11 @@ const ProfileScreen = ({ navigation, route }: any) => {
     const { logout, userInfo, updateProfile, isDarkMode, toggleTheme } = useContext(AuthContext);
 
     // VIEW MODE LOGIC
-    // If route.params.user exists, we are viewing someone else.
-    // Otherwise, we are viewing ourselves (userInfo).
+    // ...
     const paramUser = route?.params?.user;
     const viewAsGuest = route?.params?.viewAsGuest;
-    // We are viewing our own profile IF:
-    // 1. No paramUser passed (default tab view)
-    // 2. OR paramUser ID matches our ID AND we are NOT in 'viewAsGuest' mode
     const isOwnProfile = (!paramUser || (userInfo && paramUser.id === userInfo.id)) && !viewAsGuest;
 
-    // Use local user state to support dynamic updates (pic, resume) without full context reload
     const [localUser, setLocalUser] = useState(isOwnProfile ? userInfo : paramUser);
     const displayedUser = localUser; // Use this everywhere
 
@@ -129,6 +137,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
     const [socials, setSocials] = useState<any[]>([]);
     const [businessDetails, setBusinessDetails] = useState<any>(null);
     const [counts, setCounts] = useState<any>({ sales_pending: 0, purchases_pending: 0, appointments_upcoming: 0, messages_active: 0 });
+    const [blockedDates, setBlockedDates] = useState<string[]>([]);
 
     // Online Status
     const [isOnline, setIsOnline] = useState(displayedUser?.is_online || false);
@@ -152,21 +161,21 @@ const ProfileScreen = ({ navigation, route }: any) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [businessCardVisible, setBusinessCardVisible] = useState(false);
 
-    // Alert State
+    // ... (Alert State remains unchanged)
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertTitle, setAlertTitle] = useState('');
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState<'success' | 'error' | 'info'>('info');
-    const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null); // For confirmations
+    const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
     const [qrTab, setQrTab] = useState<'my' | 'scan'>('my');
 
-    // Refresh State
+    // ... (Refresh State remains unchanged)
     const [refreshing, setRefreshing] = useState(false);
     const [showLoader, setShowLoader] = useState(false);
 
-    const isBusinessUser = displayedUser?.user_type === 'Business' || displayedUser?.user_type === 'business'; // Handle case sensitivity
+    const isBusinessUser = displayedUser?.user_type === 'Business' || displayedUser?.user_type === 'business';
 
-    // Reanimated Shared Values
+    // ... (Reanimated Shared Values remains unchanged)
     const scrollY = useSharedValue(0);
 
     const theme = useTheme();
@@ -175,13 +184,12 @@ const ProfileScreen = ({ navigation, route }: any) => {
     useEffect(() => {
         if (displayedUser?.id) {
             fetchData();
-            // Sync edit state when user changes
+            // ... (Sync edit state remains unchanged)
             setEditName(displayedUser.name);
             setEditPhone(displayedUser.phone);
             setIsPrivateProfile(displayedUser.is_private === 1 || displayedUser.is_private === true);
 
-            let offStatus = () => {};
-            // Listen for online status if viewing another user
+            let offStatus = () => { };
             if (!isOwnProfile) {
                 SocketService.connect(userInfo.id);
                 offStatus = SocketService.onUserStatusChange(({ userId, status }) => {
@@ -199,6 +207,20 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
     const fetchData = async () => {
         try {
+            // Get Availability (Blocked Dates)
+            // Ideally we do this for everyone, or at least business users/providers
+            // But 'getAvailability' might return empty if no data
+            try {
+                const availRes = await DataService.getAvailability(displayedUser.id);
+                if (availRes.success && Array.isArray(availRes.availability)) {
+                    // Assuming availability object has { date: 'YYYY-MM-DD', status: 'blocked' }
+                    const dates = availRes.availability
+                        .filter((a: any) => a.status === 'blocked')
+                        .map((a: any) => a.date.split('T')[0]); // Ensure pure date string
+                    setBlockedDates(dates);
+                }
+            } catch (e) { console.log('Availability fetch error (ignorable)', e); }
+
             // Get Full Profile
             const profileRes = await DataService.getProfile(displayedUser.id);
             if (profileRes.success) {
@@ -258,13 +280,21 @@ const ProfileScreen = ({ navigation, route }: any) => {
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        setShowLoader(true);
+        // setShowLoader(true); // User prefers native loader
         await fetchData();
         setRefreshing(false);
-        setShowLoader(false);
+        // setShowLoader(false);
     };
 
     const handleDateClick = (dateStr: string) => {
+        if (blockedDates.includes(dateStr)) {
+            setAlertTitle('Date Blocked');
+            setAlertMessage(`This date (${dateStr}) is blocked for appointments.`);
+            setAlertType('info');
+            setAlertVisible(true);
+            return;
+        }
+
         if (isBusinessUser) {
             const dayData = salesData.find((d: any) => d.date.split('T')[0] === dateStr);
             if (dayData && dayData.count > 0) {
@@ -656,7 +686,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                     </View>
                                 )}
                                 {!isOwnProfile && (
-                                     <View style={{ position: 'absolute', bottom: 5, right: 5, width: 16, height: 16, borderRadius: 8, backgroundColor: isOnline ? '#48BB78' : '#A0AEC0', borderWidth: 2, borderColor: isDarkMode ? '#2D3748' : '#fff' }} />
+                                    <View style={{ position: 'absolute', bottom: 5, right: 5, width: 16, height: 16, borderRadius: 8, backgroundColor: isOnline ? '#48BB78' : '#A0AEC0', borderWidth: 2, borderColor: isDarkMode ? '#2D3748' : '#fff' }} />
                                 )}
                             </View>
                         </TouchableOpacity>
@@ -735,7 +765,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                     </Svg>
                                 </View>
                             )}
-                             {!isOwnProfile && (
+                            {!isOwnProfile && (
                                 <View style={{ position: 'absolute', bottom: 5, right: 5, width: 16, height: 16, borderRadius: 8, backgroundColor: isOnline ? '#48BB78' : '#A0AEC0', borderWidth: 2, borderColor: isDarkMode ? '#2D3748' : '#fff' }} />
                             )}
                         </View>
@@ -758,9 +788,8 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={handleRefresh}
-                        colors={['transparent']}
-                        tintColor="transparent"
-                        progressBackgroundColor="transparent"
+                        colors={[theme.text]} // Android
+                        tintColor={theme.text} // iOS
                     />
                 }
             >
@@ -924,7 +953,12 @@ const ProfileScreen = ({ navigation, route }: any) => {
                         {/* Calendar (Hide Sales Activity for Customers viewing Business) */}
                         {(!isBusinessUser || isOwnProfile) && (
                             <View style={[styles.sectionContainer, { backgroundColor: theme.cardBg }]}>
-                                <ContributionGraph data={isBusinessUser ? salesData : appointments} onDateClick={handleDateClick} isBusiness={isBusinessUser} />
+                                <ContributionGraph
+                                    data={isBusinessUser ? salesData : appointments}
+                                    isBusiness={isBusinessUser}
+                                    blockedDates={blockedDates}
+                                    onDateClick={handleDateClick}
+                                />
                             </View>
                         )}
 

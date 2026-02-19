@@ -10,6 +10,8 @@ import { LineChart } from "react-native-chart-kit";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import SocketService from '../../../services/SocketService';
 import { resolveImage, getDefaultImageForType } from '../../../utils/ImageHelper';
+import { BlurView } from "@react-native-community/blur";
+import ModernCalendar from '../../../components/ModernCalendar';
 
 const { width } = Dimensions.get("window");
 
@@ -43,6 +45,8 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
 
     // UI State
     const [qrVisible, setQrVisible] = useState(false);
+    const [calendarVisible, setCalendarVisible] = useState(false);
+    const [selectedDate, setSelectedDate] = useState('');
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'success' as 'success' | 'error' | 'info' });
 
     useEffect(() => {
@@ -139,6 +143,14 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
         }
     };
 
+    const handleDateSelect = (date: string) => {
+        setSelectedDate(date);
+        setCalendarVisible(false);
+        // Filter logic would go here. For now, we just update the UI state.
+        // In a real app, we'd refetch or filter `salesChartData` locally.
+        setAlertConfig({ visible: true, title: 'Date Filter', message: `Showing data for ${date}`, type: 'info' });
+    };
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
             <View style={styles.header}>
@@ -185,7 +197,7 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
                 <View style={[styles.chartCard, { backgroundColor: theme.cardBg }]}>
                     <View style={styles.centeredHeader}>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Sales Overview</Text>
-                        <TouchableOpacity style={{ marginLeft: 8 }}>
+                        <TouchableOpacity style={{ marginLeft: 8 }} onPress={() => setCalendarVisible(true)}>
                             <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
                                 <Path d="M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
                                 <Path d="M16 2v4" />
@@ -274,6 +286,12 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
             {/* QR Code Modal */}
             <Modal visible={qrVisible} transparent animationType="fade" onRequestClose={() => setQrVisible(false)}>
                 <View style={styles.modalOverlay}>
+                    <BlurView
+                        style={StyleSheet.absoluteFill}
+                        blurType={isDarkMode ? "dark" : "light"}
+                        blurAmount={5}
+                        reducedTransparencyFallbackColor="white"
+                    />
                     <TouchableWithoutFeedback onPress={() => setQrVisible(false)}>
                         <View style={styles.dismissArea} />
                     </TouchableWithoutFeedback>
@@ -297,6 +315,22 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
                                 <Text style={{ color: theme.primary, fontSize: 10, marginTop: 4 }}>Scan to connect</Text>
                             </View>
                         </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Calendar Modal */}
+            <Modal visible={calendarVisible} transparent animationType="slide" onRequestClose={() => setCalendarVisible(false)}>
+                <View style={styles.modalOverlay}>
+                    <TouchableWithoutFeedback onPress={() => setCalendarVisible(false)}>
+                        <View style={styles.dismissArea} />
+                    </TouchableWithoutFeedback>
+                    <View style={{ width: '90%' }}>
+                        <ModernCalendar
+                            theme={theme}
+                            onDateSelect={handleDateSelect}
+                            selectedDate={selectedDate}
+                        />
                     </View>
                 </View>
             </Modal>
@@ -340,7 +374,7 @@ const styles = StyleSheet.create({
     centeredHeader: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
 
     // Modal
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0)', justifyContent: 'center', alignItems: 'center', padding: 20 },
     dismissArea: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
     qrCard: { width: '100%', flexDirection: 'row', padding: 20, borderRadius: 20, alignItems: 'center', justifyContent: 'space-between', elevation: 5 },
     qrContainer: { padding: 10, borderRadius: 10, elevation: 2 },

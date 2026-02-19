@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, Image, TouchableOpacity, Alert, Modal, TouchableWithoutFeedback } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { DataService } from '../../../services/DataService';
 import Svg, { Path, Circle } from 'react-native-svg';
 import AnimatedSearchHeader from '../../../components/AnimatedSearchHeader';
+import { BlurView } from "@react-native-community/blur";
+import ModernCalendar from '../../../components/ModernCalendar';
 
 const ServiceAppointmentsScreen = ({ navigation }: any) => {
     const { userInfo, isDarkMode } = useContext(AuthContext);
@@ -13,6 +15,10 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
     const [loading, setLoading] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
 
+    // Block Date State
+    const [blockModalVisible, setBlockModalVisible] = useState(false);
+    const [selectedBlockDate, setSelectedBlockDate] = useState('');
+
     const theme = {
         bg: isDarkMode ? '#1A202C' : '#F7FAFC',
         text: isDarkMode ? '#F7FAFC' : '#2D3748',
@@ -20,6 +26,8 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
         cardBg: isDarkMode ? '#2D3748' : '#fff',
         inputBg: isDarkMode ? '#2D3748' : '#F7FAFC',
         borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+        error: '#E53E3E',
+        primary: isDarkMode ? '#4FD1C5' : '#319795', // Teal
     };
 
     useEffect(() => {
@@ -80,6 +88,32 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
 
     const handleScan = () => {
         navigation.navigate('ARCardScanner', { mode: 'booking' });
+    };
+
+    const handleBlockDate = async (date: string) => {
+        setSelectedBlockDate(date);
+        Alert.alert(
+            "Block Date",
+            `Are you sure you want to block ${date}? Customers won't be able to book this date.`,
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Block", onPress: async () => {
+                        try {
+                            setLoading(true);
+                            await DataService.setAvailability(userInfo.id, date, 'blocked');
+                            setBlockModalVisible(false);
+                            Alert.alert("Success", "Date blocked successfully");
+                            fetchAppointments(); // Refresh
+                        } catch (error) {
+                            Alert.alert("Error", "Failed to block date");
+                        } finally {
+                            setLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const renderAppointment = ({ item }: any) => {
@@ -172,6 +206,19 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
                 onScan={handleScan}
             />
 
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 20, paddingTop: 10 }}>
+                <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: theme.text, flexDirection: 'row', gap: 5, paddingVertical: 8, paddingHorizontal: 12 }]}
+                    onPress={() => setBlockModalVisible(true)}
+                >
+                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.bg} strokeWidth="2">
+                        <Circle cx="12" cy="12" r="10" />
+                        <Path d="M4.93 4.93l14.14 14.14" />
+                    </Svg>
+                    <Text style={{ color: theme.bg, fontWeight: 'bold', fontSize: 12 }}>Block Date</Text>
+                </TouchableOpacity>
+            </View>
+
             {searchQuery.length > 0 ? (
                 <FlatList
                     data={searchResults}
@@ -190,6 +237,28 @@ const ServiceAppointmentsScreen = ({ navigation }: any) => {
                     ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>No appointments found.</Text>}
                 />
             )}
+
+            {/* Block Date Modal */}
+            <Modal visible={blockModalVisible} transparent animationType="slide" onRequestClose={() => setBlockModalVisible(false)}>
+                <View style={styles.modalOverlay}>
+                    <BlurView
+                        style={StyleSheet.absoluteFill}
+                        blurType={isDarkMode ? "dark" : "light"}
+                        blurAmount={5}
+                        reducedTransparencyFallbackColor="white"
+                    />
+                    <TouchableWithoutFeedback onPress={() => setBlockModalVisible(false)}>
+                        <View style={styles.dismissArea} />
+                    </TouchableWithoutFeedback>
+                    <View style={{ width: '90%' }}>
+                        <ModernCalendar
+                            theme={theme}
+                            onDateSelect={handleBlockDate}
+                            selectedDate={selectedBlockDate}
+                        />
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -216,6 +285,8 @@ const styles = StyleSheet.create({
     rejectText: { color: '#C53030', fontWeight: 'bold' },
     acceptBtn: { backgroundColor: '#C6F6D5' },
     acceptText: { color: '#22543D', fontWeight: 'bold' },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+    dismissArea: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
 });
 
 export default ServiceAppointmentsScreen;

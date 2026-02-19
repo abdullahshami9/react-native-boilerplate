@@ -302,7 +302,7 @@ const AddProductScreen = ({ navigation, route }: any) => {
                         {['kg', 'dozen', 'pc', 'liter', 'plate', 'meter', 'gram'].map(u => (
                             <TouchableOpacity
                                 key={u}
-                                style={[styles.chip, unit === u && { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                                style={[styles.chip, unit === u && { backgroundColor: '#4A9EFF', borderColor: '#4A9EFF' }]}
                                 onPress={() => setUnit(u)}
                             >
                                 <Text style={[styles.chipText, unit === u && { color: 'white' }, { color: theme.text }]}>{u}</Text>
@@ -318,7 +318,7 @@ const AddProductScreen = ({ navigation, route }: any) => {
                         ).map(c => (
                             <TouchableOpacity
                                 key={c}
-                                style={[styles.chip, category === c && { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                                style={[styles.chip, category === c && { backgroundColor: '#4A9EFF', borderColor: '#4A9EFF' }]}
                                 onPress={() => setCategory(c)}
                             >
                                 <Text style={[styles.chipText, category === c && { color: 'white' }, { color: theme.text }]}>{c}</Text>

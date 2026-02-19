@@ -5,7 +5,7 @@ import { DataService } from '../../../services/DataService';
 import CustomAlert from '../../../components/CustomAlert';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Svg, { Path, Circle } from 'react-native-svg';
-import { CONFIG } from '../../Config';
+import { CONFIG } from '../../../Config';
 import LocalAssets from '../../../utils/LocalAssets';
 import { resolveImage } from '../../../utils/ImageHelper';
 
@@ -239,10 +239,17 @@ const ManageServicesScreen = ({ navigation }: any) => {
                 onDismiss={() => setAlertConfig({ ...alertConfig, visible: false })}
             />
 
-            <View style={[styles.header, { backgroundColor: theme.headerBg, borderColor: theme.borderColor }]}>
+            <View style={[styles.header, { backgroundColor: theme.headerBg }]}>
+                <TouchableOpacity style={[styles.backButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => navigation.goBack()}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
+                        <Path d="M19 12H5M12 19l-7-7 7-7" />
+                    </Svg>
+                </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>My Services</Text>
-                <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-                    <Text style={styles.addButtonText}>+ Add Service</Text>
+                <TouchableOpacity style={[styles.addButton, { backgroundColor: isDarkMode ? '#4A5568' : '#EDF2F7' }]} onPress={() => setModalVisible(true)}>
+                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth="2">
+                        <Path d="M12 5v14M5 12h14" />
+                    </Svg>
                 </TouchableOpacity>
             </View>
 
@@ -370,10 +377,29 @@ const ManageServicesScreen = ({ navigation }: any) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F7FAFC' },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderColor: '#E2E8F0' },
-    headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#2D3748' },
-    addButton: { backgroundColor: '#2D3748', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
-    addButtonText: { color: 'white', fontWeight: '600' },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingTop: 50,
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#2D3748',
+    },
+    backButton: {
+        padding: 5,
+        backgroundColor: '#EDF2F7',
+        borderRadius: 20,
+    },
+    addButton: {
+        padding: 5,
+        backgroundColor: '#EDF2F7',
+        borderRadius: 20,
+    },
     listContent: { padding: 20 },
     card: { flexDirection: 'row', backgroundColor: 'white', borderRadius: 12, padding: 12, marginBottom: 16, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 },
     cardImage: { width: 80, height: 80, borderRadius: 8, backgroundColor: '#E2E8F0' },

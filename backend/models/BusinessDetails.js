@@ -33,6 +33,10 @@ const BusinessDetails = sequelize.define('BusinessDetails', {
     address: {
         type: DataTypes.TEXT
     },
+    street_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
     card_template: {
         type: DataTypes.STRING(50),
         defaultValue: 'standard'

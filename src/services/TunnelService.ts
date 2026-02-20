@@ -60,6 +60,7 @@ export const TunnelService = {
             const response = await axios.post(`${CONFIG.API_URL}/api/tunnel/personal/details`, {
                 user_id: userId,
                 address: details.address,
+                street_id: details.streetId,
                 current_job_title: details.jobTitle
             });
             return response.data;
@@ -74,6 +75,7 @@ export const TunnelService = {
             const response = await axios.post(`${CONFIG.API_URL}/api/tunnel/business/location`, {
                 user_id: userId,
                 address: data.address,
+                street_id: data.streetId,
                 location_lat: data.lat,
                 location_lng: data.lng
             });

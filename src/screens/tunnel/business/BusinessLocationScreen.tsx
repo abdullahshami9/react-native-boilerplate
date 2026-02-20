@@ -100,6 +100,7 @@ const BusinessLocationScreen = ({ navigation }: any) => {
             // Save Location
             await TunnelService.updateBusinessLocation(userInfo.id, {
                 address: address,
+                streetId: addressDetails?.streetId,
                 lat: coords ? coords.lat : 0,
                 lng: coords ? coords.lng : 0
             });

@@ -149,6 +149,7 @@ db.connect(async (err) => {
             profile_pic_url VARCHAR(255),
             is_tunnel_completed BOOLEAN DEFAULT 0,
             address TEXT,
+            street_id INT DEFAULT NULL,
             current_job_title VARCHAR(255)
         );
 
@@ -292,6 +293,7 @@ db.connect(async (err) => {
             location_lat DECIMAL(10, 8),
             location_lng DECIMAL(11, 8),
             address TEXT,
+            street_id INT DEFAULT NULL,
             subscription_expiry_date DATETIME DEFAULT NULL,
             is_premium BOOLEAN DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -466,6 +468,7 @@ db.connect(async (err) => {
             location_lat DECIMAL(10, 8),
             location_lng DECIMAL(11, 8),
             meta_data TEXT,
+            communication_keywords TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
@@ -482,7 +485,7 @@ db.connect(async (err) => {
             // Apply migrations dynamically if needed
             const runMigration = (sql, msg) => {
                 db.query(sql, (e) => {
-                    if (e && e.code !== 'ER_DUP_FIELDNAME') console.log(`Migration Note (${msg}):`, e.message);
+                    if (e && e.code !== 'ER_DUP_FIELDNAME' && e.code !== 'ER_DUP_KEYNAME' && e.errno !== 121) console.log(`Migration Note (${msg}):`, e.message);
                     else if (!e) console.log(`Migration Success: ${msg}`);
                 });
             };
@@ -519,6 +522,11 @@ db.connect(async (err) => {
 
             // Migration V4: Order Instructions (Generic Notes)
             runMigration("ALTER TABLE orders ADD COLUMN instructions TEXT", "Order Instructions");
+
+            runMigration("ALTER TABLE users ADD COLUMN street_id INT DEFAULT NULL", "User Street ID");
+            runMigration("ALTER TABLE business_details ADD COLUMN street_id INT DEFAULT NULL", "Business Street ID");
+            runMigration("ALTER TABLE user_metadata ADD COLUMN communication_keywords TEXT", "User Communication Keywords");
+            runMigration("ALTER TABLE profile_views ADD COLUMN viewer_id INT DEFAULT NULL", "Profile Views Viewer ID");
 
             // Seed Dummy Data for Location (If empty)
             db.query("SELECT COUNT(*) as count FROM province", (e, r) => {
@@ -905,7 +913,8 @@ app.get('/api/profile/:userId', verifyToken, (req, res) => {
 
             // Log Profile View
             if (!isSelf) {
-                db.query('INSERT INTO profile_views (profile_id, source) VALUES (?, ?)', [userId, 'app_api'], (e) => { });
+                db.query('INSERT INTO profile_views (profile_id, viewer_id, source) VALUES (?, ?, ?)', [userId, viewerId, 'app_api'], (e) => { });
+                createNotification_Helper(userId, 'Profile View', 'Someone recently viewed your profile!', 'info', viewerId);
             }
 
             // Privacy Check
@@ -2067,9 +2076,9 @@ app.post('/api/tunnel/personal/additional', (req, res) => {
 });
 
 app.post('/api/tunnel/personal/details', (req, res) => {
-    const { user_id, address, current_job_title } = req.body;
-    const query = 'UPDATE users SET address = ?, current_job_title = ? WHERE id = ?';
-    dbQuery(query, [address, current_job_title, user_id], req, (err) => {
+    const { user_id, address, street_id, current_job_title } = req.body;
+    const query = 'UPDATE users SET address = ?, street_id = ?, current_job_title = ? WHERE id = ?';
+    dbQuery(query, [address, street_id || null, current_job_title, user_id], req, (err) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true });
     });
@@ -2085,11 +2094,12 @@ app.post('/api/tunnel/complete', (req, res) => {
 });
 
 app.post('/api/tunnel/business/location', async (req, res) => {
-    const { user_id, address, location_lat, location_lng } = req.body;
+    const { user_id, address, street_id, location_lat, location_lng } = req.body;
     try {
         await BusinessDetails.upsert({
             user_id: user_id,
             address: address,
+            street_id: street_id || null,
             location_lat: location_lat,
             location_lng: location_lng
         });
@@ -2289,11 +2299,11 @@ app.post('/api/logs', (req, res) => {
 });
 
 app.post('/api/metadata', (req, res) => {
-    const { user_id, device_model, os_version, app_version, ip_address, location_lat, location_lng, meta_data } = req.body;
+    const { user_id, device_model, os_version, app_version, ip_address, location_lat, location_lng, meta_data, communication_keywords } = req.body;
 
     // Store metadata silently
-    const query = `INSERT INTO user_metadata (user_id, device_model, os_version, app_version, ip_address, location_lat, location_lng, meta_data)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    const query = `INSERT INTO user_metadata (user_id, device_model, os_version, app_version, ip_address, location_lat, location_lng, meta_data, communication_keywords)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     dbQuery(query, [
         user_id || null,
@@ -2303,7 +2313,8 @@ app.post('/api/metadata', (req, res) => {
         ip_address || req.ip,
         location_lat || null,
         location_lng || null,
-        meta_data ? JSON.stringify(meta_data) : null
+        meta_data ? JSON.stringify(meta_data) : null,
+        communication_keywords ? JSON.stringify(communication_keywords) : null
     ], req, (err) => {
         if (err) {
             // Silently fail but log error

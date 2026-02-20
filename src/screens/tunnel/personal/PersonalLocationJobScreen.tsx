@@ -10,6 +10,7 @@ import Svg, { Path, Circle as SvgCircle } from 'react-native-svg';
 const PersonalLocationJobScreen = ({ navigation }: any) => {
     const { userInfo } = useContext(AuthContext);
     const [location, setLocation] = useState('');
+    const [addressDetails, setAddressDetails] = useState<any>({});
     const [jobTitle, setJobTitle] = useState('');
     const [loading, setLoading] = useState(false);
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
@@ -18,7 +19,7 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
         setLoading(true);
         try {
             // Save details
-            await TunnelService.updatePersonalDetails(userInfo.id, { address: location, jobTitle });
+            await TunnelService.updatePersonalDetails(userInfo.id, { address: location, streetId: addressDetails?.streetId, jobTitle });
 
             // Complete Tunnel for Personal User (Skip Identity Gate)
             await TunnelService.completeTunnel(userInfo.id);
@@ -31,7 +32,7 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
 
         } catch (error) {
             console.error(error);
-            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error' });
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error', onConfirm: undefined });
         } finally {
             setLoading(false);
         }
@@ -44,7 +45,10 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
                 {/* Location Section */}
                 <View style={styles.section}>
                     <AddressSelector
-                        onAddressChange={(addr) => setLocation(addr)}
+                        onAddressChange={(addr, details) => {
+                            setLocation(addr);
+                            setAddressDetails(details);
+                        }}
                     />
                 </View>
 

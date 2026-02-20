@@ -13,6 +13,7 @@ const compileNodeModules = [
     'react-native-gesture-handler',
     'react-native-screens',
     'react-native-safe-area-context',
+    'react-native-chart-kit',
 ].map((moduleName) => path.resolve(appDirectory, `node_modules/${moduleName}`));
 
 const babelLoaderConfiguration = {

@@ -815,7 +815,7 @@ app.put('/api/notifications/:id/read', verifyToken, (req, res) => {
 // Register
 app.post('/register', (req, res) => {
     const { email, password, name, phone, mac_address } = req.body;
-    if (!email || !password) return res.status(400).json({ success: false, message: 'Required fields missing' });
+    if (!email || !password || !phone) return res.status(400).json({ success: false, message: 'Required fields missing' });
 
     // Password Validation: Min 8 chars, 1 Upper, 1 Lower, 1 Special
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
@@ -826,14 +826,24 @@ app.post('/register', (req, res) => {
         });
     }
 
-    // Default user_type to 'Individual', will be updated in Tunnel
-    const query = 'INSERT INTO users (email, password, name, phone, user_type, mac_address, is_tunnel_completed) VALUES (?, ?, ?, ?, ?, ?, 0)';
-    dbQuery(query, [email, password, name, phone, req.body.user_type || 'Individual', mac_address || null], req, (err, result) => {
-        if (err) {
-            if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ success: false, message: 'Email already exists' });
-            return res.status(500).json({ success: false, message: 'Database error' });
+    // Check if phone already exists
+    const checkPhoneQuery = 'SELECT id FROM users WHERE phone = ?';
+    dbQuery(checkPhoneQuery, [phone], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false, message: 'Database error during phone validation' });
+
+        if (results.length > 0) {
+            return res.status(409).json({ success: false, message: 'Phone number already exists' });
         }
-        res.json({ success: true, message: 'User registered', userId: result.insertId });
+
+        // Default user_type to 'Individual', will be updated in Tunnel
+        const query = 'INSERT INTO users (email, password, name, phone, user_type, mac_address, is_tunnel_completed) VALUES (?, ?, ?, ?, ?, ?, 0)';
+        dbQuery(query, [email, password, name, phone, req.body.user_type || 'Individual', mac_address || null], req, (err, result) => {
+            if (err) {
+                if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ success: false, message: 'Email already exists' });
+                return res.status(500).json({ success: false, message: 'Database error' });
+            }
+            res.json({ success: true, message: 'User registered', userId: result.insertId });
+        });
     });
 });
 

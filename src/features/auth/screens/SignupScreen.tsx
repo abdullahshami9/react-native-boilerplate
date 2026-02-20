@@ -43,7 +43,7 @@ const SignupScreen = ({ navigation }: any) => {
     };
 
     const validateEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
-    const validatePhone = (phone: string) => /^[0-9]+$/.test(phone);
+    const validatePhone = (phone: string) => /^3[0-9]{9}$/.test(phone);
 
     const handleSignUp = async () => {
         if (!email || !password || !phone) {
@@ -55,7 +55,7 @@ const SignupScreen = ({ navigation }: any) => {
             return;
         }
         if (!validatePhone(phone)) {
-            showAlert('Error', 'Please enter a valid phone number (digits only)', 'error');
+            showAlert('Error', 'Please enter a valid 10-digit phone number starting with 3', 'error');
             return;
         }
         // Strict Password Validation: Min 8 chars, 1 Upper, 1 Lower, 1 Special, 1 Number
@@ -71,8 +71,10 @@ const SignupScreen = ({ navigation }: any) => {
         }
 
         try {
+            const formattedPhone = `+92${phone}`;
+
             // Defaulting to 'Individual' initially. User will select actual type in Tunnel.
-            const result = await register('User', email, password, phone, 'Individual');
+            const result = await register('User', email, password, formattedPhone, 'Individual');
             if (result.success) {
                 // Auto-login the user after successful registration
                 console.log('Registration successful, auto-logging in...');
@@ -99,7 +101,7 @@ const SignupScreen = ({ navigation }: any) => {
                 </TouchableOpacity>
             )}
             {isWeb && (
-                 <TouchableOpacity style={[styles.backButton, { top: 20 }]} onPress={() => navigation.goBack()}>
+                <TouchableOpacity style={[styles.backButton, { top: 20 }]} onPress={() => navigation.goBack()}>
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                         <Path d="M15 18L9 12L15 6" stroke={theme.iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </Svg>
@@ -114,137 +116,151 @@ const SignupScreen = ({ navigation }: any) => {
 
                 {/* Form Section */}
                 <View style={styles.formSection}>
-                        {/* Email Input */}
-                        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
-                            <View style={styles.inputIcon}>
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                    <Rect x="3" y="5" width="18" height="14" rx="2" stroke="#A0AEC0" strokeWidth="2" />
-                                    <Path d="M3 7L12 13L21 7" stroke="#A0AEC0" strokeWidth="2" strokeLinecap="round" />
-                                </Svg>
-                            </View>
-                            <TextInput
-                                style={[styles.inputField, { color: theme.text }]}
-                                placeholder="Enter your email"
-                                placeholderTextColor={theme.subText}
-                                value={email}
-                                onChangeText={setEmail}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                            />
-                        </View>
-
-                        {/* Phone Input */}
-                        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
-                            <View style={styles.inputIcon}>
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                    <Rect x="6" y="2" width="12" height="20" rx="2" stroke="#A0AEC0" strokeWidth="2" />
-                                    <Line x1="6" y1="18" x2="18" y2="18" stroke="#A0AEC0" strokeWidth="2" />
-                                </Svg>
-                            </View>
-                            <TextInput
-                                style={[styles.inputField, { color: theme.text }]}
-                                placeholder="Enter your phone no"
-                                placeholderTextColor={theme.subText}
-                                value={phone}
-                                onChangeText={setPhone}
-                                keyboardType="phone-pad"
-                            />
-                        </View>
-
-                        {/* Password Input */}
-                        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
-                            <View style={styles.inputIcon}>
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                    <Rect x="5" y="11" width="14" height="10" rx="2" stroke="#A0AEC0" strokeWidth="2" />
-                                    <Path d="M8 11V7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7V11" stroke="#A0AEC0" strokeWidth="2" strokeLinecap="round" />
-                                    <Circle cx="12" cy="16" r="1.5" fill="#A0AEC0" />
-                                </Svg>
-                            </View>
-                            <TextInput
-                                style={[styles.inputField, { color: theme.text }]}
-                                placeholder="Enter your password"
-                                placeholderTextColor={theme.subText}
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry={!showPassword}
-                            />
-                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                                {showPassword ? (
-                                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                        <Path d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z" stroke="#A0AEC0" strokeWidth="2" />
-                                        <Circle cx="12" cy="12" r="3" stroke="#A0AEC0" strokeWidth="2" />
-                                    </Svg>
-                                ) : (
-                                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                        <Path d="M3 3L21 21M10.5 10.5C9.57 11.43 9.57 12.57 10.5 13.5M10.5 10.5L13.5 13.5M10.5 10.5C11.43 9.57 12.57 9.57 13.5 10.5M13.5 13.5C14.43 12.57 14.43 11.43 13.5 10.5M9.9 4.24C10.56 4.09 11.27 4 12 4C19 4 22 12 22 12C22 12 21.27 13.58 19.74 15.24M6.61 6.61C4.62 8.07 3.14 10.39 2 12C2 12 5 19 12 19C13.65 19 15.08 18.57 16.38 17.93" stroke="#A0AEC0" strokeWidth="2" strokeLinecap="round" />
-                                    </Svg>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Terms and Conditions Checkbox */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
-                            <TouchableOpacity
-                                onPress={() => setTermsAccepted(!termsAccepted)}
-                                style={{
-                                    width: 20,
-                                    height: 20,
-                                    borderWidth: 2,
-                                    borderColor: theme.secondary,
-                                    borderRadius: 4,
-                                    marginRight: 10,
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    backgroundColor: termsAccepted ? theme.secondary : 'transparent'
-                                }}
-                            >
-                                {termsAccepted && (
-                                    <Svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                                        <Path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                                    </Svg>
-                                )}
-                            </TouchableOpacity>
-                            <Text style={{ fontSize: 13, color: theme.subText }}>I agree to the </Text>
-                            <TouchableOpacity onPress={() => setTermsVisible(true)}>
-                                <Text style={{ fontSize: 13, color: theme.secondary, fontWeight: '600', textDecorationLine: 'underline' }}>
-                                    Terms & Conditions
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Sign Up Button */}
-                        <TouchableOpacity style={[styles.signupButton, { backgroundColor: theme.secondary }]} onPress={handleSignUp}>
-                            <Text style={styles.signupButtonText}>Sign up</Text>
-                        </TouchableOpacity>
-
-                        {/* Divider */}
-                        <View style={styles.dividerContainer}>
-                            <Text style={[styles.dividerText, { color: theme.subText }]}>or continue with</Text>
-                        </View>
-
-                        {/* Google Button */}
-                        <TouchableOpacity style={[styles.googleButton, { backgroundColor: 'rgba(255, 255, 255, 0.6)', borderColor: theme.inputBorder }]} onPress={handleGoogleSignUp}>
-                            <Svg width="20" height="20" viewBox="0 0 24 24">
-                                <Path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                                <Path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                                <Path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                                <Path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    {/* Email Input */}
+                    <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
+                        <View style={styles.inputIcon}>
+                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <Rect x="3" y="5" width="18" height="14" rx="2" stroke="#A0AEC0" strokeWidth="2" />
+                                <Path d="M3 7L12 13L21 7" stroke="#A0AEC0" strokeWidth="2" strokeLinecap="round" />
                             </Svg>
-                            <Text style={[styles.googleButtonText, { color: theme.text }]}>Google</Text>
+                        </View>
+                        <TextInput
+                            style={[styles.inputField, { color: theme.text }]}
+                            placeholder="Enter your email"
+                            placeholderTextColor={theme.subText}
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                        />
+                    </View>
+
+                    {/* Phone Input */}
+                    <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
+                        {/* Country Code Dropdown (Static for now: Pakistan) */}
+                        <TouchableOpacity style={styles.countryCodeContainer}>
+                            <Image
+                                source={{ uri: 'https://flagcdn.com/w20/pk.png' }}
+                                style={styles.flagIcon}
+                                resizeMode="contain"
+                            />
+                            <Text style={[styles.countryCodeText, { color: theme.text }]}>+92</Text>
+                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginLeft: 4 }}>
+                                <Path d="M6 9L12 15L18 9" stroke="#A0AEC0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </Svg>
                         </TouchableOpacity>
 
-                        {/* Login Link */}
-                        <View style={styles.loginContainer}>
-                            <Text style={[styles.loginText, { color: theme.subText }]}>Already have an account? </Text>
-                            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                                <Text style={[styles.loginLink, { color: theme.secondary }]}>Login</Text>
-                            </TouchableOpacity>
+                        <View style={[styles.verticalDivider, { backgroundColor: theme.inputBorder }]} />
+
+                        <TextInput
+                            style={[styles.inputField, { color: theme.text, paddingLeft: 12 }]}
+                            placeholder="3XX XXXXXXX"
+                            placeholderTextColor={theme.subText}
+                            value={phone}
+                            onChangeText={(text) => {
+                                // Only allow digits and max 10 chars
+                                const cleaned = text.replace(/[^0-9]/g, '');
+                                setPhone(cleaned.slice(0, 10));
+                            }}
+                            keyboardType="phone-pad"
+                            maxLength={10}
+                        />
+                    </View>
+
+                    {/* Password Input */}
+                    <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
+                        <View style={styles.inputIcon}>
+                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <Rect x="5" y="11" width="14" height="10" rx="2" stroke="#A0AEC0" strokeWidth="2" />
+                                <Path d="M8 11V7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7V11" stroke="#A0AEC0" strokeWidth="2" strokeLinecap="round" />
+                                <Circle cx="12" cy="16" r="1.5" fill="#A0AEC0" />
+                            </Svg>
                         </View>
+                        <TextInput
+                            style={[styles.inputField, { color: theme.text }]}
+                            placeholder="Enter your password"
+                            placeholderTextColor={theme.subText}
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry={!showPassword}
+                        />
+                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                            {showPassword ? (
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <Path d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z" stroke="#A0AEC0" strokeWidth="2" />
+                                    <Circle cx="12" cy="12" r="3" stroke="#A0AEC0" strokeWidth="2" />
+                                </Svg>
+                            ) : (
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <Path d="M3 3L21 21M10.5 10.5C9.57 11.43 9.57 12.57 10.5 13.5M10.5 10.5L13.5 13.5M10.5 10.5C11.43 9.57 12.57 9.57 13.5 10.5M13.5 13.5C14.43 12.57 14.43 11.43 13.5 10.5M9.9 4.24C10.56 4.09 11.27 4 12 4C19 4 22 12 22 12C22 12 21.27 13.58 19.74 15.24M6.61 6.61C4.62 8.07 3.14 10.39 2 12C2 12 5 19 12 19C13.65 19 15.08 18.57 16.38 17.93" stroke="#A0AEC0" strokeWidth="2" strokeLinecap="round" />
+                                </Svg>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Terms and Conditions Checkbox */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
+                        <TouchableOpacity
+                            onPress={() => setTermsAccepted(!termsAccepted)}
+                            style={{
+                                width: 20,
+                                height: 20,
+                                borderWidth: 2,
+                                borderColor: theme.secondary,
+                                borderRadius: 4,
+                                marginRight: 10,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                backgroundColor: termsAccepted ? theme.secondary : 'transparent'
+                            }}
+                        >
+                            {termsAccepted && (
+                                <Svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                    <Path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                </Svg>
+                            )}
+                        </TouchableOpacity>
+                        <Text style={{ fontSize: 13, color: theme.subText }}>I agree to the </Text>
+                        <TouchableOpacity onPress={() => setTermsVisible(true)}>
+                            <Text style={{ fontSize: 13, color: theme.secondary, fontWeight: '600', textDecorationLine: 'underline' }}>
+                                Terms & Conditions
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Sign Up Button */}
+                    <TouchableOpacity style={[styles.signupButton, { backgroundColor: theme.secondary }]} onPress={handleSignUp}>
+                        <Text style={styles.signupButtonText}>Sign up</Text>
+                    </TouchableOpacity>
+
+                    {/* Divider */}
+                    <View style={styles.dividerContainer}>
+                        <Text style={[styles.dividerText, { color: theme.subText }]}>or continue with</Text>
+                    </View>
+
+                    {/* Google Button */}
+                    <TouchableOpacity style={[styles.googleButton, { backgroundColor: 'rgba(255, 255, 255, 0.6)', borderColor: theme.inputBorder }]} onPress={handleGoogleSignUp}>
+                        <Svg width="20" height="20" viewBox="0 0 24 24">
+                            <Path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                            <Path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                            <Path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                            <Path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                        </Svg>
+                        <Text style={[styles.googleButtonText, { color: theme.text }]}>Google</Text>
+                    </TouchableOpacity>
+
+                    {/* Login Link */}
+                    <View style={styles.loginContainer}>
+                        <Text style={[styles.loginText, { color: theme.subText }]}>Already have an account? </Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                            <Text style={[styles.loginLink, { color: theme.secondary }]}>Login</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
+            </View>
 
-                {/* Bottom Indicator Removed */}
-            </ScrollView>
+            {/* Bottom Indicator Removed */}
+        </ScrollView>
     );
 
     return (
@@ -252,17 +268,17 @@ const SignupScreen = ({ navigation }: any) => {
             <RNStatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
             {isWeb ? (
-                 <View style={{ flex: 1, flexDirection: 'row' }}>
-                     <View style={{ flex: 1, backgroundColor: '#00a884', justifyContent: 'center', alignItems: 'center' }}>
-                         <Image
-                             source={LocalAssets['business_startup_growth']}
-                             style={{ width: '80%', height: '80%', resizeMode: 'contain' }}
-                         />
-                     </View>
-                     <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, flexDirection: 'row' }}>
+                    <View style={{ flex: 1, backgroundColor: '#00a884', justifyContent: 'center', alignItems: 'center' }}>
+                        <Image
+                            source={LocalAssets['business_startup_growth']}
+                            style={{ width: '80%', height: '80%', resizeMode: 'contain' }}
+                        />
+                    </View>
+                    <View style={{ flex: 1 }}>
                         {renderContent()}
-                     </View>
-                 </View>
+                    </View>
+                </View>
             ) : (
                 renderContent()
             )}
@@ -323,8 +339,28 @@ const styles = StyleSheet.create({
         // backgroundColor, borderColor handled via theme
         borderWidth: 1,
         borderRadius: 50,
-        paddingHorizontal: 20,
+        paddingHorizontal: 12, // Reduced padding to fit the flag/prefix
         height: 56,
+    },
+    countryCodeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 8,
+    },
+    flagIcon: {
+        width: 24,
+        height: 16,
+        marginRight: 8,
+    },
+    countryCodeText: {
+        fontSize: 15,
+        fontWeight: '500',
+    },
+    verticalDivider: {
+        width: 1,
+        height: 24,
+        marginHorizontal: 8,
     },
     inputIcon: {
         marginRight: 12,

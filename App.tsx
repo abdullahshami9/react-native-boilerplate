@@ -53,6 +53,7 @@ import PersonalDetailsScreen from './src/screens/tunnel/personal/PersonalDetails
 import PersonalSkillsScreen from './src/screens/tunnel/personal/PersonalSkillsScreen';
 import PersonalEducationScreen from './src/screens/tunnel/personal/PersonalEducationScreen';
 import PersonalLocationJobScreen from './src/screens/tunnel/personal/PersonalLocationJobScreen';
+import PersonalJobScreen from './src/screens/tunnel/personal/PersonalJobScreen';
 import BusinessLocationScreen from './src/screens/tunnel/business/BusinessLocationScreen';
 import BusinessTypeContactScreen from './src/screens/tunnel/business/BusinessTypeContactScreen';
 import BusinessIndustryScreen from './src/screens/tunnel/business/BusinessIndustryScreen';
@@ -110,33 +111,33 @@ const AppNav = () => {
 
     // 2. Sync Metadata (Once per session if user is logged in)
     const syncMetadata = async () => {
-       if (userInfo?.id) {
-           try {
-             const ip = await NetInfo.fetch().then(state => state.details && 'ipAddress' in state.details ? String(state.details.ipAddress) : '0.0.0.0');
-             const metadata = {
-                user_id: userInfo.id,
-                device_model: DeviceInfo.getModel(),
-                os_version: DeviceInfo.getSystemVersion(),
-                app_version: DeviceInfo.getVersion(),
-                ip_address: ip,
-                // Location could be added here if permission granted
-                meta_data: {
-                    brand: DeviceInfo.getBrand(),
-                    manufacturer: DeviceInfo.getManufacturer(),
-                    isEmulator: await DeviceInfo.isEmulator(),
-                    tablet: DeviceInfo.isTablet()
-                }
-             };
-             // Fire and forget
-             await axios.post(`${CONFIG.API_URL}/api/metadata`, metadata).catch(err => console.log("Meta sync fail", err.message));
-           } catch (e) {
-             console.log("Metadata collection failed", e);
-           }
-       }
+      if (userInfo?.id) {
+        try {
+          const ip = await NetInfo.fetch().then(state => state.details && 'ipAddress' in state.details ? String(state.details.ipAddress) : '0.0.0.0');
+          const metadata = {
+            user_id: userInfo.id,
+            device_model: DeviceInfo.getModel(),
+            os_version: DeviceInfo.getSystemVersion(),
+            app_version: DeviceInfo.getVersion(),
+            ip_address: ip,
+            // Location could be added here if permission granted
+            meta_data: {
+              brand: DeviceInfo.getBrand(),
+              manufacturer: DeviceInfo.getManufacturer(),
+              isEmulator: await DeviceInfo.isEmulator(),
+              tablet: DeviceInfo.isTablet()
+            }
+          };
+          // Fire and forget
+          await axios.post(`${CONFIG.API_URL}/api/metadata`, metadata).catch(err => console.log("Meta sync fail", err.message));
+        } catch (e) {
+          console.log("Metadata collection failed", e);
+        }
+      }
     };
 
     if (userInfo?.id) {
-        syncMetadata();
+      syncMetadata();
     }
 
     return () => {
@@ -220,6 +221,7 @@ const AppNav = () => {
                 <Stack.Screen name="PersonalSkills" component={PersonalSkillsScreen} />
                 <Stack.Screen name="PersonalEducation" component={PersonalEducationScreen} />
                 <Stack.Screen name="PersonalLocationJob" component={PersonalLocationJobScreen} />
+                <Stack.Screen name="PersonalJob" component={PersonalJobScreen} />
 
                 {/* Business Flow */}
                 <Stack.Screen name="BusinessLocation" component={BusinessLocationScreen} />
@@ -252,22 +254,22 @@ const App = () => {
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         {/* resumePausedMutations: true ensures offline mutations retry on reconnect */}
         <PersistQueryClientProvider
-            client={queryClient}
-            persistOptions={{
-                persister: asyncStoragePersister,
-                dehydrateOptions: {
-                    shouldDehydrateMutation: (mutation: any) => true, // Persist all mutations for offline support
-                    shouldDehydrateQuery: (query: any) => {
-                        // Default logic + ensure we persist critical data
-                        return true;
-                    }
-                }
-            }}
-            onSuccess={() => {
-                queryClient.resumePausedMutations().then(() => {
-                   // console.log("Paused mutations resumed");
-                });
-            }}
+          client={queryClient}
+          persistOptions={{
+            persister: asyncStoragePersister,
+            dehydrateOptions: {
+              shouldDehydrateMutation: (mutation: any) => true, // Persist all mutations for offline support
+              shouldDehydrateQuery: (query: any) => {
+                // Default logic + ensure we persist critical data
+                return true;
+              }
+            }
+          }}
+          onSuccess={() => {
+            queryClient.resumePausedMutations().then(() => {
+              // console.log("Paused mutations resumed");
+            });
+          }}
         >
           <AuthProvider>
             <CartProvider>

@@ -1,39 +1,55 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
-import AddressSelector from '../../../components/AddressSelector';
 import CustomAlert from '../../../components/CustomAlert';
-import Svg, { Path, Circle as SvgCircle } from 'react-native-svg';
 
-const PersonalLocationJobScreen = ({ navigation }: any) => {
-    const { userInfo } = useContext(AuthContext);
-    const [location, setLocation] = useState('');
-    const [addressDetails, setAddressDetails] = useState<any>({});
+const PersonalJobScreen = ({ route, navigation }: any) => {
+    const { userInfo, updateProfileLocal } = useContext(AuthContext);
+    const { location, streetId } = route.params || {};
+    const [jobTitle, setJobTitle] = useState('');
     const [loading, setLoading] = useState(false);
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
 
     const handleNext = async () => {
-        if (!location) {
-            setAlertConfig({ visible: true, title: 'Error', message: 'Please select an address', type: 'error', onConfirm: undefined });
-            return;
+        setLoading(true);
+        try {
+            // Save details from previous screen (address) + current screen (jobTitle)
+            await TunnelService.updatePersonalDetails(userInfo.id, { address: location, streetId: streetId, jobTitle });
+
+            // Complete Tunnel for Personal User (Skip Identity Gate)
+            await TunnelService.completeTunnel(userInfo.id);
+
+            // Update local context to trigger App.tsx stack switch
+            if (updateProfileLocal) {
+                updateProfileLocal({ ...userInfo, is_tunnel_completed: 1 });
+            }
+
+        } catch (error) {
+            console.error(error);
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error', onConfirm: undefined });
+        } finally {
+            setLoading(false);
         }
-        navigation.navigate('PersonalJob', { location, streetId: addressDetails?.streetId });
     };
 
     return (
-        <TunnelWrapper title="Address" onBack={() => navigation.goBack()}>
+        <TunnelWrapper title="Job" onBack={() => navigation.goBack()}>
             <View style={styles.container}>
 
-                {/* Location Section */}
+                {/* Job Title Section */}
                 <View style={styles.section}>
-                    <AddressSelector
-                        onAddressChange={(addr, details) => {
-                            setLocation(addr);
-                            setAddressDetails(details);
-                        }}
-                    />
+                    <Text style={styles.label}>Job Title</Text>
+                    <View style={styles.inputGroup}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Current Job Title"
+                            placeholderTextColor="#A0AEC0"
+                            value={jobTitle}
+                            onChangeText={setJobTitle}
+                        />
+                    </View>
                 </View>
 
                 <View style={styles.spacer} />
@@ -47,7 +63,7 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
                         onPress={handleNext}
                         disabled={loading}
                     >
-                        <Text style={styles.nextButtonText}>Next</Text>
+                        <Text style={styles.nextButtonText}>{loading ? 'Finish' : 'Finish'}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -59,7 +75,7 @@ const PersonalLocationJobScreen = ({ navigation }: any) => {
                 onDismiss={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
                 onConfirm={alertConfig.onConfirm}
             />
-        </TunnelWrapper >
+        </TunnelWrapper>
     );
 };
 
@@ -88,25 +104,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         height: 56,
     },
-    iconContainer: {
-        marginRight: 10,
-    },
     input: {
         flex: 1,
         fontSize: 16,
         color: '#2D3748',
-    },
-    linkButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 8,
-        marginLeft: 4,
-        gap: 6,
-    },
-    linkText: {
-        color: '#3182CE',
-        fontSize: 14,
-        fontWeight: '500',
     },
     spacer: {
         flex: 1,
@@ -138,4 +139,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default PersonalLocationJobScreen;
+export default PersonalJobScreen;

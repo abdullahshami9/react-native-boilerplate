@@ -59,7 +59,7 @@ const PersonalDetailsScreen = ({ navigation }: any) => {
     };
 
     return (
-        <TunnelWrapper title="Personal Details" onBack={() => navigation.goBack()}>
+        <TunnelWrapper title="Personal" onBack={() => navigation.goBack()}>
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
                 {/* Username */}

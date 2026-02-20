@@ -35,14 +35,13 @@ const TunnelWrapper: React.FC<TunnelWrapperProps> = ({
       <View style={styles.header}>
         {showBack ? (
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <Path d="M15 18L9 12L15 6" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="2">
+              <Path d="M19 12H5M12 19l-7-7 7-7" />
             </Svg>
           </TouchableOpacity>
         ) : <View style={styles.backButtonPlaceholder} />}
 
-        <Text style={styles.headerTitle}></Text>
-        {/* Title is typically in the content in the designs, not center header */}
+        <Text style={styles.headerTitle}>{title}</Text>
 
         <View style={styles.headerRight}>
           {headerRight}
@@ -50,7 +49,6 @@ const TunnelWrapper: React.FC<TunnelWrapperProps> = ({
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.pageTitle}>{title}</Text>
         {children}
       </ScrollView>
     </SafeAreaView>
@@ -76,9 +74,11 @@ const styles = StyleSheet.create({
     width: 40,
   },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2D3748',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1A202C',
+    textAlign: 'center',
+    flex: 1,
   },
   headerRight: {
     width: 40,
@@ -87,14 +87,8 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: 24,
+    paddingTop: 16,
     paddingBottom: 30,
-  },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1A202C',
-    marginTop: 10,
-    marginBottom: 24,
   }
 });
 

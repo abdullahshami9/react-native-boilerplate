@@ -7,7 +7,7 @@ import CustomAlert from '../../../components/CustomAlert';
 
 const ServiceDetailsScreen = ({ route, navigation }: any) => {
     const { service } = route.params;
-    const { userInfo, isDarkMode } = useContext(AuthContext);
+    const { userInfo, isDarkMode, upgradeGuest } = useContext(AuthContext);
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info' });
 
     const isOwner = userInfo?.id === service.user_id;
@@ -23,6 +23,17 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
     const handleBook = () => {
         if (!userInfo) {
             setAlertConfig({ visible: true, title: 'Login Required', message: 'Please login to book a service', type: 'info' });
+            return;
+        }
+        if (userInfo.user_type === 'Guest') {
+            Alert.alert(
+                "Complete Profile Required",
+                "You need a full Personal profile to book services. Would you like to complete it now?",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Upgrade", onPress: () => upgradeGuest() }
+                ]
+            );
             return;
         }
         if (isOwner) {
@@ -59,7 +70,7 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
 
             <View style={styles.content}>
                 <View style={styles.headerRow}>
-                    <View style={{flex: 1}}>
+                    <View style={{ flex: 1 }}>
                         <Text style={[styles.title, { color: theme.text }]}>{service.name}</Text>
                         <Text style={{ color: theme.subText, fontSize: 12 }}>{service.service_type} • {service.service_location}</Text>
                     </View>
@@ -68,8 +79,8 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
 
                 <View style={styles.metaRow}>
                     <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.subText} strokeWidth="2">
-                         <Circle cx="12" cy="12" r="10" />
-                         <Path d="M12 6v6l4 2" />
+                        <Circle cx="12" cy="12" r="10" />
+                        <Path d="M12 6v6l4 2" />
                     </Svg>
                     <Text style={[styles.metaText, { color: theme.subText }]}>{service.duration_mins} mins</Text>
                 </View>

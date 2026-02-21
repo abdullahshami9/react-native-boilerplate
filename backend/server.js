@@ -2235,6 +2235,15 @@ app.post('/api/tunnel/complete', (req, res) => {
     });
 });
 
+app.post('/api/tunnel/revert', (req, res) => {
+    const { user_id } = req.body;
+    const query = 'UPDATE users SET is_tunnel_completed = 0 WHERE id = ?';
+    dbQuery(query, [user_id], req, (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, message: 'Tunnel reverted' });
+    });
+});
+
 app.post('/api/tunnel/business/location', async (req, res) => {
     const { user_id, address, street_id, location_lat, location_lng } = req.body;
     try {

@@ -15,7 +15,7 @@ import { AuthContext } from '../../../context/AuthContext';
 const ProductDetailsScreen = ({ navigation, route }: any) => {
     const { product } = route.params || {};
     const { addToCart } = React.useContext(CartContext);
-    const { userInfo } = React.useContext(AuthContext);
+    const { userInfo, upgradeGuest } = React.useContext(AuthContext);
     const toastRef = useRef<MiniToastRef>(null);
 
     // Variants handling
@@ -42,6 +42,20 @@ const ProductDetailsScreen = ({ navigation, route }: any) => {
     };
 
     const handleAddToCart = () => {
+        if (userInfo?.user_type === 'Guest') {
+            import('react-native').then(({ Alert }) => {
+                Alert.alert(
+                    "Complete Profile Required",
+                    "You need a full Personal profile to buy products. Would you like to complete it now?",
+                    [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Upgrade", onPress: () => upgradeGuest() }
+                    ]
+                );
+            });
+            return;
+        }
+
         if (isOwner) {
             toastRef.current?.show('You cannot buy your own product');
             return;

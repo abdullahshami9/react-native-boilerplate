@@ -214,7 +214,9 @@ const AppNav = () => {
             ) : (
               // Tunnel Stack (Mandatory Onboarding)
               <>
-                <Stack.Screen name="ChooseProfileType" component={ChooseProfileTypeScreen} options={{ animation: 'none' }} />
+                {(!userInfo?.user_type || userInfo.user_type === 'Guest') && (
+                  <Stack.Screen name="ChooseProfileType" component={ChooseProfileTypeScreen} options={{ animation: 'none' }} />
+                )}
 
                 {/* Personal Flow */}
                 <Stack.Screen name="PersonalDetails" component={PersonalDetailsScreen} options={{ animation: 'none' }} />
@@ -224,7 +226,9 @@ const AppNav = () => {
                 <Stack.Screen name="PersonalJob" component={PersonalJobScreen} options={{ animation: 'none' }} />
 
                 {/* Business Flow */}
-                <Stack.Screen name="BusinessLocation" component={BusinessLocationScreen} options={{ animation: 'none' }} />
+                {userInfo?.user_type === 'Business' && (
+                  <Stack.Screen name="BusinessLocation" component={BusinessLocationScreen} options={{ animation: 'none' }} />
+                )}
                 <Stack.Screen name="BusinessTypeContact" component={BusinessTypeContactScreen} options={{ animation: 'none' }} />
                 <Stack.Screen name="BusinessIndustry" component={BusinessIndustryScreen} options={{ animation: 'none' }} />
 

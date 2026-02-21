@@ -15,10 +15,12 @@ const ChooseProfileTypeScreen = ({ navigation }: any) => {
 
     const individualScale = useRef(new Animated.Value(1)).current;
     const businessScale = useRef(new Animated.Value(1)).current;
+    const guestScale = useRef(new Animated.Value(1)).current;
 
     // For fade out effect on unselected card
     const individualOpacity = useRef(new Animated.Value(1)).current;
     const businessOpacity = useRef(new Animated.Value(1)).current;
+    const guestOpacity = useRef(new Animated.Value(1)).current;
 
     const animatePress = (scale: Animated.Value, toValue: number) => {
         Animated.spring(scale, {
@@ -29,40 +31,63 @@ const ChooseProfileTypeScreen = ({ navigation }: any) => {
         }).start();
     };
 
-    const handleSelect = (type: 'Individual' | 'Business') => {
-        // Optimistic UI - No loading indicator needed if transition is smooth enough
-        // or we use a very subtle one. Here we rely on the animation.
+    const handleSelect = (type: 'Individual' | 'Business' | 'Guest') => {
+        // Optimistic UI - Rely on animation.
 
         // Animation Sequence
         if (type === 'Individual') {
             Animated.parallel([
                 Animated.timing(businessOpacity, { toValue: 0.5, duration: 200, useNativeDriver: true }),
+                Animated.timing(guestOpacity, { toValue: 0.5, duration: 200, useNativeDriver: true }),
                 Animated.spring(individualScale, { toValue: 1.05, useNativeDriver: true })
             ]).start();
-        } else {
+        } else if (type === 'Business') {
             Animated.parallel([
                 Animated.timing(individualOpacity, { toValue: 0.5, duration: 200, useNativeDriver: true }),
+                Animated.timing(guestOpacity, { toValue: 0.5, duration: 200, useNativeDriver: true }),
                 Animated.spring(businessScale, { toValue: 1.05, useNativeDriver: true })
+            ]).start();
+        } else if (type === 'Guest') {
+            Animated.parallel([
+                Animated.timing(individualOpacity, { toValue: 0.5, duration: 200, useNativeDriver: true }),
+                Animated.timing(businessOpacity, { toValue: 0.5, duration: 200, useNativeDriver: true }),
+                Animated.spring(guestScale, { toValue: 1.05, useNativeDriver: true })
             ]).start();
         }
 
-        // Optimistically update local context so subsequent screens and App navigation know the type
+        // Handle Guest Mode immediately via Context bypass
+        if (type === 'Guest') {
+            // Fire and Forget APIs
+            Promise.all([
+                TunnelService.updateUserType(userInfo.id, type),
+                TunnelService.completeTunnel(userInfo.id)
+            ]).catch(err => {
+                console.error("Background Guest Setup Failed:", err);
+            });
+
+            setTimeout(() => {
+                if (updateProfileLocal) {
+                    updateProfileLocal({ ...userInfo, user_type: type, is_tunnel_completed: 1 });
+                }
+                // App.tsx automatically transitions to Main Stack!
+            }, 150);
+            return;
+        }
+
+        // For Individual & Business
         if (updateProfileLocal) {
             updateProfileLocal({ ...userInfo, user_type: type });
         }
 
-        // Fire and Forget API call - don't block navigation
         TunnelService.updateUserType(userInfo.id, type).catch(err => {
             console.error("Background UserType Update Failed:", err);
-            // In a robust app, we might retry or handle this on the next screen
         });
 
         // Navigate after short delay for animation visibility
         setTimeout(() => {
-            // Navigate to next step
             if (type === 'Individual') {
                 navigation.navigate('PersonalDetails');
-            } else {
+            } else if (type === 'Business') {
                 navigation.navigate('BusinessLocation');
             }
 
@@ -70,10 +95,12 @@ const ChooseProfileTypeScreen = ({ navigation }: any) => {
             setTimeout(() => {
                 individualOpacity.setValue(1);
                 businessOpacity.setValue(1);
+                guestOpacity.setValue(1);
                 individualScale.setValue(1);
                 businessScale.setValue(1);
+                guestScale.setValue(1);
             }, 500);
-        }, 150); // Reduced delay for snappier feel
+        }, 150);
     };
 
     const Card = ({ type, title, desc, image, scale, opacity }: any) => (
@@ -126,6 +153,15 @@ const ChooseProfileTypeScreen = ({ navigation }: any) => {
                     image="asset:business_startup_growth"
                     scale={businessScale}
                     opacity={businessOpacity}
+                />
+
+                <Card
+                    type="Guest"
+                    title="Guest Mode"
+                    desc="Explore the app quickly without full setup."
+                    image="asset:default_avatar"
+                    scale={guestScale}
+                    opacity={guestOpacity}
                 />
 
                 {loading && <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 20 }} />}

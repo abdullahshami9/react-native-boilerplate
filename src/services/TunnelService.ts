@@ -139,6 +139,16 @@ export const TunnelService = {
         }
     },
 
+    revertTunnel: async (userId: number) => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/api/tunnel/revert`, { user_id: userId });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Revert Tunnel Error:', error, 'TunnelService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+
     uploadResume: async (file: any, userId: number) => {
         const formData = new FormData();
         formData.append('image', {

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Screen Flow & UI Map</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 30px; color: #333; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { color: #1a73e8; margin-bottom: 10px; }
+        .header p { color: #666; font-size: 16px; }
+        .section { background: white; border-radius: 12px; padding: 25px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .section-title { font-size: 24px; font-weight: bold; margin-bottom: 25px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; color: #2c3e50; text-align: center; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; }
+        .screen-card { background: #fff; border: 1px solid #e1e4e8; border-radius: 8px; padding: 12px; text-align: center; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .screen-card:hover { transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-color: #bbdefb; }
+        
+        .screen-img { 
+            width: 100%; 
+            height: 320px; 
+            background: #f8f9fa; 
+            border: 2px dashed #ced4da;
+            border-radius: 6px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: #adb5bd; 
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 15px; 
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Placeholder styling for empty images */
+        .screen-img::before {
+            content: "UI Snap Placeholder";
+            position: absolute;
+        }
+
+        .screen-name { font-weight: bold; font-size: 15px; color: #34495e; margin-bottom: 5px; }
+        .screen-desc { font-size: 12px; color: #7f8c8d; line-height: 1.4; }
+        
+        .split-view { display: flex; gap: 30px; margin-top: 30px; }
+        .column { flex: 1; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .personal-col { border-top: 5px solid #2ecc71; }
+        .business-col { border-top: 5px solid #3498db; }
+        .col-title { font-size: 22px; font-weight: bold; margin-bottom: 20px; text-align: center; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; }
+        .personal-title { color: #27ae60; }
+        .business-title { color: #2980b9; }
+
+        .role-choice {
+            text-align: center;
+            background: #fff3e0;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 30px 0;
+            border: 2px solid #ffe0b2;
+        }
+
+        .shared-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .hub-title {
+            text-align: center;
+            font-size: 18px;
+            color: #6c757d;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 900px) {
+            .split-view { flex-direction: column; }
+            .screen-img { height: 250px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>App UI Screens Journey</h1>
+        <p>A complete visual mapping of Onboarding, Customer, and Business workflows.</p>
+        <p style="font-size: 13px; color: #888;">(Replace the placeholders below with your actual screenshots to complete the visual map)</p>
+    </div>
+
+    <!-- SHARED ONBOARDING -->
+    <div class="section">
+        <div class="section-title">1. Shared Entry & Authentication</div>
+        <div class="grid">
+            <div class="screen-card">
+                <div class="screen-img"></div>
+                <div class="screen-name">Onboarding</div>
+                <div class="screen-desc">Welcome slides introducing the platform</div>
+            </div>
+            <div class="screen-card">
+                <div class="screen-img"></div>
+                <div class="screen-name">Sign Up</div>
+                <div class="screen-desc">Create new account</div>
+            </div>
+            <div class="screen-card">
+                <div class="screen-img"></div>
+                <div class="screen-name">Login</div>
+                <div class="screen-desc">Account access</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE CHOICE -->
+    <div class="role-choice">
+        <h2>2. Role Selection</h2>
+        <div class="grid" style="max-width: 600px; margin: 0 auto;">
+            <div class="screen-card" style="border-color: #2ecc71;">
+                <div class="screen-img" style="height: 150px;"></div>
+                <div class="screen-name">Choose Profile Type</div>
+                <div class="screen-desc">User selects "Personal/Customer" or "Business Owner"</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TUNNEL FLOW SCREENS -->
+    <h2 style="text-align: center; color: #333; margin-bottom: 10px;">3. Profile Tunnels (Mandatory Setup)</h2>
+    <div class="split-view">
+        <!-- Personal Tunnel -->
+        <div class="column personal-col">
+            <div class="col-title personal-title">Personal / Customer Tunnel</div>
+            <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="screen-card">
+                    <div class="screen-img" style="height: 200px;"></div>
+                    <div class="screen-name">Personal Details</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img" style="height: 200px;"></div>
+                    <div class="screen-name">Skills Screen</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img" style="height: 200px;"></div>
+                    <div class="screen-name">Education</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img" style="height: 200px;"></div>
+                    <div class="screen-name">Location / Job Interest</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img" style="height: 200px;"></div>
+                    <div class="screen-name">Job Screen</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Business Tunnel -->
+        <div class="column business-col">
+            <div class="col-title business-title">Business Owner Tunnel</div>
+            <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="screen-card">
+                    <div class="screen-img" style="height: 200px;"></div>
+                    <div class="screen-name">Business Location</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img" style="height: 200px;"></div>
+                    <div class="screen-name">Type & Contact</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img" style="height: 200px;"></div>
+                    <div class="screen-name">Industry Selection</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHARED TUNNEL COMPLETION -->
+    <div class="shared-section" style="margin-bottom: 40px;">
+        <div class="hub-title">Shared Tunnel End Steps</div>
+        <div class="grid" style="justify-content: center; display: flex;">
+            <div class="screen-card" style="width: 250px;">
+                <div class="screen-img" style="height: 200px;"></div>
+                <div class="screen-name">Identity Gate</div>
+            </div>
+            <div class="screen-card" style="width: 250px;">
+                <div class="screen-img" style="height: 200px;"></div>
+                <div class="screen-name">Payment Integration</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP POST-TUNNEL -->
+    <h2 style="text-align: center; color: #333; margin-bottom: 10px;">4. Main App UI (Post Login & Tunnel)</h2>
+    <div class="split-view">
+        
+        <!-- Personal App UI -->
+        <div class="column personal-col">
+            <div class="col-title personal-title">Personal / Customer App UI</div>
+            <div class="grid">
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Home Tab (Marketplace)</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Service Details</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Booking Screen</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Checkout</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Customer Orders</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Order Detail</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Business App UI -->
+        <div class="column business-col">
+            <div class="col-title business-title">Business Owner App UI</div>
+            <div class="grid">
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Dashboard Tab</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Business Onboarding</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Inventory</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Add Product</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Manage Services</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Service Appointments</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Business Orders</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Procurement</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Business Card Editor</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">AR Card Scanner</div>
+                </div>
+                <div class="screen-card">
+                    <div class="screen-img"></div>
+                    <div class="screen-name">Premium Upgrade</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHARED APP UI -->
+    <div class="shared-section" style="margin-top: 40px; border-top: 5px solid #95a5a6;">
+        <div class="hub-title">Shared App Features (Both Users)</div>
+        <div class="grid">
+            <div class="screen-card">
+                <div class="screen-img"></div>
+                <div class="screen-name">Chat List</div>
+            </div>
+            <div class="screen-card">
+                <div class="screen-img"></div>
+                <div class="screen-name">Chat Messages</div>
+            </div>
+            <div class="screen-card">
+                <div class="screen-img"></div>
+                <div class="screen-name">User Profile</div>
+            </div>
+            <div class="screen-card">
+                <div class="screen-img"></div>
+                <div class="screen-name">Notifications</div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

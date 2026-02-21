@@ -436,6 +436,34 @@ db.connect(async (err) => {
           FOREIGN KEY (sublocation_sublocationId) REFERENCES sublocation (sublocationId) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS building (
+          buildingId int(11) NOT NULL AUTO_INCREMENT,
+          streetInfo_streetId int(11) NOT NULL,
+          buildingName varchar(45) NOT NULL,
+          plotNumber varchar(10) DEFAULT NULL,
+          charges double unsigned NOT NULL,
+          chargesType char(1) NOT NULL,
+          creationDate timestamp NULL DEFAULT NULL,
+          modifiedDate timestamp NULL DEFAULT NULL,
+          total_housepass int(11) DEFAULT NULL,
+          current_housepass_occupancy int(11) DEFAULT NULL,
+          energize_date date DEFAULT NULL,
+          PRIMARY KEY (buildingId),
+          KEY house_block_FKIndex1 (streetInfo_streetId),
+          FOREIGN KEY (streetInfo_streetId) REFERENCES streetinfo(streetId) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS building_block (
+          buildingBlockId int(11) NOT NULL AUTO_INCREMENT,
+          buildingBlockName varchar(45) NOT NULL,
+          creationDate timestamp NULL DEFAULT NULL,
+          modifiedDate timestamp NULL DEFAULT NULL,
+          building_buildingId int(11) NOT NULL,
+          PRIMARY KEY (buildingBlockId),
+          KEY fk_building_block_building1 (building_buildingId),
+          FOREIGN KEY (building_buildingId) REFERENCES building(buildingId) ON DELETE CASCADE
+        );
+
         CREATE TABLE IF NOT EXISTS product_logs (
             id INT AUTO_INCREMENT PRIMARY KEY,
             product_id INT NOT NULL,
@@ -545,7 +573,17 @@ db.connect(async (err) => {
                                             db.query("INSERT INTO sublocation (location_LocationId, sublocationName) VALUES (?, ?)", [locId, 'Block 13-D'], (e4, r4) => {
                                                 if (!e4) {
                                                     const subId = r4.insertId;
-                                                    db.query("INSERT INTO streetinfo (sublocation_sublocationId, streetName) VALUES (?, ?)", [subId, 'Street 1'], () => { });
+                                                    db.query("INSERT INTO streetinfo (sublocation_sublocationId, streetName) VALUES (?, ?)", [subId, 'Street 1'], (e5, r5) => {
+                                                        if (!e5) {
+                                                            const strId = r5.insertId;
+                                                            db.query("INSERT INTO building (streetInfo_streetId, buildingName, charges, chargesType) VALUES (?, ?, 0, 'F')", [strId, 'Building A'], (e6, r6) => {
+                                                                if (!e6) {
+                                                                    const bId = r6.insertId;
+                                                                    db.query("INSERT INTO building_block (building_buildingId, buildingBlockName) VALUES (?, ?)", [bId, 'Block A'], () => { });
+                                                                }
+                                                            });
+                                                        }
+                                                    });
                                                 }
                                             });
                                         }
@@ -2204,6 +2242,20 @@ app.get('/api/streets/:sublocationId', (req, res) => {
     dbQuery('SELECT * FROM streetinfo WHERE sublocation_sublocationId = ?', [req.params.sublocationId], req, (err, results) => {
         if (err) return res.status(500).json({ success: false });
         res.json({ success: true, streets: results });
+    });
+});
+
+app.get('/api/buildings/:streetId', (req, res) => {
+    dbQuery('SELECT * FROM building WHERE streetInfo_streetId = ?', [req.params.streetId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, buildings: results });
+    });
+});
+
+app.get('/api/building-blocks/:buildingId', (req, res) => {
+    dbQuery('SELECT * FROM building_block WHERE building_buildingId = ?', [req.params.buildingId], req, (err, results) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, buildingBlocks: results });
     });
 });
 

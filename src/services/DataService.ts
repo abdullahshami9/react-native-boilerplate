@@ -96,22 +96,22 @@ export const DataService = {
     },
     getCustomerOrders: async (userId: number) => {
         try {
-           const response = await axios.get(`${CONFIG.API_URL}/api/orders/customer/${userId}`);
-           return response.data;
-       } catch (error: any) {
-           LoggerService.error('Get Customer Orders Error:', error, 'DataService');
-           throw error.response?.data || { message: 'Network Error' };
-       }
-   },
-   getUserCounts: async (userId: number) => {
-       try {
-           const response = await axios.get(`${CONFIG.API_URL}/api/user/counts/${userId}`);
-           return response.data;
-       } catch (error: any) {
-           LoggerService.error('Get User Counts Error:', error, 'DataService');
-           throw error.response?.data || { message: 'Network Error' };
-       }
-   },
+            const response = await axios.get(`${CONFIG.API_URL}/api/orders/customer/${userId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Customer Orders Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getUserCounts: async (userId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/user/counts/${userId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get User Counts Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
     getSkills: async (userId: number) => {
         try {
             const response = await axios.get(`${CONFIG.API_URL}/api/skills/${userId}`);
@@ -418,7 +418,7 @@ export const DataService = {
         }
     },
     getBusinessOrders: async (userId: number) => {
-         try {
+        try {
             const response = await axios.get(`${CONFIG.API_URL}/api/orders/business/${userId}`);
             return response.data;
         } catch (error: any) {
@@ -543,6 +543,24 @@ export const DataService = {
             return response.data;
         } catch (error: any) {
             LoggerService.error('Get Streets Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getBuildings: async (streetId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/buildings/${streetId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Buildings Error:', error, 'DataService');
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+    getBuildingBlocks: async (buildingId: number) => {
+        try {
+            const response = await axios.get(`${CONFIG.API_URL}/api/building-blocks/${buildingId}`);
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Get Building Blocks Error:', error, 'DataService');
             throw error.response?.data || { message: 'Network Error' };
         }
     },

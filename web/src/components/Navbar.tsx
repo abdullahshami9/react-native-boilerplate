@@ -22,6 +22,7 @@ export function Navbar() {
   }
 
   const isBusiness = userInfo?.user_type?.toLowerCase() === 'business';
+  const isGuest = userInfo?.user_type === 'Guest';
 
   // Navigation Links based on Role
   const businessLinks = [
@@ -35,10 +36,10 @@ export function Navbar() {
 
   const customerLinks = [
     { name: 'Discover', href: '/discover' },
-    { name: 'Connections', href: '/connections' },
+    !isGuest && { name: 'Connections', href: '/connections' },
     { name: 'Shop', href: '/shop' },
     { name: 'Profile', href: `/profile/${userInfo?.id}` },
-  ];
+  ].filter(Boolean) as { name: string; href: string }[];
 
   // Public links are now hidden to match "App" feel (Login required to see features)
   const publicLinks: { name: string; href: string }[] = [];

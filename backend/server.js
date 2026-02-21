@@ -11,6 +11,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const { verifyToken, JWT_SECRET } = require('./middleware/auth');
+const { OAuth2Client } = require('google-auth-library');
 const sequelize = require('./config/database');
 const BusinessDetails = require('./models/BusinessDetails');
 const IdentityScan = require('./models/IdentityScan');
@@ -737,6 +738,99 @@ const checkSubscription = (req, res, next) => {
 };
 
 // --- ROUTES ---
+
+// --- GOOGLE AUTHENTICATION ---
+// Replace YOUR_WEB_CLIENT_ID with actual client id when available
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_WEB_CLIENT_ID || 'YOUR_WEB_CLIENT_ID';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+app.post('/api/google-login', async (req, res) => {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+        return res.status(400).json({ success: false, message: 'ID Token is required' });
+    }
+
+    try {
+        // Verify token
+        const ticket = await googleClient.verifyIdToken({
+            idToken: idToken,
+            audience: GOOGLE_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        const { email, name, sub: googleId, picture } = payload;
+
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Google account has no email attached.' });
+        }
+
+        // Check if user exists
+        const checkUserQuery = 'SELECT * FROM users WHERE email = ?';
+        db.query(checkUserQuery, [email], (err, results) => {
+            if (err) {
+                console.error('Database error finding Google user:', err);
+                return res.status(500).json({ success: false, message: 'Database error' });
+            }
+
+            if (results.length > 0) {
+                // User exists, log them in
+                const user = results[0];
+                const token = jwt.sign(
+                    { id: user.id, email: user.email, user_type: user.user_type },
+                    JWT_SECRET,
+                    { expiresIn: '30d' }
+                );
+
+                // Don't send password back to the frontend
+                const { password, ...userWithoutPassword } = user;
+                return res.json({ success: true, message: 'Google login successful', token, user: userWithoutPassword });
+            } else {
+                // User doesn't exist, auto-register them
+                // DB Schema enforces `phone` and `password` to be NOT NULL. Provide dummy/secure random values.
+
+                // Generate a random, highly secure dummy password since they use Google to log in
+                const randomPassword = require('crypto').randomBytes(16).toString('hex');
+                // Use a generic placeholder phone number, user can update later in profile
+                const dummyPhone = '+0000000000';
+                // Default to Individual, as user sets real type in Tunnel
+                const userType = 'Individual';
+
+                const insertUserQuery = 'INSERT INTO users (name, email, password, phone, user_type, profile_pic_url) VALUES (?, ?, ?, ?, ?, ?)';
+                db.query(insertUserQuery, [name, email, randomPassword, dummyPhone, userType, picture || null], (insertErr, insertResult) => {
+                    if (insertErr) {
+                        console.error('Error inserting Google user:', insertErr);
+                        return res.status(500).json({ success: false, message: 'Error creating user account' });
+                    }
+
+                    const newUserId = insertResult.insertId;
+                    const token = jwt.sign(
+                        { id: newUserId, email, user_type: userType },
+                        JWT_SECRET,
+                        { expiresIn: '30d' }
+                    );
+
+                    // Construct what the user object looks like for the frontend
+                    const newUser = {
+                        id: newUserId,
+                        name,
+                        email,
+                        phone: dummyPhone,
+                        user_type: userType,
+                        profile_pic_url: picture,
+                        is_tunnel_completed: 0 // New users must go through tunnel
+                    };
+
+                    return res.json({ success: true, message: 'Google registration successful', token, user: newUser });
+                });
+            }
+        });
+
+    } catch (error) {
+        console.error('Google token verification error:', error);
+        return res.status(401).json({ success: false, message: 'Invalid or expired Google Token' });
+    }
+});
 
 // Helper to create notification
 const createNotification_Helper = (userId, title, message, type, relatedId) => {

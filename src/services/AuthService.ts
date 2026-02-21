@@ -43,5 +43,19 @@ export const AuthService = {
         }
     },
 
+    googleLogin: async (idToken: string) => {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/google-login`, { idToken });
+            return response.data;
+        } catch (error: any) {
+            LoggerService.error('Google Login Error:', error, 'AuthService');
+            // Provide a clear fallback error message if the backend isn't ready or returns HTML
+            if (typeof error.response?.data === 'string' && error.response?.data.startsWith('<')) {
+                throw { message: 'Server reached, but returned an invalid response (500 or 404 HTML). Check backend logs.' };
+            }
+            throw error.response?.data || { message: 'Network Error' };
+        }
+    },
+
     // checkBiometric removed as per user request
 };

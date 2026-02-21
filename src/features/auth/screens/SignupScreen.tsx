@@ -25,7 +25,7 @@ const SignupScreen = ({ navigation }: any) => {
         password: '',
         terms: '',
     });
-    const { register, login } = useContext(AuthContext);
+    const { register, login, googleLogin } = useContext(AuthContext);
     const theme = useTheme('light'); // Force Light Mode
 
     // Alert State
@@ -115,8 +115,14 @@ const SignupScreen = ({ navigation }: any) => {
         }
     };
 
-    const handleGoogleSignUp = () => {
+    const handleGoogleSignUp = async () => {
         console.log('Google sign up clicked');
+        try {
+            await googleLogin();
+            // Navigation handled by App.tsx automatically on token state change
+        } catch (error: any) {
+            showAlert('Google Sign Up Failed', error.message || 'Something went wrong', 'error');
+        }
     };
 
     const renderContent = () => (

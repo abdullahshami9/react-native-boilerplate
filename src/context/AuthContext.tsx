@@ -6,6 +6,8 @@ import DeviceInfo from 'react-native-device-info';
 import LoggerService from '../services/LoggerService';
 import axios from 'axios';
 import { colors } from '../theme/colors';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { CONFIG } from '../Config';
 
 const { NavBarColor } = NativeModules;
 
@@ -24,6 +26,15 @@ export const AuthProvider = ({ children }: any) => {
                 NavBarColor.setNightMode(isDarkMode);
             }
         }
+
+        // Configure Google Sign-In
+        GoogleSignin.configure({
+            webClientId: CONFIG.GOOGLE_WEB_CLIENT_ID,
+            offlineAccess: true, // if you want to access Google API on behalf of the user FROM YOUR SERVER
+            forceCodeForRefreshToken: true, // [Android] related to `serverAuthCode`, read the docs link below *.
+            // accountName: '', // [Android] specifies an account name on the device that should be used
+            // iosClientId: '<FROM DEVELOPER CONSOLE>', // [iOS] optional, if you want to specify the client ID of type iOS (otherwise, it is taken from GoogleService-Info.plist)
+        });
     }, [isDarkMode]);
 
     const toggleTheme = () => {
@@ -117,6 +128,65 @@ export const AuthProvider = ({ children }: any) => {
         }
     };
 
+    const googleLogin = async () => {
+        try {
+            LoggerService.info('Starting Google SignIn flow...', undefined, 'AuthContext');
+
+            // Check if device supports Google Play Services
+            await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+            // Trigger Google Sign-In Prompts
+            const response = await GoogleSignin.signIn();
+
+            // Extract the secure idToken (from response.data if using v13.x+)
+            let idToken = null;
+            if (response.data?.idToken) {
+                idToken = response.data.idToken;
+            } else if ((response as any).idToken) {
+                // Fallback for older SDK versions
+                idToken = (response as any).idToken;
+            }
+
+            if (!idToken) {
+                LoggerService.error('Google Sign-In failed: No ID Token retrieved', undefined, 'AuthContext');
+                throw new Error("No ID Token found. Web Client ID may be missing or incorrect.");
+            }
+
+            LoggerService.info('Google SignIn Success. Calling Backend...', undefined, 'AuthContext');
+            const apiResponse = await AuthService.googleLogin(idToken);
+
+            if (apiResponse.success) {
+                setUserInfo(apiResponse.user);
+
+                const token = apiResponse.token;
+                setUserToken(token);
+                await AsyncStorage.setItem('userToken', token);
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+                await AsyncStorage.setItem('userInfo', JSON.stringify(apiResponse.user));
+                LoggerService.info('Google Login Success from Backend', undefined, 'AuthContext');
+                return apiResponse;
+            } else {
+                throw new Error(apiResponse.message || 'Backend Google Authentication failed');
+            }
+
+        } catch (error: any) {
+            LoggerService.error('Google Auth Context Error:', error, 'AuthContext');
+
+            // Handle specific Google Signin Error Codes
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                throw new Error('User cancelled the login flow');
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                throw new Error('Sign in is in progress already');
+            } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+                throw new Error('Play services not available or outdated');
+            } else {
+                // Pass back the backend string error message if present
+                throw error;
+            }
+        }
+    };
+
     const logout = () => {
         setIsLoading(true);
         setUserToken(null);
@@ -192,7 +262,7 @@ export const AuthProvider = ({ children }: any) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ login, logout, register, updateProfile, updateProfileLocal, biometricLogin, isLoading, userToken, userInfo, isDarkMode, toggleTheme }}>
+        <AuthContext.Provider value={{ login, logout, register, updateProfile, updateProfileLocal, biometricLogin, googleLogin, isLoading, userToken, userInfo, isDarkMode, toggleTheme }}>
             {children}
         </AuthContext.Provider>
     );

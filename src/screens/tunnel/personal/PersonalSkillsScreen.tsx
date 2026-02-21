@@ -31,7 +31,7 @@ const PersonalSkillsScreen = ({ navigation }: any) => {
     };
 
     return (
-        <TunnelWrapper title="Personal Profile - Skills" onBack={() => navigation.goBack()}>
+        <TunnelWrapper title="Skills" onBack={() => navigation.goBack()}>
             <ScrollView style={styles.container} keyboardShouldPersistTaps="always">
                 <Text style={styles.subtitle}>Multi-select</Text>
 

@@ -47,14 +47,14 @@ const PersonalEducationScreen = ({ navigation }: any) => {
             navigation.navigate('PersonalLocationJob');
         } catch (error) {
             console.error(error);
-            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error' });
+            setAlertConfig({ visible: true, title: 'Error', message: 'Failed to save details', type: 'error', onConfirm: undefined });
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <TunnelWrapper title="Personal Profile - Education" onBack={() => navigation.goBack()}>
+        <TunnelWrapper title="Education" onBack={() => navigation.goBack()}>
             <View style={styles.container}>
                 <View style={styles.inputGroup}>
                     <TextInput

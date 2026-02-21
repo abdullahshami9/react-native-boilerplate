@@ -214,23 +214,23 @@ const AppNav = () => {
             ) : (
               // Tunnel Stack (Mandatory Onboarding)
               <>
-                <Stack.Screen name="ChooseProfileType" component={ChooseProfileTypeScreen} />
+                <Stack.Screen name="ChooseProfileType" component={ChooseProfileTypeScreen} options={{ animation: 'none' }} />
 
                 {/* Personal Flow */}
-                <Stack.Screen name="PersonalDetails" component={PersonalDetailsScreen} />
-                <Stack.Screen name="PersonalSkills" component={PersonalSkillsScreen} />
-                <Stack.Screen name="PersonalEducation" component={PersonalEducationScreen} />
-                <Stack.Screen name="PersonalLocationJob" component={PersonalLocationJobScreen} />
-                <Stack.Screen name="PersonalJob" component={PersonalJobScreen} />
+                <Stack.Screen name="PersonalDetails" component={PersonalDetailsScreen} options={{ animation: 'none' }} />
+                <Stack.Screen name="PersonalSkills" component={PersonalSkillsScreen} options={{ animation: 'none' }} />
+                <Stack.Screen name="PersonalEducation" component={PersonalEducationScreen} options={{ animation: 'none' }} />
+                <Stack.Screen name="PersonalLocationJob" component={PersonalLocationJobScreen} options={{ animation: 'none' }} />
+                <Stack.Screen name="PersonalJob" component={PersonalJobScreen} options={{ animation: 'none' }} />
 
                 {/* Business Flow */}
-                <Stack.Screen name="BusinessLocation" component={BusinessLocationScreen} />
-                <Stack.Screen name="BusinessTypeContact" component={BusinessTypeContactScreen} />
-                <Stack.Screen name="BusinessIndustry" component={BusinessIndustryScreen} />
+                <Stack.Screen name="BusinessLocation" component={BusinessLocationScreen} options={{ animation: 'none' }} />
+                <Stack.Screen name="BusinessTypeContact" component={BusinessTypeContactScreen} options={{ animation: 'none' }} />
+                <Stack.Screen name="BusinessIndustry" component={BusinessIndustryScreen} options={{ animation: 'none' }} />
 
                 {/* Common Final Step */}
-                <Stack.Screen name="IdentityGate" component={IdentityGateScreen} />
-                <Stack.Screen name="PaymentIntegration" component={PaymentIntegrationScreen} />
+                <Stack.Screen name="IdentityGate" component={IdentityGateScreen} options={{ animation: 'none' }} />
+                <Stack.Screen name="PaymentIntegration" component={PaymentIntegrationScreen} options={{ animation: 'none' }} />
               </>
             )
           ) : (

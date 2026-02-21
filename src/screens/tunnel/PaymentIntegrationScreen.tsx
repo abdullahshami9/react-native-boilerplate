@@ -166,7 +166,7 @@ const PaymentIntegrationScreen = ({ navigation }: any) => {
     };
 
     return (
-        <TunnelWrapper title="Payment Integration" onBack={() => navigation.goBack()}>
+        <TunnelWrapper title="Payments" onBack={() => navigation.goBack()}>
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
                 {/* Illustration from Assets */}

@@ -122,7 +122,7 @@ const BusinessIndustryScreen = ({ navigation, route }: any) => {
     };
 
     return (
-        <TunnelWrapper title="Business Profile - Industry" onBack={() => navigation.goBack()}>
+        <TunnelWrapper title="Industry" onBack={() => navigation.goBack()}>
             <View style={styles.container}>
 
                 <TouchableOpacity style={styles.inputGroup} onPress={() => openSelection('Industry')}>

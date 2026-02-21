@@ -114,7 +114,7 @@ const BusinessLocationScreen = ({ navigation }: any) => {
     };
 
     return (
-        <TunnelWrapper title="Business Headquarters" onBack={() => navigation.goBack()}>
+        <TunnelWrapper title="Headquarters" onBack={() => navigation.goBack()}>
             <View style={styles.container}>
 
                 {/* Username Section */}

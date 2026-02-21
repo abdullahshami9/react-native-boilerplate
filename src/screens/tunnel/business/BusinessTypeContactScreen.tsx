@@ -113,7 +113,7 @@ const BusinessTypeContactScreen = ({ navigation, route }: any) => {
     };
 
     return (
-        <TunnelWrapper title="Business Profile - Type & Details" onBack={() => navigation.goBack()}>
+        <TunnelWrapper title="Business Type" onBack={() => navigation.goBack()}>
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
                 {/* Type Selection Tiles */}

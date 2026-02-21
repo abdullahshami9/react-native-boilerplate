@@ -4,6 +4,7 @@ import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { AuthContext } from '../../../context/AuthContext';
 import { useTheme } from '../../../theme/useTheme';
 import LocalAssets from '../../../utils/LocalAssets';
+import { CONFIG } from '../../../Config';
 
 const { width, height } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
@@ -18,6 +19,12 @@ const SignupScreen = ({ navigation }: any) => {
     const [showPassword, setShowPassword] = useState(false);
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [termsVisible, setTermsVisible] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState({
+        email: '',
+        phone: '',
+        password: '',
+        terms: '',
+    });
     const { register, login } = useContext(AuthContext);
     const theme = useTheme('light'); // Force Light Mode
 
@@ -46,27 +53,49 @@ const SignupScreen = ({ navigation }: any) => {
     const validatePhone = (phone: string) => /^3[0-9]{9}$/.test(phone);
 
     const handleSignUp = async () => {
-        if (!email || !password || !phone) {
-            showAlert('Error', 'Please fill all fields', 'error');
-            return;
+        setFieldErrors({ email: '', phone: '', password: '', terms: '' });
+
+        let isValid = true;
+        let newErrors = { email: '', phone: '', password: '', terms: '' };
+
+        if (!email) {
+            newErrors.email = 'Email is required';
+            isValid = false;
+        } else if (!validateEmail(email)) {
+            newErrors.email = 'Please enter a valid email address';
+            isValid = false;
         }
-        if (!validateEmail(email)) {
-            showAlert('Error', 'Please enter a valid email address', 'error');
-            return;
+
+        if (!phone) {
+            newErrors.phone = 'Phone number is required';
+            isValid = false;
+        } else if (!validatePhone(phone)) {
+            newErrors.phone = 'Please enter a valid 10-digit phone number starting with 3';
+            isValid = false;
         }
-        if (!validatePhone(phone)) {
-            showAlert('Error', 'Please enter a valid 10-digit phone number starting with 3', 'error');
-            return;
-        }
+
         // Strict Password Validation: Min 8 chars, 1 Upper, 1 Lower, 1 Special, 1 Number
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-        if (!passwordRegex.test(password)) {
-            showAlert('Error', 'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.', 'error');
-            return;
+        if (!password) {
+            newErrors.password = 'Password is required';
+            isValid = false;
+        } else if (!passwordRegex.test(password)) {
+            newErrors.password = 'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.';
+            isValid = false;
         }
 
         if (!termsAccepted) {
-            showAlert('Error', 'Please agree to the Terms and Conditions to proceed', 'error');
+            newErrors.terms = 'Please agree to the Terms and Conditions to proceed';
+            isValid = false;
+        }
+
+        if (!isValid) {
+            if (CONFIG.showSignupvadationOnCustomerAlert) {
+                const firstError = newErrors.email || newErrors.phone || newErrors.password || newErrors.terms;
+                showAlert('Error', firstError, 'error');
+            } else {
+                setFieldErrors(newErrors);
+            }
             return;
         }
 
@@ -117,115 +146,128 @@ const SignupScreen = ({ navigation }: any) => {
                 {/* Form Section */}
                 <View style={styles.formSection}>
                     {/* Email Input */}
-                    <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
-                        <View style={styles.inputIcon}>
-                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <Rect x="3" y="5" width="18" height="14" rx="2" stroke="#A0AEC0" strokeWidth="2" />
-                                <Path d="M3 7L12 13L21 7" stroke="#A0AEC0" strokeWidth="2" strokeLinecap="round" />
-                            </Svg>
+                    <View>
+                        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: fieldErrors.email && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : theme.inputBorder }]}>
+                            <View style={styles.inputIcon}>
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <Rect x="3" y="5" width="18" height="14" rx="2" stroke={fieldErrors.email && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : "#A0AEC0"} strokeWidth="2" />
+                                    <Path d="M3 7L12 13L21 7" stroke={fieldErrors.email && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : "#A0AEC0"} strokeWidth="2" strokeLinecap="round" />
+                                </Svg>
+                            </View>
+                            <TextInput
+                                style={[styles.inputField, { color: theme.text }]}
+                                placeholder="Enter your email"
+                                placeholderTextColor={fieldErrors.email && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : theme.subText}
+                                value={email}
+                                onChangeText={(text) => { setEmail(text); setFieldErrors(prev => ({ ...prev, email: '' })); }}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                            />
                         </View>
-                        <TextInput
-                            style={[styles.inputField, { color: theme.text }]}
-                            placeholder="Enter your email"
-                            placeholderTextColor={theme.subText}
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                        />
+                        {fieldErrors.email && !CONFIG.showSignupvadationOnCustomerAlert ? <Text style={styles.errorText}>{fieldErrors.email}</Text> : null}
                     </View>
 
                     {/* Phone Input */}
-                    <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
-                        {/* Country Code Dropdown (Static for now: Pakistan) */}
-                        <TouchableOpacity style={styles.countryCodeContainer}>
-                            <Image
-                                source={{ uri: 'https://flagcdn.com/w20/pk.png' }}
-                                style={styles.flagIcon}
-                                resizeMode="contain"
+                    <View>
+                        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: fieldErrors.phone && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : theme.inputBorder }]}>
+                            {/* Country Code Dropdown (Static for now: Pakistan) */}
+                            <TouchableOpacity style={styles.countryCodeContainer}>
+                                <Image
+                                    source={{ uri: 'https://flagcdn.com/w20/pk.png' }}
+                                    style={styles.flagIcon}
+                                    resizeMode="contain"
+                                />
+                                <Text style={[styles.countryCodeText, { color: fieldErrors.phone && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : theme.text }]}>+92</Text>
+                                <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginLeft: 4 }}>
+                                    <Path d="M6 9L12 15L18 9" stroke={fieldErrors.phone && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : "#A0AEC0"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                </Svg>
+                            </TouchableOpacity>
+
+                            <View style={[styles.verticalDivider, { backgroundColor: theme.inputBorder }]} />
+
+                            <TextInput
+                                style={[styles.inputField, { color: theme.text, paddingLeft: 12 }]}
+                                placeholder="3XX XXXXXXX"
+                                placeholderTextColor={fieldErrors.phone && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : theme.subText}
+                                value={phone}
+                                onChangeText={(text) => {
+                                    // Only allow digits and max 10 chars
+                                    const cleaned = text.replace(/[^0-9]/g, '');
+                                    setPhone(cleaned.slice(0, 10));
+                                    setFieldErrors(prev => ({ ...prev, phone: '' }));
+                                }}
+                                keyboardType="phone-pad"
+                                maxLength={10}
                             />
-                            <Text style={[styles.countryCodeText, { color: theme.text }]}>+92</Text>
-                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginLeft: 4 }}>
-                                <Path d="M6 9L12 15L18 9" stroke="#A0AEC0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </Svg>
-                        </TouchableOpacity>
-
-                        <View style={[styles.verticalDivider, { backgroundColor: theme.inputBorder }]} />
-
-                        <TextInput
-                            style={[styles.inputField, { color: theme.text, paddingLeft: 12 }]}
-                            placeholder="3XX XXXXXXX"
-                            placeholderTextColor={theme.subText}
-                            value={phone}
-                            onChangeText={(text) => {
-                                // Only allow digits and max 10 chars
-                                const cleaned = text.replace(/[^0-9]/g, '');
-                                setPhone(cleaned.slice(0, 10));
-                            }}
-                            keyboardType="phone-pad"
-                            maxLength={10}
-                        />
+                        </View>
+                        {fieldErrors.phone && !CONFIG.showSignupvadationOnCustomerAlert ? <Text style={styles.errorText}>{fieldErrors.phone}</Text> : null}
                     </View>
 
                     {/* Password Input */}
-                    <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
-                        <View style={styles.inputIcon}>
-                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <Rect x="5" y="11" width="14" height="10" rx="2" stroke="#A0AEC0" strokeWidth="2" />
-                                <Path d="M8 11V7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7V11" stroke="#A0AEC0" strokeWidth="2" strokeLinecap="round" />
-                                <Circle cx="12" cy="16" r="1.5" fill="#A0AEC0" />
-                            </Svg>
+                    <View>
+                        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: fieldErrors.password && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : theme.inputBorder }]}>
+                            <View style={styles.inputIcon}>
+                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <Rect x="5" y="11" width="14" height="10" rx="2" stroke={fieldErrors.password && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : "#A0AEC0"} strokeWidth="2" />
+                                    <Path d="M8 11V7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7V11" stroke={fieldErrors.password && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : "#A0AEC0"} strokeWidth="2" strokeLinecap="round" />
+                                    <Circle cx="12" cy="16" r="1.5" fill={fieldErrors.password && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : "#A0AEC0"} />
+                                </Svg>
+                            </View>
+                            <TextInput
+                                style={[styles.inputField, { color: theme.text }]}
+                                placeholder="Enter your password"
+                                placeholderTextColor={fieldErrors.password && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : theme.subText}
+                                value={password}
+                                onChangeText={(text) => { setPassword(text); setFieldErrors(prev => ({ ...prev, password: '' })); }}
+                                secureTextEntry={!showPassword}
+                            />
+                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                                {showPassword ? (
+                                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                        <Path d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z" stroke={fieldErrors.password && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : "#A0AEC0"} strokeWidth="2" />
+                                        <Circle cx="12" cy="12" r="3" stroke={fieldErrors.password && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : "#A0AEC0"} strokeWidth="2" />
+                                    </Svg>
+                                ) : (
+                                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                        <Path d="M3 3L21 21M10.5 10.5C9.57 11.43 9.57 12.57 10.5 13.5M10.5 10.5L13.5 13.5M10.5 10.5C11.43 9.57 12.57 9.57 13.5 10.5M13.5 13.5C14.43 12.57 14.43 11.43 13.5 10.5M9.9 4.24C10.56 4.09 11.27 4 12 4C19 4 22 12 22 12C22 12 21.27 13.58 19.74 15.24M6.61 6.61C4.62 8.07 3.14 10.39 2 12C2 12 5 19 12 19C13.65 19 15.08 18.57 16.38 17.93" stroke={fieldErrors.password && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : "#A0AEC0"} strokeWidth="2" strokeLinecap="round" />
+                                    </Svg>
+                                )}
+                            </TouchableOpacity>
                         </View>
-                        <TextInput
-                            style={[styles.inputField, { color: theme.text }]}
-                            placeholder="Enter your password"
-                            placeholderTextColor={theme.subText}
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry={!showPassword}
-                        />
-                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                            {showPassword ? (
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                    <Path d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z" stroke="#A0AEC0" strokeWidth="2" />
-                                    <Circle cx="12" cy="12" r="3" stroke="#A0AEC0" strokeWidth="2" />
-                                </Svg>
-                            ) : (
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                    <Path d="M3 3L21 21M10.5 10.5C9.57 11.43 9.57 12.57 10.5 13.5M10.5 10.5L13.5 13.5M10.5 10.5C11.43 9.57 12.57 9.57 13.5 10.5M13.5 13.5C14.43 12.57 14.43 11.43 13.5 10.5M9.9 4.24C10.56 4.09 11.27 4 12 4C19 4 22 12 22 12C22 12 21.27 13.58 19.74 15.24M6.61 6.61C4.62 8.07 3.14 10.39 2 12C2 12 5 19 12 19C13.65 19 15.08 18.57 16.38 17.93" stroke="#A0AEC0" strokeWidth="2" strokeLinecap="round" />
-                                </Svg>
-                            )}
-                        </TouchableOpacity>
+                        {fieldErrors.password && !CONFIG.showSignupvadationOnCustomerAlert ? <Text style={styles.errorText}>{fieldErrors.password}</Text> : null}
                     </View>
 
                     {/* Terms and Conditions Checkbox */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
-                        <TouchableOpacity
-                            onPress={() => setTermsAccepted(!termsAccepted)}
-                            style={{
-                                width: 20,
-                                height: 20,
-                                borderWidth: 2,
-                                borderColor: theme.secondary,
-                                borderRadius: 4,
-                                marginRight: 10,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                backgroundColor: termsAccepted ? theme.secondary : 'transparent'
-                            }}
-                        >
-                            {termsAccepted && (
-                                <Svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                                    <Path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                                </Svg>
-                            )}
-                        </TouchableOpacity>
-                        <Text style={{ fontSize: 13, color: theme.subText }}>I agree to the </Text>
-                        <TouchableOpacity onPress={() => setTermsVisible(true)}>
-                            <Text style={{ fontSize: 13, color: theme.secondary, fontWeight: '600', textDecorationLine: 'underline' }}>
-                                Terms & Conditions
-                            </Text>
-                        </TouchableOpacity>
+                    <View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
+                            <TouchableOpacity
+                                onPress={() => { setTermsAccepted(!termsAccepted); setFieldErrors(prev => ({ ...prev, terms: '' })); }}
+                                style={{
+                                    width: 20,
+                                    height: 20,
+                                    borderWidth: 2,
+                                    borderColor: fieldErrors.terms && !CONFIG.showSignupvadationOnCustomerAlert ? '#E53E3E' : theme.secondary,
+                                    borderRadius: 4,
+                                    marginRight: 10,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    backgroundColor: termsAccepted ? theme.secondary : 'transparent'
+                                }}
+                            >
+                                {termsAccepted && (
+                                    <Svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                        <Path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                    </Svg>
+                                )}
+                            </TouchableOpacity>
+                            <Text style={{ fontSize: 13, color: theme.subText }}>I agree to the </Text>
+                            <TouchableOpacity onPress={() => setTermsVisible(true)}>
+                                <Text style={{ fontSize: 13, color: theme.secondary, fontWeight: '600', textDecorationLine: 'underline' }}>
+                                    Terms & Conditions
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                        {fieldErrors.terms && !CONFIG.showSignupvadationOnCustomerAlert ? <Text style={styles.errorText}>{fieldErrors.terms}</Text> : null}
                     </View>
 
                     {/* Sign Up Button */}
@@ -422,6 +464,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         textDecorationLine: 'underline',
+    },
+    errorText: {
+        color: '#E53E3E',
+        fontSize: 12,
+        marginTop: 4,
+        marginLeft: 16,
     },
 
 });

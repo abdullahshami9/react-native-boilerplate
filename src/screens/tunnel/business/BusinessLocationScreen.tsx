@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Linking, Platform, PermissionsAndroid } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Linking, Platform, PermissionsAndroid, Image } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { TunnelService } from '../../../services/TunnelService';
 import TunnelWrapper from '../../../components/TunnelWrapper';
@@ -139,12 +139,10 @@ const BusinessLocationScreen = ({ navigation }: any) => {
                 {/* Location Display Area - Premium Redesign */}
                 <View style={styles.locationCard}>
                     <View style={styles.cardHeader}>
-                        <View style={styles.iconContainer}>
-                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5568" strokeWidth="2.5">
-                                <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                <Circle cx="12" cy="10" r="3" />
-                            </Svg>
-                        </View>
+                        <Image
+                            source={require('../../../assets/grey-map-with-location-pin.png')}
+                            style={{ width: 48, height: 48, marginRight: 16, resizeMode: 'contain' }}
+                        />
                         <View>
                             <Text style={styles.cardTitle}>Business Coordinates</Text>
                             <Text style={styles.cardSubtitle}>Precise Geolocation</Text>
@@ -243,17 +241,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 20,
     },
-    iconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: '#F7FAFC',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 16,
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-    },
+
     cardTitle: {
         fontSize: 18,
         fontWeight: 'bold',

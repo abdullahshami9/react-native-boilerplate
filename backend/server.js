@@ -106,36 +106,39 @@ ensureDir(path.join(__dirname, 'uploads/resumes'));
 ensureDir(path.join(__dirname, 'uploads/chats'));
 ensureDir(path.join(__dirname, 'uploads/identity'));
 
-// Database Connection Config
+// Database Connection Config (Pool)
 const dbConfig = {
     host: 'localhost',
     user: 'root',
     password: '',
+    database: 'AppStarter',
+    waitForConnections: true,
+    connectionLimit: 100, // Handle up to 100 concurrent DB connections
+    queueLimit: 0,        // Unlimited queueing
     multipleStatements: true
 };
 
-// Create Connection
-let db = mysql.createConnection(dbConfig);
+// Create Connection Pool instead of single connection
+let db = mysql.createPool(dbConfig);
 
-// Initialize Database & Tables
-db.connect(async (err) => {
-    if (err) {
-        console.error('Error connecting to MySQL:', err);
-        return;
-    }
-    console.log('Connected to MySQL server (Raw).');
+// Initialize Sequelize
+try {
+    await sequelize.authenticate();
+    console.log('Connected to MySQL via Sequelize.');
+    await sequelize.sync(); // Sync models
+    console.log('Sequelize models synced.');
+} catch (error) {
+    console.error('Unable to connect to the database via Sequelize:', error);
+}
 
-    // Initialize Sequelize
-    try {
-        await sequelize.authenticate();
-        console.log('Connected to MySQL via Sequelize.');
-        await sequelize.sync(); // Sync models
-        console.log('Sequelize models synced.');
-    } catch (error) {
-        console.error('Unable to connect to the database via Sequelize:', error);
-    }
+const initConnection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    multipleStatements: true
+});
 
-    const initQuery = `
+const initQuery = `
         CREATE DATABASE IF NOT EXISTS AppStarter;
         USE AppStarter;
 
@@ -503,101 +506,106 @@ db.connect(async (err) => {
         );
     `;
 
-    db.query(initQuery, (err, result) => {
-        if (err) {
-            console.error('Error initializing database:', err);
-        } else {
-            console.log('Database and Tables initialized.');
-            db.end();
-            db = mysql.createConnection({ ...dbConfig, database: 'AppStarter' });
+initConnection.query(initQuery, (err, result) => {
+    if (err) {
+        console.error('Error initializing database:', err);
+    } else {
+        console.log('Database and Tables initialized.');
+        initConnection.end(); // close init connection
 
-            // Apply migrations dynamically if needed
-            const runMigration = (sql, msg) => {
-                db.query(sql, (e) => {
-                    if (e && e.code !== 'ER_DUP_FIELDNAME' && e.code !== 'ER_DUP_KEYNAME' && e.errno !== 121) console.log(`Migration Note (${msg}):`, e.message);
-                    else if (!e) console.log(`Migration Success: ${msg}`);
-                });
-            };
-
-            runMigration("ALTER TABLE business_details ADD COLUMN subscription_expiry_date DATETIME DEFAULT NULL", "Subscription Expiry");
-            runMigration("ALTER TABLE business_details ADD COLUMN is_premium BOOLEAN DEFAULT 0", "Is Premium");
-
-            // Product Schema Updates
-            runMigration("ALTER TABLE products ADD COLUMN unit VARCHAR(50)", "Product Unit");
-            runMigration("ALTER TABLE products ADD COLUMN category VARCHAR(100)", "Product Category");
-            runMigration("ALTER TABLE products ADD COLUMN attributes LONGTEXT", "Product Attributes");
-            runMigration("ALTER TABLE order_items ADD COLUMN variant TEXT", "Order Item Variant");
-
-            runMigration("CREATE INDEX idx_users_email ON users(email)", "Index Email");
-            runMigration("CREATE INDEX idx_products_user_category ON products(user_id, category)", "Index Products User/Cat");
-            runMigration("CREATE FULLTEXT INDEX idx_products_fts ON products(name, description)", "FTS Products");
-
-            // New Migrations for Fish Wala Flow
-            runMigration("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'accepted', 'out_for_delivery', 'completed', 'cancelled') DEFAULT 'pending'", "Order Status Enum");
-            runMigration("ALTER TABLE orders ADD COLUMN rating INT", "Order Rating");
-            runMigration("ALTER TABLE orders ADD COLUMN review TEXT", "Order Review");
-
-            // Migrations for Restaurant Flow (V3)
-            runMigration("ALTER TABLE products ADD COLUMN addons LONGTEXT", "Product Addons");
-            runMigration("ALTER TABLE order_items ADD COLUMN selected_addons LONGTEXT", "Order Item Addons");
-            runMigration("ALTER TABLE business_details ADD COLUMN operating_hours LONGTEXT", "Business Operating Hours");
-            runMigration("ALTER TABLE business_details ADD COLUMN delivery_radius DECIMAL(10,2)", "Business Delivery Radius");
-            runMigration("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'accepted', 'preparing', 'out_for_delivery', 'completed', 'cancelled') DEFAULT 'pending'", "Order Status Update");
-            runMigration("ALTER TABLE orders ADD COLUMN rider_name VARCHAR(255)", "Order Rider Name");
-            runMigration("ALTER TABLE orders ADD COLUMN rider_phone VARCHAR(50)", "Order Rider Phone");
-            runMigration("ALTER TABLE orders ADD COLUMN delivery_fee DECIMAL(10,2) DEFAULT 0.00", "Order Delivery Fee");
-            runMigration("ALTER TABLE chats ADD COLUMN order_id INT", "Chat Order ID");
-            runMigration("ALTER TABLE chats ADD CONSTRAINT fk_chats_order FOREIGN KEY (order_id) REFERENCES orders(id)", "Chat Order FK");
-
-            // Migration V4: Order Instructions (Generic Notes)
-            runMigration("ALTER TABLE orders ADD COLUMN instructions TEXT", "Order Instructions");
-
-            runMigration("ALTER TABLE users ADD COLUMN street_id INT DEFAULT NULL", "User Street ID");
-            runMigration("ALTER TABLE business_details ADD COLUMN street_id INT DEFAULT NULL", "Business Street ID");
-            runMigration("ALTER TABLE user_metadata ADD COLUMN communication_keywords TEXT", "User Communication Keywords");
-            runMigration("ALTER TABLE profile_views ADD COLUMN viewer_id INT DEFAULT NULL", "Profile Views Viewer ID");
-
-            // Seed Dummy Data for Location (If empty)
-            db.query("SELECT COUNT(*) as count FROM province", (e, r) => {
-                if (r && r[0].count === 0) {
-                    console.log("Seeding Location Data...");
-                    const sql = "INSERT INTO province (provinceName) VALUES ('Sindh'), ('Punjab')";
-                    db.query(sql, (err, res) => {
-                        if (!err) {
-                            const sindhId = res.insertId;
-                            db.query("INSERT INTO city (province_provinceId, cityName) VALUES (?, ?)", [sindhId, 'Karachi'], (e2, r2) => {
-                                if (!e2) {
-                                    const khiId = r2.insertId;
-                                    db.query("INSERT INTO location (city_cityId, locationName) VALUES (?, ?)", [khiId, 'Gulshan-e-Iqbal'], (e3, r3) => {
-                                        if (!e3) {
-                                            const locId = r3.insertId;
-                                            db.query("INSERT INTO sublocation (location_LocationId, sublocationName) VALUES (?, ?)", [locId, 'Block 13-D'], (e4, r4) => {
-                                                if (!e4) {
-                                                    const subId = r4.insertId;
-                                                    db.query("INSERT INTO streetinfo (sublocation_sublocationId, streetName) VALUES (?, ?)", [subId, 'Street 1'], (e5, r5) => {
-                                                        if (!e5) {
-                                                            const strId = r5.insertId;
-                                                            db.query("INSERT INTO building (streetInfo_streetId, buildingName, charges, chargesType) VALUES (?, ?, 0, 'F')", [strId, 'Building A'], (e6, r6) => {
-                                                                if (!e6) {
-                                                                    const bId = r6.insertId;
-                                                                    db.query("INSERT INTO building_block (building_buildingId, buildingBlockName) VALUES (?, ?)", [bId, 'Block A'], () => { });
-                                                                }
-                                                            });
-                                                        }
-                                                    });
-                                                }
-                                            });
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    });
-                }
+        // Apply migrations dynamically if needed
+        const runMigration = (sql, msg) => {
+            db.query(sql, (e) => {
+                if (e && e.code !== 'ER_DUP_FIELDNAME' && e.code !== 'ER_DUP_KEYNAME' && e.errno !== 121) console.log(`Migration Note (${msg}):`, e.message);
+                else if (!e) console.log(`Migration Success: ${msg}`);
             });
-        }
-    });
+        };
+
+        runMigration("ALTER TABLE business_details ADD COLUMN subscription_expiry_date DATETIME DEFAULT NULL", "Subscription Expiry");
+        runMigration("ALTER TABLE business_details ADD COLUMN is_premium BOOLEAN DEFAULT 0", "Is Premium");
+
+        // Product Schema Updates
+        runMigration("ALTER TABLE products ADD COLUMN unit VARCHAR(50)", "Product Unit");
+        runMigration("ALTER TABLE products ADD COLUMN category VARCHAR(100)", "Product Category");
+        runMigration("ALTER TABLE products ADD COLUMN attributes LONGTEXT", "Product Attributes");
+        runMigration("ALTER TABLE order_items ADD COLUMN variant TEXT", "Order Item Variant");
+
+        runMigration("CREATE INDEX idx_users_email ON users(email)", "Index Email");
+        runMigration("CREATE INDEX idx_products_user_category ON products(user_id, category)", "Index Products User/Cat");
+        runMigration("CREATE FULLTEXT INDEX idx_products_fts ON products(name, description)", "FTS Products");
+
+        // New Migrations for Fish Wala Flow
+        runMigration("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'accepted', 'out_for_delivery', 'completed', 'cancelled') DEFAULT 'pending'", "Order Status Enum");
+        runMigration("ALTER TABLE orders ADD COLUMN rating INT", "Order Rating");
+        runMigration("ALTER TABLE orders ADD COLUMN review TEXT", "Order Review");
+
+        // Migrations for Restaurant Flow (V3)
+        runMigration("ALTER TABLE products ADD COLUMN addons LONGTEXT", "Product Addons");
+        runMigration("ALTER TABLE order_items ADD COLUMN selected_addons LONGTEXT", "Order Item Addons");
+        runMigration("ALTER TABLE business_details ADD COLUMN operating_hours LONGTEXT", "Business Operating Hours");
+        runMigration("ALTER TABLE business_details ADD COLUMN delivery_radius DECIMAL(10,2)", "Business Delivery Radius");
+        runMigration("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'accepted', 'preparing', 'out_for_delivery', 'completed', 'cancelled') DEFAULT 'pending'", "Order Status Update");
+        runMigration("ALTER TABLE orders ADD COLUMN rider_name VARCHAR(255)", "Order Rider Name");
+        runMigration("ALTER TABLE orders ADD COLUMN rider_phone VARCHAR(50)", "Order Rider Phone");
+        runMigration("ALTER TABLE orders ADD COLUMN delivery_fee DECIMAL(10,2) DEFAULT 0.00", "Order Delivery Fee");
+        runMigration("ALTER TABLE chats ADD COLUMN order_id INT", "Chat Order ID");
+        runMigration("ALTER TABLE chats ADD CONSTRAINT fk_chats_order FOREIGN KEY (order_id) REFERENCES orders(id)", "Chat Order FK");
+
+        // Migration V4: Order Instructions (Generic Notes)
+        runMigration("ALTER TABLE orders ADD COLUMN instructions TEXT", "Order Instructions");
+
+        runMigration("ALTER TABLE users ADD COLUMN street_id INT DEFAULT NULL", "User Street ID");
+        runMigration("ALTER TABLE business_details ADD COLUMN street_id INT DEFAULT NULL", "Business Street ID");
+        runMigration("ALTER TABLE user_metadata ADD COLUMN communication_keywords TEXT", "User Communication Keywords");
+        runMigration("ALTER TABLE profile_views ADD COLUMN viewer_id INT DEFAULT NULL", "Profile Views Viewer ID");
+
+        // Seed Dummy Data for Location (If empty)
+        db.query("SELECT COUNT(*) as count FROM province", (e, r) => {
+            if (r && r[0].count === 0) {
+                console.log("Seeding Location Data...");
+                const sql = "INSERT INTO province (provinceName) VALUES ('Sindh'), ('Punjab')";
+                db.query(sql, (err, res) => {
+                    if (!err) {
+                        const sindhId = res.insertId;
+                        db.query("INSERT INTO city (province_provinceId, cityName) VALUES (?, ?)", [sindhId, 'Karachi'], (e2, r2) => {
+                            if (!e2) {
+                                const khiId = r2.insertId;
+                                db.query("INSERT INTO location (city_cityId, locationName) VALUES (?, ?)", [khiId, 'Gulshan-e-Iqbal'], (e3, r3) => {
+                                    if (!e3) {
+                                        const locId = r3.insertId;
+                                        db.query("INSERT INTO sublocation (location_LocationId, sublocationName) VALUES (?, ?)", [locId, 'Block 13-D'], (e4, r4) => {
+                                            if (!e4) {
+                                                const subId = r4.insertId;
+                                                db.query("INSERT INTO streetinfo (sublocation_sublocationId, streetName) VALUES (?, ?)", [subId, 'Street 1'], (e5, r5) => {
+                                                    if (!e5) {
+                                                        const strId = r5.insertId;
+                                                        db.query("INSERT INTO building (streetInfo_streetId, buildingName, charges, chargesType) VALUES (?, ?, 0, 'F')", [strId, 'Building A'], (e6, r6) => {
+                                                            if (!e6) {
+                                                                const bId = r6.insertId;
+                                                                db.query("INSERT INTO building_block (building_buildingId, buildingBlockName) VALUES (?, ?)", [bId, 'Block A'], () => { });
+                                                            }
+                                                        });
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
 });
+
+// Ping DB periodically to keep pool active
+setInterval(() => {
+    db.query('SELECT 1', (err) => {
+        if (err) console.error('Ping error:', err);
+    });
+}, 60000); // every 60s
 
 // Helper to sanitize filenames
 const sanitize = (str) => String(str).replace(/[^a-zA-Z0-9_-]/g, '');
@@ -657,7 +665,22 @@ const dbQuery = (sql, params, reqOrUrl, callback) => {
         if (err) {
             const url = typeof reqOrUrl === 'string' ? reqOrUrl : (reqOrUrl?.originalUrl || 'Unknown');
             console.error(`DB Error [${url}]:`, err.message);
-            // Log error to generic table
+
+            // Handle fatal errors or dropped connections by retrying once if it's an easily recoverable error
+            if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET' || err.code === 'ER_LOCK_DEADLOCK') {
+                console.warn('Retrying query after connection lost or deadlock...');
+                db.query(sql, params, (retryErr, retryResult) => {
+                    if (retryErr) {
+                        const logSql = "INSERT INTO generic (query, error, url) VALUES (?, ?, ?)";
+                        db.query(logSql, [sql, retryErr.message, url], (logErr) => { });
+                        if (callback) return callback(retryErr, null);
+                    }
+                    if (callback) return callback(null, retryResult);
+                });
+                return; // exit the main callback execution flow
+            }
+
+            // Log error to generic table for other errors (Syntax, Duplicate keys etc)
             const logSql = "INSERT INTO generic (query, error, url) VALUES (?, ?, ?)";
             db.query(logSql, [sql, err.message, url], (logErr) => {
                 if (logErr) console.error("Failed to log database error:", logErr);

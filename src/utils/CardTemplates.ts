@@ -3,99 +3,160 @@ export const CardTemplates = {
         <html>
         <head>
             <style>
-                @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400&display=swap');
-                body { margin: 0; font-family: 'Lato', sans-serif; background: #f9f9f9; -webkit-print-color-adjust: exact; }
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+                body { margin: 0; font-family: 'Inter', sans-serif; background: #202c33; -webkit-print-color-adjust: exact; }
                 .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
 
                 .card {
-                    width: 350px; height: 200px; padding: 30px;
-                    background: #ffffff;
-                    /* Subtle paper texture */
-                    background-image: linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px);
-                    background-size: 20px 20px;
-                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-                    border-radius: 4px;
+                    width: 350px; height: 200px; padding: 25px;
+                    background: #111b21; /* Slightly darker than nav/header for contrast */
+                    color: #e9edef;
+                    border-radius: 16px;
                     position: relative;
                     overflow: hidden;
                     display: flex;
-                    border: 1px solid #eee;
+                    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+                    border: 1px solid #2a3942;
                 }
 
-                /* Artistic Splash */
-                .splash {
-                    position: absolute; top: -50%; right: -20%; width: 300px; height: 300px;
-                    background: radial-gradient(circle, ${data.color || '#333'} 0%, transparent 70%);
-                    opacity: 0.1; filter: blur(40px);
+                /* Background Gradient Mesh */
+                .card::before {
+                    content: '';
+                    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+                    background: radial-gradient(circle at 50% 50%, rgba(0, 168, 132, 0.08) 0%, transparent 60%);
+                    z-index: 1; pointer-events: none;
                 }
 
-                /* Left Border Accent */
-                .accent-bar {
-                    position: absolute; left: 0; top: 20px; bottom: 20px; width: 4px;
-                    background: ${data.color || '#333'};
-                    border-radius: 0 4px 4px 0;
+                /* Front Top Right Text */
+                .junr-branding {
+                    position: absolute; top: 20px; right: 25px;
+                    font-family: 'Inter', sans-serif;
+                    font-weight: 800;
+                    font-size: 14px;
+                    letter-spacing: 2px;
+                    color: #00a884; /* Teal Accent */
+                    opacity: 0.9;
+                    z-index: 10;
+                    text-transform: uppercase;
                 }
 
-                .content { flex: 1; z-index: 2; display: flex; flex-direction: column; justify-content: center; padding-left: 20px; }
+                .content { flex: 1; z-index: 2; display: flex; flex-direction: column; justify-content: center; }
 
                 .name {
-                    font-family: 'Playfair Display', serif;
-                    font-size: 28px;
-                    color: #222;
-                    margin-bottom: 5px;
+                    font-size: 26px;
+                    font-weight: 700;
+                    color: #e9edef;
+                    margin-bottom: 4px;
                     letter-spacing: -0.5px;
                 }
 
                 .role {
                     font-size: 11px;
-                    color: ${data.color || '#666'};
+                    color: ${data.color || '#00a884'};
                     text-transform: uppercase;
-                    letter-spacing: 2px;
-                    margin-bottom: 20px;
-                    font-weight: 700;
+                    letter-spacing: 1.5px;
+                    font-weight: 600;
+                    margin-bottom: 25px;
+                    display: flex; align-items: center;
+                }
+                .role::before {
+                    content: ''; display: inline-block; width: 20px; height: 2px; background: ${data.color || '#00a884'}; margin-right: 8px; border-radius: 2px;
                 }
 
-                .info-group { margin-top: auto; }
+                .info-group { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
                 .info-item {
-                    font-size: 10px; color: #555; margin-bottom: 4px; display: flex; align-items: center;
+                    font-size: 10px; color: #8696a0; display: flex; align-items: center; font-weight: 400;
                 }
-                .icon { width: 14px; text-align: center; margin-right: 8px; opacity: 0.6; }
+                .icon { width: 14px; text-align: center; margin-right: 8px; color: #00a884; font-size: 10px; }
 
+                /* Logo Box - Minimal & Modern */
                 .logo-box {
-                    position: absolute; top: 20px; right: 20px;
-                    width: 50px; height: 50px;
-                    border: 1px solid #eee;
-                    border-radius: 50%;
+                    position: absolute; bottom: 25px; right: 25px;
+                    width: 40px; height: 40px;
+                    border-radius: 12px;
                     display: flex; align-items: center; justify-content: center;
-                    background: white;
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+                    background: rgba(255,255,255,0.05);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    backdrop-filter: blur(5px);
+                    z-index: 10;
                 }
-                .logo-img { width: 30px; height: 30px; object-fit: contain; }
+                .logo-img { width: 24px; height: 24px; object-fit: contain; }
 
+                /* Back Side Design */
                 .card-back {
-                    background: #222;
-                    color: white;
                     justify-content: center;
                     align-items: center;
                     flex-direction: column;
-                    background-image: radial-gradient(circle at 50% 50%, #333 1px, transparent 1px);
-                    background-size: 20px 20px;
+                    background: #0b141a; /* Darkest Theme BG */
                 }
 
-                .qr-frame {
-                    padding: 10px;
+                /* Large Watermark Text */
+                .watermark-text {
+                    position: absolute;
+                    font-family: 'Inter', sans-serif;
+                    font-weight: 900;
+                    font-size: 120px;
+                    color: rgba(255, 255, 255, 0.02);
+                    letter-spacing: -5px;
+                    z-index: 1;
+                    transform: rotate(-10deg);
+                    pointer-events: none;
+                    white-space: nowrap;
+                    top: 50%; left: 50%;
+                    transform: translate(-50%, -50%) rotate(-10deg);
+                }
+
+                /* Modern QR Frame (Android 16 style - Rounded Squircle Viewfinder) */
+                .qr-container {
+                    position: relative;
+                    z-index: 5;
+                    padding: 15px;
+                    background: rgba(255,255,255,0.03);
+                    border-radius: 24px; /* Significant rounding */
+                    backdrop-filter: blur(10px);
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    border: 1px solid rgba(255,255,255,0.08);
+                    display: flex; justify-content: center; align-items: center;
+                }
+
+                /* Viewfinder Corners */
+                .corner {
+                    position: absolute; width: 20px; height: 20px;
+                    border: 3px solid #00a884;
+                    border-radius: 4px;
+                    pointer-events: none;
+                }
+                .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; border-top-left-radius: 12px; }
+                .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; border-top-right-radius: 12px; }
+                .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; border-bottom-left-radius: 12px; }
+                .br { bottom: -2px; right: -2px; border-left: none; border-top: none; border-bottom-right-radius: 12px; }
+
+                .qr-code-wrapper {
                     background: white;
-                    border: 1px solid #444;
-                    box-shadow: 0 0 30px rgba(255,255,255,0.1);
+                    padding: 10px;
+                    border-radius: 16px;
                 }
 
-                .scan-cta { margin-top: 20px; font-family: 'Playfair Display', serif; font-size: 14px; letter-spacing: 1px; color: #ccc; }
+                .scan-cta {
+                    margin-top: 25px;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 10px;
+                    letter-spacing: 3px;
+                    color: #8696a0;
+                    text-transform: uppercase;
+                    font-weight: 600;
+                    z-index: 5;
+                    background: rgba(11, 20, 26, 0.8);
+                    padding: 6px 16px;
+                    border-radius: 20px;
+                    border: 1px solid rgba(255,255,255,0.05);
+                }
             </style>
         </head>
         <body>
             <div class="page">
                 <div class="card">
-                    <div class="accent-bar"></div>
-                    <div class="splash"></div>
+                    <div class="junr-branding">JUNR</div>
                     <div class="content">
                         <div class="name">${data.name}</div>
                         <div class="role">${data.role}</div>
@@ -112,10 +173,17 @@ export const CardTemplates = {
             </div>
             <div class="page">
                 <div class="card card-back">
-                    <div class="qr-frame">
-                        ${data.qrCode}
+                    <div class="watermark-text">JUNR</div>
+                    <div class="qr-container">
+                        <div class="corner tl"></div>
+                        <div class="corner tr"></div>
+                        <div class="corner bl"></div>
+                        <div class="corner br"></div>
+                        <div class="qr-code-wrapper">
+                            ${data.qrCode}
+                        </div>
                     </div>
-                    <div class="scan-cta">Connect With Me</div>
+                    <div class="scan-cta">Scan to Connect</div>
                 </div>
             </div>
         </body>

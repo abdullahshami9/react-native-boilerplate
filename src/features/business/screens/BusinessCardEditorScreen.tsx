@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Platform, Dimensions, Image, Modal, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Platform, Dimensions, Image, Modal, FlatList, TouchableWithoutFeedback } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import RNPrint from 'react-native-print';
 import ViewShot from 'react-native-view-shot';
@@ -50,6 +50,7 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
     const [logoUrl, setLogoUrl] = useState(userInfo?.profile_pic_url ? `${CONFIG.API_URL}/${userInfo.profile_pic_url}` : null);
     const [selectedAssetKey, setSelectedAssetKey] = useState<string | null>(null);
     const [showLogoPicker, setShowLogoPicker] = useState(false);
+    const [showActionSheet, setShowActionSheet] = useState(false);
 
     const [qrBase64, setQrBase64] = useState('');
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
@@ -143,14 +144,13 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.iconColor} strokeWidth="2"><Path d="M15 18l-6-6 6-6" /></Svg>
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>Business Card</Text>
-                <View style={{ flexDirection: 'row', gap: 15 }}>
-                    <TouchableOpacity onPress={handleShareImage}>
-                        <Text style={[styles.saveText, { color: theme.primary }]}>Share</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleExport}>
-                        <Text style={[styles.saveText, { color: theme.primary }]}>PDF</Text>
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity onPress={() => setShowActionSheet(true)} style={styles.iconButton}>
+                    <Image
+                        source={require('../../../assets/share_929610.png')}
+                        style={{ width: 22, height: 22, tintColor: theme.text }}
+                        resizeMode="contain"
+                    />
+                </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
@@ -306,6 +306,36 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
                 </View>
             </Modal>
 
+            {/* Action Bottom Sheet */}
+            <Modal visible={showActionSheet} transparent animationType="slide" onRequestClose={() => setShowActionSheet(false)}>
+                <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'transparent' }}>
+                    <TouchableWithoutFeedback onPress={() => setShowActionSheet(false)}>
+                        <View style={styles.dismissArea} />
+                    </TouchableWithoutFeedback>
+                    <View style={[styles.actionSheetContent, { backgroundColor: theme.cardBg }]}>
+                        <TouchableOpacity style={[styles.actionItem, { justifyContent: 'center' }]} onPress={() => { setShowActionSheet(false); handleShareImage(); }}>
+                            <Image
+                                source={require('../../../assets/share_929610.png')}
+                                style={{ width: 24, height: 24, marginRight: 15, tintColor: theme.text }}
+                                resizeMode="contain"
+                            />
+                            <Text style={[styles.actionText, { color: theme.text }]}>Share Card</Text>
+                        </TouchableOpacity>
+
+                        <View style={{ height: 1, backgroundColor: theme.borderColor, marginVertical: 4 }} />
+
+                        <TouchableOpacity style={[styles.actionItem, { justifyContent: 'center' }]} onPress={() => { setShowActionSheet(false); handleExport(); }}>
+                            <Image
+                                source={require('../../../assets/pdf_15783901.png')}
+                                style={{ width: 24, height: 24, marginRight: 15 }}
+                                resizeMode="contain"
+                            />
+                            <Text style={[styles.actionText, { color: theme.text }]}>Export PDF</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             <CustomAlert
                 visible={alertConfig.visible}
                 title={alertConfig.title}
@@ -320,8 +350,9 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingTop: 50 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 15, paddingTop: Platform.OS === 'ios' ? 40 : 20 },
     backBtn: { padding: 5 },
+    iconButton: { padding: 5 },
     headerTitle: { fontSize: 18, fontWeight: 'bold' },
     saveText: { fontWeight: 'bold', fontSize: 16 },
     content: { padding: 20, paddingBottom: 50 },
@@ -346,5 +377,9 @@ const styles = StyleSheet.create({
     modalTitle: { fontSize: 18, fontWeight: 'bold' },
     closeText: { color: 'red', fontWeight: '600' },
     logoItem: { flex: 1 / 3, height: 80, padding: 5, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#eee', margin: 2, borderRadius: 8 },
-    logoImage: { width: '100%', height: '100%' }
+    logoImage: { width: '100%', height: '100%' },
+    dismissArea: { flex: 1 },
+    actionSheetContent: { borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, elevation: 20, paddingBottom: 50 },
+    actionItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15 },
+    actionText: { fontSize: 16, fontWeight: '700', fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium' }
 });

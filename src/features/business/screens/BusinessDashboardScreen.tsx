@@ -15,8 +15,8 @@ import ModernCalendar from '../../../components/ModernCalendar';
 
 const { width } = Dimensions.get("window");
 
-const StatCard = ({ label, value, icon, color, theme }: any) => (
-    <View style={[styles.statCard, { backgroundColor: theme.cardBg }]}>
+const StatCard = ({ label, value, icon, color, theme, onPress }: any) => (
+    <TouchableOpacity style={[styles.statCard, { backgroundColor: theme.cardBg }]} onPress={onPress}>
         <View style={[styles.statIcon, { backgroundColor: color + '20' }]}>
             {icon}
         </View>
@@ -24,7 +24,7 @@ const StatCard = ({ label, value, icon, color, theme }: any) => (
             <Text style={[styles.statValue, { color: theme.text }]}>{value}</Text>
             <Text style={[styles.statLabel, { color: theme.subText }]}>{label}</Text>
         </View>
-    </View>
+    </TouchableOpacity>
 );
 
 const BusinessDashboardScreen = ({ navigation }: any) => {
@@ -176,6 +176,7 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
                         icon={<Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#48BB78" strokeWidth="2"><Path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></Svg>}
                         color="#48BB78"
                         theme={theme}
+                        onPress={() => navigation.navigate('Orders')}
                     />
                     <StatCard
                         label="Active Orders"
@@ -183,6 +184,7 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
                         icon={<Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4299E1" strokeWidth="2"><Path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /></Svg>}
                         color="#4299E1"
                         theme={theme}
+                        onPress={() => navigation.navigate('Orders')}
                     />
                     <StatCard
                         label="Low Stock"
@@ -190,6 +192,7 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
                         icon={<Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ED8936" strokeWidth="2"><Path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><Path d="M12 9v4" /><Path d="M12 17h.01" /></Svg>}
                         color="#ED8936"
                         theme={theme}
+                        onPress={() => navigation.navigate('Inventory')}
                     />
                 </View>
 

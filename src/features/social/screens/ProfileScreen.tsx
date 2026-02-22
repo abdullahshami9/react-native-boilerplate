@@ -114,11 +114,21 @@ const ProfileScreen = ({ navigation, route }: any) => {
     // VIEW MODE LOGIC
     // ...
     const paramUser = route?.params?.user;
+    const paramUserId = route?.params?.userId ? Number(route.params.userId) : null;
     const viewAsGuest = route?.params?.viewAsGuest;
-    const isOwnProfile = (!paramUser || (userInfo && paramUser.id === userInfo.id)) && !viewAsGuest;
 
-    const [localUser, setLocalUser] = useState(isOwnProfile ? userInfo : paramUser);
+    const effectiveUserId = paramUser?.id || paramUserId || userInfo?.id;
+    const isOwnProfile = (effectiveUserId === userInfo?.id) && !viewAsGuest;
+
+    const [localUser, setLocalUser] = useState(isOwnProfile ? userInfo : (paramUser || { id: effectiveUserId, name: 'Loading...', email: '...' }));
     const displayedUser = localUser; // Use this everywhere
+
+    // Sync localUser if route params change (e.g. deep link update)
+    useEffect(() => {
+        if (effectiveUserId && localUser?.id !== effectiveUserId) {
+             setLocalUser(isOwnProfile ? userInfo : (paramUser || { id: effectiveUserId, name: 'Loading...', email: '...' }));
+        }
+    }, [effectiveUserId, isOwnProfile, paramUser]);
 
     const [isEditing, setIsEditing] = useState(false);
 
@@ -668,7 +678,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     <View style={[styles.qrContainer]}>
                         <TouchableOpacity onPress={() => setBusinessCardVisible(true)}>
                             <View style={[styles.qrWrapper, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', elevation: isDarkMode ? 0 : 5 }]}>
-                                <QRCode value={`raabtaa://user/${displayedUser?.id}`} size={140} color={isDarkMode ? 'white' : 'black'} backgroundColor={isDarkMode ? '#2D3748' : 'white'} />
+                                <QRCode value={`${CONFIG.WEB_URL}/profile/${displayedUser?.id}`} size={140} color={isDarkMode ? 'white' : 'black'} backgroundColor={isDarkMode ? '#2D3748' : 'white'} />
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -748,7 +758,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                 <Animated.View style={[styles.qrContainer, qrStyle]}>
                     <TouchableOpacity onPress={() => setBusinessCardVisible(true)}>
                         <View style={[styles.qrWrapper, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', elevation: isDarkMode ? 0 : 5 }]}>
-                            <QRCode value={`raabtaa://user/${displayedUser?.id}`} size={140} color={isDarkMode ? 'white' : 'black'} backgroundColor={isDarkMode ? '#2D3748' : 'white'} />
+                            <QRCode value={`${CONFIG.WEB_URL}/profile/${displayedUser?.id}`} size={140} color={isDarkMode ? 'white' : 'black'} backgroundColor={isDarkMode ? '#2D3748' : 'white'} />
                         </View>
                     </TouchableOpacity>
                 </Animated.View>
@@ -1200,7 +1210,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
                                 {/* Left Side: QR */}
                                 <View style={[styles.landscapeQrSection, { backgroundColor: isDarkMode ? '#2D3748' : '#fff', borderColor: theme.borderColor }]}>
                                     <QRCode
-                                        value={`raabtaa://user/${displayedUser?.id}`}
+                                        value={`${CONFIG.WEB_URL}/profile/${displayedUser?.id}`}
                                         size={110}
                                         backgroundColor={isDarkMode ? '#2D3748' : 'white'}
                                         color={isDarkMode ? 'white' : 'black'}

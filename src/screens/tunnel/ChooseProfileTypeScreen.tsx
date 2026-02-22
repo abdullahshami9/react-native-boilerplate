@@ -141,7 +141,7 @@ const ChooseProfileTypeScreen = ({ navigation }: any) => {
                     type="Individual"
                     title="Personal Profile"
                     desc="For shopping, booking, and connecting with friends."
-                    image="asset:leisure_relax"
+                    image="asset:shopping_sale"
                     scale={individualScale}
                     opacity={individualOpacity}
                 />

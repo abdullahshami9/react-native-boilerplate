@@ -142,7 +142,7 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.iconColor} strokeWidth="2"><Path d="M15 18l-6-6 6-6" /></Svg>
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Design Business Card</Text>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Business Card</Text>
                 <View style={{ flexDirection: 'row', gap: 15 }}>
                     <TouchableOpacity onPress={handleShareImage}>
                         <Text style={[styles.saveText, { color: theme.primary }]}>Share</Text>
@@ -255,7 +255,7 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
                 <View style={styles.rowHeader}>
                     <Text style={[styles.sectionHeader, { color: theme.text }]}>Details</Text>
                     <TouchableOpacity onPress={() => setShowLogoPicker(true)}>
-                        <Text style={{color: theme.primary, fontWeight: '600'}}>Change Logo</Text>
+                        <Text style={{ color: theme.primary, fontWeight: '600' }}>Change Logo</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -345,6 +345,6 @@ const styles = StyleSheet.create({
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
     modalTitle: { fontSize: 18, fontWeight: 'bold' },
     closeText: { color: 'red', fontWeight: '600' },
-    logoItem: { flex: 1/3, height: 80, padding: 5, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#eee', margin: 2, borderRadius: 8 },
+    logoItem: { flex: 1 / 3, height: 80, padding: 5, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#eee', margin: 2, borderRadius: 8 },
     logoImage: { width: '100%', height: '100%' }
 });

@@ -4,19 +4,19 @@ export const CardTemplates = {
         <head>
             <style>
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
-                body { margin: 0; font-family: 'Inter', sans-serif; background: #202c33; -webkit-print-color-adjust: exact; }
+                body { margin: 0; font-family: 'Inter', sans-serif; background: ${data.bgColor || '#ffffff'}; -webkit-print-color-adjust: exact; }
                 .page { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; page-break-after: always; }
 
                 .card {
                     width: 350px; height: 200px; padding: 25px;
-                    background: #111b21; /* Slightly darker than nav/header for contrast */
-                    color: #e9edef;
+                    background: ${data.cardBg || '#f8f9fa'};
+                    color: ${data.textColor || '#111b21'};
                     border-radius: 16px;
                     position: relative;
                     overflow: hidden;
                     display: flex;
-                    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-                    border: 1px solid #2a3942;
+                    box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+                    border: 1px solid rgba(0,0,0,0.05);
                 }
 
                 /* Background Gradient Mesh */
@@ -45,7 +45,7 @@ export const CardTemplates = {
                 .name {
                     font-size: 26px;
                     font-weight: 700;
-                    color: #e9edef;
+                    color: ${data.textColor || '#111b21'};
                     margin-bottom: 4px;
                     letter-spacing: -0.5px;
                 }
@@ -65,29 +65,29 @@ export const CardTemplates = {
 
                 .info-group { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
                 .info-item {
-                    font-size: 10px; color: #8696a0; display: flex; align-items: center; font-weight: 400;
+                    font-size: 10px; color: ${data.subTextColor || '#54656f'}; display: flex; align-items: center; font-weight: 400;
                 }
                 .icon { width: 14px; text-align: center; margin-right: 8px; color: #00a884; font-size: 10px; }
 
                 /* Logo Box - Minimal & Modern */
                 .logo-box {
                     position: absolute; bottom: 25px; right: 25px;
-                    width: 40px; height: 40px;
+                    width: 70px; height: 70px;
                     border-radius: 12px;
                     display: flex; align-items: center; justify-content: center;
-                    background: rgba(255,255,255,0.05);
-                    border: 1px solid rgba(255,255,255,0.1);
+                    background: rgba(0,0,0,0.02);
+                    border: 1px solid rgba(0,0,0,0.05);
                     backdrop-filter: blur(5px);
                     z-index: 10;
                 }
-                .logo-img { width: 24px; height: 24px; object-fit: contain; }
+                .logo-img { width: 50px; height: 50px; object-fit: contain; }
 
                 /* Back Side Design */
                 .card-back {
                     justify-content: center;
                     align-items: center;
                     flex-direction: column;
-                    background: #0b141a; /* Darkest Theme BG */
+                    background: ${data.bgColor || '#ffffff'};
                 }
 
                 /* Large Watermark Text */
@@ -96,7 +96,7 @@ export const CardTemplates = {
                     font-family: 'Inter', sans-serif;
                     font-weight: 900;
                     font-size: 120px;
-                    color: rgba(255, 255, 255, 0.02);
+                    color: rgba(0, 0, 0, 0.03);
                     letter-spacing: -5px;
                     z-index: 1;
                     transform: rotate(-10deg);
@@ -111,11 +111,11 @@ export const CardTemplates = {
                     position: relative;
                     z-index: 5;
                     padding: 15px;
-                    background: rgba(255,255,255,0.03);
+                    background: rgba(0,0,0,0.02);
                     border-radius: 24px; /* Significant rounding */
                     backdrop-filter: blur(10px);
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-                    border: 1px solid rgba(255,255,255,0.08);
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+                    border: 1px solid rgba(0,0,0,0.05);
                     display: flex; justify-content: center; align-items: center;
                 }
 
@@ -142,14 +142,14 @@ export const CardTemplates = {
                     font-family: 'Inter', sans-serif;
                     font-size: 10px;
                     letter-spacing: 3px;
-                    color: #8696a0;
+                    color: ${data.subTextColor || '#54656f'};
                     text-transform: uppercase;
                     font-weight: 600;
                     z-index: 5;
-                    background: rgba(11, 20, 26, 0.8);
+                    background: rgba(0, 0, 0, 0.05);
                     padding: 6px 16px;
                     border-radius: 20px;
-                    border: 1px solid rgba(255,255,255,0.05);
+                    border: 1px solid rgba(0,0,0,0.05);
                 }
             </style>
         </head>

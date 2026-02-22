@@ -123,10 +123,12 @@ let db = mysql.createPool(dbConfig);
 
 // Initialize Sequelize
 try {
-    await sequelize.authenticate();
-    console.log('Connected to MySQL via Sequelize.');
-    await sequelize.sync(); // Sync models
-    console.log('Sequelize models synced.');
+    (async () => {
+        await sequelize.authenticate();
+        console.log('Connected to MySQL via Sequelize.');
+        await sequelize.sync(); // Sync models
+        console.log('Sequelize models synced.');
+    })();
 } catch (error) {
     console.error('Unable to connect to the database via Sequelize:', error);
 }

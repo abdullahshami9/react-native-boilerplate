@@ -187,98 +187,99 @@ export const AuthProvider = ({ children }: any) => {
         }
     };
 
-    try {
-        LoggerService.info('Upgrading Guest to Individual', undefined, 'AuthContext');
-        const updatedUser = { ...userInfo, user_type: 'Individual', is_tunnel_completed: 0 };
+    const upgradeGuest = async () => {
+        try {
+            LoggerService.info('Upgrading Guest to Individual', undefined, 'AuthContext');
+            const updatedUser = { ...userInfo, user_type: 'Individual', is_tunnel_completed: 0 };
 
-        await TunnelService.updateUserType(userInfo.id, 'Individual');
-        await TunnelService.revertTunnel(userInfo.id);
+            await TunnelService.updateUserType(userInfo.id, 'Individual');
+            await TunnelService.revertTunnel(userInfo.id);
 
+            setUserInfo(updatedUser);
+            await AsyncStorage.setItem('userInfo', JSON.stringify(updatedUser));
+        } catch (error: any) {
+            LoggerService.error('Upgrade Guest Error:', error, 'AuthContext');
+            throw error;
+        }
+    };
+
+    const logout = () => {
+        setIsLoading(true);
+        setUserToken(null);
+        setUserInfo(null);
+        AsyncStorage.removeItem('userToken');
+        AsyncStorage.removeItem('userInfo');
+        delete axios.defaults.headers.common['Authorization'];
+        setIsLoading(false);
+    };
+
+    const updateProfile = async (name: string, phone: string) => {
+        setIsLoading(true);
+        try {
+            const userInfo = await AsyncStorage.getItem('userInfo');
+            const token = await AsyncStorage.getItem('userToken');
+
+            if (userInfo && token) {
+                const user = JSON.parse(userInfo);
+                // We pass userId (or email) if backend needs it, usually token is enough for auth
+                // But updateProfile endpoint might need id. 
+                // Using existing user_id from stored info
+                const response = await AuthService.updateProfile({
+                    userId: user.id,
+                    name,
+                    phone
+                });
+
+                if (response.success) {
+                    const updatedUser = { ...user, name, phone };
+                    setUserInfo(updatedUser);
+                    AsyncStorage.setItem('userInfo', JSON.stringify(updatedUser));
+                    LoggerService.info('Profile updated successfully', { userId: user.id }, 'AuthContext');
+                }
+                return response;
+            }
+        } catch (e: any) {
+            LoggerService.error(`Update Profile error: ${e}`, e, 'AuthContext');
+            throw e;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const updateProfileLocal = async (updatedUser: any) => {
         setUserInfo(updatedUser);
         await AsyncStorage.setItem('userInfo', JSON.stringify(updatedUser));
-    } catch (error: any) {
-        LoggerService.error('Upgrade Guest Error:', error, 'AuthContext');
-        throw error;
-    }
-};
+    };
 
-const logout = () => {
-    setIsLoading(true);
-    setUserToken(null);
-    setUserInfo(null);
-    AsyncStorage.removeItem('userToken');
-    AsyncStorage.removeItem('userInfo');
-    delete axios.defaults.headers.common['Authorization'];
-    setIsLoading(false);
-};
+    const isLoggedIn = async () => {
+        try {
+            setIsLoading(true);
+            let userToken = await AsyncStorage.getItem('userToken');
+            let userInfo = await AsyncStorage.getItem('userInfo');
+            let savedTheme = await AsyncStorage.getItem('isDarkMode');
 
-const updateProfile = async (name: string, phone: string) => {
-    setIsLoading(true);
-    try {
-        const userInfo = await AsyncStorage.getItem('userInfo');
-        const token = await AsyncStorage.getItem('userToken');
-
-        if (userInfo && token) {
-            const user = JSON.parse(userInfo);
-            // We pass userId (or email) if backend needs it, usually token is enough for auth
-            // But updateProfile endpoint might need id. 
-            // Using existing user_id from stored info
-            const response = await AuthService.updateProfile({
-                userId: user.id,
-                name,
-                phone
-            });
-
-            if (response.success) {
-                const updatedUser = { ...user, name, phone };
-                setUserInfo(updatedUser);
-                AsyncStorage.setItem('userInfo', JSON.stringify(updatedUser));
-                LoggerService.info('Profile updated successfully', { userId: user.id }, 'AuthContext');
+            if (userToken) {
+                axios.defaults.headers.common['Authorization'] = `Bearer ${userToken}`;
             }
-            return response;
+
+            setUserInfo(userInfo ? JSON.parse(userInfo) : null);
+            setUserToken(userToken);
+            if (savedTheme) {
+                setIsDarkMode(JSON.parse(savedTheme));
+            }
+            setIsLoading(false);
+        } catch (e: any) {
+            LoggerService.error(`isLogged in error ${e}`, e, 'AuthContext');
         }
-    } catch (e: any) {
-        LoggerService.error(`Update Profile error: ${e}`, e, 'AuthContext');
-        throw e;
-    } finally {
-        setIsLoading(false);
-    }
-};
+    };
 
-const updateProfileLocal = async (updatedUser: any) => {
-    setUserInfo(updatedUser);
-    await AsyncStorage.setItem('userInfo', JSON.stringify(updatedUser));
-};
+    useEffect(() => {
+        isLoggedIn();
+    }, []);
 
-const isLoggedIn = async () => {
-    try {
-        setIsLoading(true);
-        let userToken = await AsyncStorage.getItem('userToken');
-        let userInfo = await AsyncStorage.getItem('userInfo');
-        let savedTheme = await AsyncStorage.getItem('isDarkMode');
-
-        if (userToken) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${userToken}`;
-        }
-
-        setUserInfo(userInfo ? JSON.parse(userInfo) : null);
-        setUserToken(userToken);
-        if (savedTheme) {
-            setIsDarkMode(JSON.parse(savedTheme));
-        }
-        setIsLoading(false);
-    } catch (e: any) {
-        LoggerService.error(`isLogged in error ${e}`, e, 'AuthContext');
-    }
-};
-
-useEffect(() => {
-    isLoggedIn();
-}, []);
-
-return (
-    <AuthContext.Provider value={{ login, logout, register, updateProfile, updateProfileLocal, biometricLogin, googleLogin, upgradeGuest, isLoading, userToken, userInfo, isDarkMode, toggleTheme }}>
-        {children}
-    </AuthContext.Provider>
-);
+    return (
+        <AuthContext.Provider value={{ login, logout, register, updateProfile, updateProfileLocal, biometricLogin, googleLogin, upgradeGuest, isLoading, userToken, userInfo, isDarkMode, toggleTheme }}>
+            {children}
+        </AuthContext.Provider>
+    );
 };

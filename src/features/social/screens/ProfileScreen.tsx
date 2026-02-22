@@ -126,7 +126,7 @@ const ProfileScreen = ({ navigation, route }: any) => {
     // Sync localUser if route params change (e.g. deep link update)
     useEffect(() => {
         if (effectiveUserId && localUser?.id !== effectiveUserId) {
-             setLocalUser(isOwnProfile ? userInfo : (paramUser || { id: effectiveUserId, name: 'Loading...', email: '...' }));
+            setLocalUser(isOwnProfile ? userInfo : (paramUser || { id: effectiveUserId, name: 'Loading...', email: '...' }));
         }
     }, [effectiveUserId, isOwnProfile, paramUser]);
 
@@ -589,66 +589,80 @@ const ProfileScreen = ({ navigation, route }: any) => {
     });
 
     const headerHeightStyle = useAnimatedStyle(() => {
+        const isCollapsed = scrollY.value > SCROLL_DISTANCE * 0.5;
         return {
-            height: interpolate(scrollY.value, [0, SCROLL_DISTANCE], [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT], Extrapolate.CLAMP),
-            borderBottomLeftRadius: interpolate(scrollY.value, [0, SCROLL_DISTANCE], [40, 20], Extrapolate.CLAMP),
-            borderBottomRightRadius: interpolate(scrollY.value, [0, SCROLL_DISTANCE], [40, 20], Extrapolate.CLAMP),
+            height: isCollapsed ? HEADER_MIN_HEIGHT : HEADER_MAX_HEIGHT,
+            borderBottomLeftRadius: isCollapsed ? 20 : 40,
+            borderBottomRightRadius: isCollapsed ? 20 : 40,
         };
     });
 
     const headerContentStyle = useAnimatedStyle(() => {
-        const textColor = interpolateColor(
-            scrollY.value,
-            [0, SCROLL_DISTANCE],
-            ['#FFFFFF', isDarkMode ? '#FFFFFF' : '#2D3748'] // White to Dark Grey (or White in Dark Mode)
-        );
-        return { color: textColor };
+        const isCollapsed = scrollY.value > SCROLL_DISTANCE * 0.5;
+        const colorExpanded = '#FFFFFF';
+        const colorCollapsed = isDarkMode ? '#FFFFFF' : '#2D3748';
+        return { color: isCollapsed ? colorCollapsed : colorExpanded };
     });
 
     // Opacity for White Icons (Fade Out)
     const whiteIconStyle = useAnimatedStyle(() => {
-        return { opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.5], [1, 0], Extrapolate.CLAMP) };
+        const isCollapsed = scrollY.value > SCROLL_DISTANCE * 0.5;
+        return { opacity: isCollapsed ? 0 : 1 };
     });
 
     // Opacity for Dark Icons (Fade In)
     const darkIconStyle = useAnimatedStyle(() => {
-        return { opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.5], [0, 1], Extrapolate.CLAMP) };
+        const isCollapsed = scrollY.value > SCROLL_DISTANCE * 0.5;
+        return { opacity: isCollapsed ? 1 : 0 };
     });
 
     const qrStyle = useAnimatedStyle(() => {
-        // Just fade out the main QR code
+        const isCollapsed = scrollY.value > SCROLL_DISTANCE * 0.5;
         return {
-            opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.5], [1, 0], Extrapolate.CLAMP),
-            transform: [{ scale: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.5], [1, 0.8], Extrapolate.CLAMP) }]
+            opacity: isCollapsed ? 0 : 1,
+            transform: [{ scale: isCollapsed ? 0 : 1 }]
         };
     });
 
     const smallQrStyle = useAnimatedStyle(() => {
-        // Fade in the small icon
+        const isCollapsed = scrollY.value > SCROLL_DISTANCE * 0.5;
         return {
-            opacity: interpolate(scrollY.value, [SCROLL_DISTANCE * 0.6, SCROLL_DISTANCE], [0, 1], Extrapolate.CLAMP),
-            transform: [{ scale: interpolate(scrollY.value, [SCROLL_DISTANCE * 0.6, SCROLL_DISTANCE], [0.5, 1], Extrapolate.CLAMP) }]
+            opacity: isCollapsed ? 1 : 0,
+            transform: [{ scale: isCollapsed ? 1 : 0 }]
         };
     });
 
     const avatarStyle = useAnimatedStyle(() => {
-        const scale = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [1, 0.5], Extrapolate.CLAMP);
-        const translateY = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -245], Extrapolate.CLAMP);
-        const translateX = interpolate(scrollY.value, [0, SCROLL_DISTANCE], [0, -width / 2 + 50], Extrapolate.CLAMP);
+        const isCollapsed = scrollY.value > SCROLL_DISTANCE * 0.5;
         return {
-            transform: [{ translateX }, { translateY }, { scale }]
+            transform: [
+                { translateX: isCollapsed ? -width / 2 + 50 : 0 },
+                { translateY: isCollapsed ? -245 : 0 },
+                { scale: isCollapsed ? 0.5 : 1 }
+            ]
         };
     });
 
     const headerInfoOpacity = useAnimatedStyle(() => {
-        return {
-            opacity: interpolate(scrollY.value, [SCROLL_DISTANCE * 0.5, SCROLL_DISTANCE], [0, 1], Extrapolate.CLAMP)
-        };
+        const isCollapsed = scrollY.value > SCROLL_DISTANCE * 0.5;
+        return { opacity: isCollapsed ? 1 : 0 };
     });
 
     const bodyInfoOpacity = useAnimatedStyle(() => {
+        const isCollapsed = scrollY.value > SCROLL_DISTANCE * 0.5;
+        return { opacity: isCollapsed ? 0 : 1 };
+    });
+
+    const spacerStyle = useAnimatedStyle(() => {
+        const isCollapsed = scrollY.value > SCROLL_DISTANCE * 0.5;
+        return { height: isCollapsed ? 160 : 320 };
+    });
+
+    const infoSectionStyle = useAnimatedStyle(() => {
+        const isCollapsed = scrollY.value > SCROLL_DISTANCE * 0.5;
         return {
-            opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.5], [1, 0], Extrapolate.CLAMP)
+            marginTop: isCollapsed ? 0 : 20,
+            marginBottom: isCollapsed ? 0 : 20,
         };
     });
 
@@ -803,9 +817,9 @@ const ProfileScreen = ({ navigation, route }: any) => {
                     />
                 }
             >
-                {!isWeb && <View style={styles.spacer} />}
+                {!isWeb && <Animated.View style={[spacerStyle]} />}
 
-                <View style={isWeb ? {} : [styles.infoSection, { opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.5], [1, 0], Extrapolate.CLAMP) }]}>
+                <Animated.View style={isWeb ? {} : [styles.infoSection, bodyInfoOpacity, infoSectionStyle]}>
                     {/* On web, opacity logic is removed or simplified. Re-using bodyInfoOpacity but without animation */}
                     {isWeb ? (
                         <View style={[styles.infoSection]}>
@@ -816,15 +830,15 @@ const ProfileScreen = ({ navigation, route }: any) => {
                             </View>
                         </View>
                     ) : (
-                        <Animated.View style={[styles.infoSection, bodyInfoOpacity]}>
+                        <View style={{ alignItems: 'center' }}>
                             <Text style={[styles.nameText, { color: theme.text }]}>{displayedUser?.name}</Text>
                             <Text style={[styles.roleText, { color: theme.subText }]}>{displayedUser?.email}</Text>
                             <View style={[styles.userTypeBadge, { backgroundColor: isDarkMode ? '#4A5568' : '#E2E8F0' }]}>
                                 <Text style={[styles.userTypeBadgeText, { color: isDarkMode ? '#F7FAFC' : '#4A5568' }]}>{isBusinessUser ? 'Business' : 'Individual'}</Text>
                             </View>
-                        </Animated.View>
+                        </View>
                     )}
-                </View>
+                </Animated.View>
 
                 {isRestricted ? (
                     <View style={{ alignItems: 'center', marginTop: 20 }}>

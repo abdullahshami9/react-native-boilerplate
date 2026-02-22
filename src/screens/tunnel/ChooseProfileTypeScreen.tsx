@@ -159,7 +159,7 @@ const ChooseProfileTypeScreen = ({ navigation }: any) => {
                     type="Guest"
                     title="Guest Mode"
                     desc="Explore the app quickly without full setup."
-                    image="asset:default_avatar"
+                    image="asset:social_startup"
                     scale={guestScale}
                     opacity={guestOpacity}
                 />
@@ -174,46 +174,48 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingTop: 10,
-        gap: 24,
+        paddingBottom: 20,
+        justifyContent: 'space-between', // Distribute cards evenly
     },
     card: {
-        borderRadius: 24,
-        padding: 24,
+        borderRadius: 20,
+        padding: 16, // Reduced padding
         alignItems: 'center',
         shadowColor: 'rgba(0, 0, 0, 0.1)',
-        shadowOffset: { width: 0, height: 8 },
+        shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 1,
-        shadowRadius: 16,
-        elevation: 6, // Increased elevation for 'pop'
+        shadowRadius: 10,
+        elevation: 5,
         borderWidth: 1,
         flex: 1,
-        justifyContent: 'center'
+        justifyContent: 'center',
+        marginBottom: 16, // Space between cards
     },
     imageContainer: {
-        height: 140,
+        height: 100, // Reduced height
         width: '100%',
-        marginBottom: 20,
+        marginBottom: 10, // Reduced margin
         alignItems: 'center',
         justifyContent: 'center'
     },
     cardImage: {
-        width: 180,
-        height: 140,
+        width: 140, // Reduced size
+        height: 100,
     },
     textContainer: {
         alignItems: 'center',
-        gap: 8
+        gap: 4 // Reduced gap
     },
     cardTitle: {
-        fontSize: 20,
+        fontSize: 18, // Reduced font size
         fontWeight: '700',
-        marginBottom: 4,
+        marginBottom: 2,
     },
     cardDesc: {
-        fontSize: 14,
-        lineHeight: 20,
+        fontSize: 13, // Reduced font size
+        lineHeight: 18,
         textAlign: 'center',
-        paddingHorizontal: 10
+        paddingHorizontal: 8 // Reduced padding
     }
 });
 

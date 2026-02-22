@@ -228,18 +228,24 @@ const AppNav = () => {
                 )}
 
                 {/* Personal Flow */}
-                <Stack.Screen name="PersonalDetails" component={PersonalDetailsScreen} options={{ animation: 'none' }} />
-                <Stack.Screen name="PersonalSkills" component={PersonalSkillsScreen} options={{ animation: 'none' }} />
-                <Stack.Screen name="PersonalEducation" component={PersonalEducationScreen} options={{ animation: 'none' }} />
-                <Stack.Screen name="PersonalLocationJob" component={PersonalLocationJobScreen} options={{ animation: 'none' }} />
-                <Stack.Screen name="PersonalJob" component={PersonalJobScreen} options={{ animation: 'none' }} />
+                {userInfo?.user_type === 'Individual' && (
+                  <>
+                    <Stack.Screen name="PersonalDetails" component={PersonalDetailsScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="PersonalSkills" component={PersonalSkillsScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="PersonalEducation" component={PersonalEducationScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="PersonalLocationJob" component={PersonalLocationJobScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="PersonalJob" component={PersonalJobScreen} options={{ animation: 'none' }} />
+                  </>
+                )}
 
                 {/* Business Flow */}
                 {userInfo?.user_type === 'Business' && (
-                  <Stack.Screen name="BusinessLocation" component={BusinessLocationScreen} options={{ animation: 'none' }} />
+                  <>
+                    <Stack.Screen name="BusinessLocation" component={BusinessLocationScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="BusinessTypeContact" component={BusinessTypeContactScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="BusinessIndustry" component={BusinessIndustryScreen} options={{ animation: 'none' }} />
+                  </>
                 )}
-                <Stack.Screen name="BusinessTypeContact" component={BusinessTypeContactScreen} options={{ animation: 'none' }} />
-                <Stack.Screen name="BusinessIndustry" component={BusinessIndustryScreen} options={{ animation: 'none' }} />
 
                 {/* Common Final Step */}
                 <Stack.Screen name="IdentityGate" component={IdentityGateScreen} options={{ animation: 'none' }} />

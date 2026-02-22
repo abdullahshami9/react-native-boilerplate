@@ -102,8 +102,8 @@ const SignupScreen = ({ navigation }: any) => {
         try {
             const formattedPhone = `+92${phone}`;
 
-            // Defaulting to 'Individual' initially. User will select actual type in Tunnel.
-            const result = await register('User', email, password, formattedPhone, 'Individual');
+            // Defaulting to '' initially so user selects actual type in Tunnel.
+            const result = await register('User', email, password, formattedPhone, '');
             if (result.success) {
                 // Auto-login the user after successful registration
                 console.log('Registration successful, auto-logging in...');

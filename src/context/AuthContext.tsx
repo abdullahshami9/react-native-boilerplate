@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '../services/AuthService';
 import DeviceInfo from 'react-native-device-info';
 import LoggerService from '../services/LoggerService';
+import { TunnelService } from '../services/TunnelService';
 import axios from 'axios';
 import { colors } from '../theme/colors';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';

@@ -9,6 +9,7 @@ import MiniToast, { MiniToastRef } from '../../../components/MiniToast';
 const { width } = Dimensions.get('window');
 
 import { AuthContext } from '../../../context/AuthContext';
+import CustomAlert from '../../../components/CustomAlert';
 
 // ...
 
@@ -17,6 +18,14 @@ const ProductDetailsScreen = ({ navigation, route }: any) => {
     const { addToCart } = React.useContext(CartContext);
     const { userInfo, upgradeGuest } = React.useContext(AuthContext);
     const toastRef = useRef<MiniToastRef>(null);
+
+    const [alertConfig, setAlertConfig] = React.useState({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'info' as 'error' | 'success' | 'info',
+        onConfirm: undefined as undefined | (() => void)
+    });
 
     // Variants handling
     const variants = product?.variants ? (typeof product.variants === 'string' ? JSON.parse(product.variants) : product.variants) : [];
@@ -43,15 +52,15 @@ const ProductDetailsScreen = ({ navigation, route }: any) => {
 
     const handleAddToCart = () => {
         if (userInfo?.user_type === 'Guest') {
-            import('react-native').then(({ Alert }) => {
-                Alert.alert(
-                    "Complete Profile Required",
-                    "You need a full Personal profile to buy products. Would you like to complete it now?",
-                    [
-                        { text: "Cancel", style: "cancel" },
-                        { text: "Upgrade", onPress: () => upgradeGuest() }
-                    ]
-                );
+            setAlertConfig({
+                visible: true,
+                title: "Complete Profile Required",
+                message: "You need a full Personal profile to buy products. Would you like to complete it now?",
+                type: 'info',
+                onConfirm: () => {
+                    setAlertConfig(prev => ({ ...prev, visible: false }));
+                    upgradeGuest();
+                }
             });
             return;
         }
@@ -213,6 +222,16 @@ const ProductDetailsScreen = ({ navigation, route }: any) => {
                     </View>
                 </View>
             </ScrollView>
+            <CustomAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onDismiss={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+                confirmText="Upgrade"
+                cancelText="Cancel"
+            />
             <MiniToast ref={toastRef} />
         </View>
     );

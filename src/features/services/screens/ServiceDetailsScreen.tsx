@@ -8,7 +8,13 @@ import CustomAlert from '../../../components/CustomAlert';
 const ServiceDetailsScreen = ({ route, navigation }: any) => {
     const { service } = route.params;
     const { userInfo, isDarkMode, upgradeGuest } = useContext(AuthContext);
-    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info' });
+    const [alertConfig, setAlertConfig] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'error' as 'error' | 'success' | 'info',
+        onConfirm: undefined as undefined | (() => void)
+    });
 
     const isOwner = userInfo?.id === service.user_id;
 
@@ -22,22 +28,24 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
 
     const handleBook = () => {
         if (!userInfo) {
-            setAlertConfig({ visible: true, title: 'Login Required', message: 'Please login to book a service', type: 'info' });
+            setAlertConfig({ visible: true, title: 'Login Required', message: 'Please login to book a service', type: 'info', onConfirm: undefined });
             return;
         }
         if (userInfo.user_type === 'Guest') {
-            Alert.alert(
-                "Complete Profile Required",
-                "You need a full Personal profile to book services. Would you like to complete it now?",
-                [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Upgrade", onPress: () => upgradeGuest() }
-                ]
-            );
+            setAlertConfig({
+                visible: true,
+                title: "Complete Profile Required",
+                message: "You need a full Personal profile to book services. Would you like to complete it now?",
+                type: 'info',
+                onConfirm: () => {
+                    setAlertConfig(prev => ({ ...prev, visible: false }));
+                    upgradeGuest();
+                }
+            });
             return;
         }
         if (isOwner) {
-            setAlertConfig({ visible: true, title: 'Restriction', message: 'You cannot book your own service', type: 'error' });
+            setAlertConfig({ visible: true, title: 'Restriction', message: 'You cannot book your own service', type: 'error', onConfirm: undefined });
             return;
         }
         navigation.navigate('Booking', { service });
@@ -61,6 +69,9 @@ const ServiceDetailsScreen = ({ route, navigation }: any) => {
                 message={alertConfig.message}
                 type={alertConfig.type}
                 onDismiss={() => setAlertConfig({ ...alertConfig, visible: false })}
+                onConfirm={alertConfig.onConfirm}
+                confirmText="Upgrade"
+                cancelText="Cancel"
             />
 
             <Image

@@ -10,7 +10,7 @@ import CustomAlert from '../../../components/CustomAlert';
 import { useTheme } from '../../../theme/useTheme';
 
 const BusinessLocationScreen = ({ navigation }: any) => {
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, updateProfileLocal } = useContext(AuthContext);
     const [username, setUsername] = useState('');
     const [address, setAddress] = useState('');
     const [addressDetails, setAddressDetails] = useState<any>({});
@@ -114,7 +114,16 @@ const BusinessLocationScreen = ({ navigation }: any) => {
     };
 
     return (
-        <TunnelWrapper title="Headquarters" onBack={() => navigation.goBack()}>
+        <TunnelWrapper title="Headquarters" onBack={async () => {
+            try {
+                // Clear user_type in DB so it doesn't persist
+                await TunnelService.updateUserType(userInfo.id, '');
+            } catch (e) { console.error('Failed to clear UserType', e) }
+
+            if (updateProfileLocal) {
+                updateProfileLocal({ ...userInfo, user_type: null });
+            }
+        }}>
             <View style={styles.container}>
 
                 {/* Username Section */}

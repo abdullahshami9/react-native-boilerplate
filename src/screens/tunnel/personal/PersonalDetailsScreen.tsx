@@ -9,7 +9,7 @@ import CustomAlert from '../../../components/CustomAlert';
 import { useTheme } from '../../../theme/useTheme';
 
 const PersonalDetailsScreen = ({ navigation }: any) => {
-    const { userInfo } = useContext(AuthContext);
+    const { userInfo, updateProfileLocal } = useContext(AuthContext);
     const [username, setUsername] = useState('');
     const [gender, setGender] = useState('');
     const [interests, setInterests] = useState<string[]>([]);
@@ -59,7 +59,16 @@ const PersonalDetailsScreen = ({ navigation }: any) => {
     };
 
     return (
-        <TunnelWrapper title="Personal" onBack={() => navigation.goBack()}>
+        <TunnelWrapper title="Personal" onBack={async () => {
+            try {
+                // Clear user_type in DB so it doesn't persist if they close the app
+                await TunnelService.updateUserType(userInfo.id, '');
+            } catch (e) { console.error('Failed to clear UserType', e) }
+
+            if (updateProfileLocal) {
+                updateProfileLocal({ ...userInfo, user_type: null });
+            }
+        }}>
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
                 {/* Username */}

@@ -59,15 +59,16 @@ const PersonalDetailsScreen = ({ navigation }: any) => {
     };
 
     return (
-        <TunnelWrapper title="Personal" onBack={async () => {
-            try {
-                // Clear user_type in DB so it doesn't persist if they close the app
-                await TunnelService.updateUserType(userInfo.id, '');
-            } catch (e) { console.error('Failed to clear UserType', e) }
-
+        <TunnelWrapper title="Personal" onBack={() => {
+            // Update local state and trigger app navigation instantly
             if (updateProfileLocal) {
                 updateProfileLocal({ ...userInfo, user_type: null });
             }
+
+            // Fire and forget DB update so it doesn't block the UI
+            TunnelService.updateUserType(userInfo.id, '').catch(e => {
+                console.error('Failed to clear UserType in background', e);
+            });
         }}>
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 

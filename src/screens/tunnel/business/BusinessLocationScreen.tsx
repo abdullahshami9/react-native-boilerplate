@@ -114,15 +114,16 @@ const BusinessLocationScreen = ({ navigation }: any) => {
     };
 
     return (
-        <TunnelWrapper title="Headquarters" onBack={async () => {
-            try {
-                // Clear user_type in DB so it doesn't persist
-                await TunnelService.updateUserType(userInfo.id, '');
-            } catch (e) { console.error('Failed to clear UserType', e) }
-
+        <TunnelWrapper title="Headquarters" onBack={() => {
+            // Update local state and trigger app navigation instantly
             if (updateProfileLocal) {
                 updateProfileLocal({ ...userInfo, user_type: null });
             }
+
+            // Fire and forget DB update so it doesn't block the UI
+            TunnelService.updateUserType(userInfo.id, '').catch(e => {
+                console.error('Failed to clear UserType in background', e);
+            });
         }}>
             <View style={styles.container}>
 

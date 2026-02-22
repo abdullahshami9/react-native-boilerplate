@@ -94,6 +94,15 @@ const asyncStoragePersister = createAsyncStoragePersister({
   },
 });
 
+const linking = {
+  prefixes: [CONFIG.WEB_URL, 'raabtaa://'],
+  config: {
+    screens: {
+      UserProfile: 'profile/:userId',
+    },
+  },
+};
+
 const AppNav = () => {
   const { isLoading, userToken, userInfo } = useContext(AuthContext);
   const toastRef = useRef<MiniToastRef>(null);
@@ -173,7 +182,7 @@ const AppNav = () => {
 
   return (
     <>
-      <NavigationContainer ref={navigationRef}>
+      <NavigationContainer ref={navigationRef} linking={linking}>
         <Stack.Navigator screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',

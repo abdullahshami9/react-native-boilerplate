@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Platform, Dimensions, Image, Modal, FlatList } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import RNPrint from 'react-native-print';
+import ViewShot from 'react-native-view-shot';
+import Share from 'react-native-share';
 import Svg, { Path } from 'react-native-svg';
 import { AuthContext } from '../../../context/AuthContext';
 import { useTheme } from '../../../theme/useTheme';
@@ -51,6 +53,7 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
 
     const [qrBase64, setQrBase64] = useState('');
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'error' as 'error' | 'success' | 'info', onConfirm: undefined as undefined | (() => void) });
+    const viewShotRef = useRef(null);
 
     // Flatten assets for picker
     const allAssets = Object.keys(LocalAssets);
@@ -68,6 +71,21 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
             return source.uri;
         }
         return logoUrl || 'https://via.placeholder.com/50';
+    };
+
+    const handleShareImage = async () => {
+        if (viewShotRef.current) {
+            try {
+                // @ts-ignore
+                const uri = await viewShotRef.current.capture();
+                await Share.open({
+                    url: uri,
+                    message: `Check out my Business Card! Connect with me here: ${CONFIG.WEB_URL}/profile/${userInfo.id}`,
+                });
+            } catch (error) {
+                console.log("Share failed", error);
+            }
+        }
     };
 
     const handleExport = async () => {
@@ -114,7 +132,7 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
             {/* Hidden QR Generator */}
             <View style={{ position: 'absolute', opacity: 0, zIndex: -1 }}>
                 <QRCode
-                    value={`raabtaa://user/${userInfo?.id}`}
+                    value={`${CONFIG.WEB_URL}/profile/${userInfo?.id}`}
                     size={100}
                     getRef={handleQrRef}
                 />
@@ -125,67 +143,74 @@ export default function BusinessCardEditorScreen({ route, navigation }: any) {
                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={theme.iconColor} strokeWidth="2"><Path d="M15 18l-6-6 6-6" /></Svg>
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>Design Business Card</Text>
-                <TouchableOpacity onPress={handleExport}>
-                    <Text style={[styles.saveText, { color: theme.primary }]}>Export</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 15 }}>
+                    <TouchableOpacity onPress={handleShareImage}>
+                        <Text style={[styles.saveText, { color: theme.primary }]}>Share</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleExport}>
+                        <Text style={[styles.saveText, { color: theme.primary }]}>PDF</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
                 {/* Preview Area */}
                 <View style={styles.previewContainer}>
-                    <View style={[styles.cardPreviewPlaceholder, { backgroundColor: '#EDF2F7', borderColor: theme.navBorder }]}>
-                        <WebView
-                            key={`${selectedTemplate}-${previewSide}-${selectedColor}-${selectedAssetKey}`}
-                            originWhitelist={['*']}
-                            source={{
-                                html: (() => {
-                                    const data = {
-                                        name,
-                                        role,
-                                        phone,
-                                        email,
-                                        address,
-                                        logo: getLogoUri(),
-                                        qrCode: qrBase64,
-                                        color: selectedColor
-                                    };
-                                    let html = (CardTemplates as any)[selectedTemplate](data);
-                                    const hideStyle = previewSide === 'front'
-                                        ? `
-                                            <meta name="viewport" content="width=420, user-scalable=no" />
-                                            <style>
-                                                .page:nth-of-type(2) { display: none !important; } 
-                                                body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: transparent; }
-                                                .page { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; } 
-                                            </style>`
-                                        : `
-                                            <meta name="viewport" content="width=420, user-scalable=no" />
-                                            <style>
-                                                .page:nth-of-type(1) { display: none !important; } 
-                                                body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: transparent; }
-                                                .page { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; } 
-                                            </style>`;
+                    <ViewShot ref={viewShotRef} options={{ format: 'jpg', quality: 0.9 }}>
+                        <View collapsable={false} style={[styles.cardPreviewPlaceholder, { backgroundColor: '#EDF2F7', borderColor: theme.navBorder }]}>
+                            <WebView
+                                key={`${selectedTemplate}-${previewSide}-${selectedColor}-${selectedAssetKey}`}
+                                originWhitelist={['*']}
+                                source={{
+                                    html: (() => {
+                                        const data = {
+                                            name,
+                                            role,
+                                            phone,
+                                            email,
+                                            address,
+                                            logo: getLogoUri(),
+                                            qrCode: qrBase64,
+                                            color: selectedColor
+                                        };
+                                        let html = (CardTemplates as any)[selectedTemplate](data);
+                                        const hideStyle = previewSide === 'front'
+                                            ? `
+                                                <meta name="viewport" content="width=420, user-scalable=no" />
+                                                <style>
+                                                    .page:nth-of-type(2) { display: none !important; }
+                                                    body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: transparent; }
+                                                    .page { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+                                                </style>`
+                                            : `
+                                                <meta name="viewport" content="width=420, user-scalable=no" />
+                                                <style>
+                                                    .page:nth-of-type(1) { display: none !important; }
+                                                    body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: transparent; }
+                                                    .page { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+                                                </style>`;
 
-                                    let finalHtml = html;
-                                    if (finalHtml.includes('</head>')) {
-                                        finalHtml = finalHtml.replace('</head>', hideStyle + '</head>');
-                                    } else {
-                                        finalHtml = hideStyle + finalHtml;
-                                    }
-                                    if (!finalHtml.trim().startsWith('<!DOCTYPE html>')) {
-                                        finalHtml = '<!DOCTYPE html>' + finalHtml;
-                                    }
-                                    return finalHtml;
-                                })(),
-                                baseUrl: ''
-                            }}
-                            scalesPageToFit={true}
-                            javaScriptEnabled={true}
-                            domStorageEnabled={true}
-                            style={{ width: '100%', height: '100%', backgroundColor: 'transparent', opacity: 0.99 }}
-                            automaticallyAdjustContentInsets={false}
-                        />
-                    </View>
+                                        let finalHtml = html;
+                                        if (finalHtml.includes('</head>')) {
+                                            finalHtml = finalHtml.replace('</head>', hideStyle + '</head>');
+                                        } else {
+                                            finalHtml = hideStyle + finalHtml;
+                                        }
+                                        if (!finalHtml.trim().startsWith('<!DOCTYPE html>')) {
+                                            finalHtml = '<!DOCTYPE html>' + finalHtml;
+                                        }
+                                        return finalHtml;
+                                    })(),
+                                    baseUrl: ''
+                                }}
+                                scalesPageToFit={true}
+                                javaScriptEnabled={true}
+                                domStorageEnabled={true}
+                                style={{ width: '100%', height: '100%', backgroundColor: 'transparent', opacity: 0.99 }}
+                                automaticallyAdjustContentInsets={false}
+                            />
+                        </View>
+                    </ViewShot>
                     <View style={[styles.toggleRow, { backgroundColor: theme.inputBg }]}>
                         <TouchableOpacity onPress={() => setPreviewSide('front')} style={[styles.toggleBtn, previewSide === 'front' && { backgroundColor: theme.cardBg, shadowColor: theme.text }]}><Text style={previewSide === 'front' ? { fontWeight: 'bold', color: theme.text } : { color: theme.subText }}>Front</Text></TouchableOpacity>
                         <TouchableOpacity onPress={() => setPreviewSide('back')} style={[styles.toggleBtn, previewSide === 'back' && { backgroundColor: theme.cardBg, shadowColor: theme.text }]}><Text style={previewSide === 'back' ? { fontWeight: 'bold', color: theme.text } : { color: theme.subText }}>Back</Text></TouchableOpacity>

@@ -165,7 +165,7 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
                         })}
 
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-start', marginTop: 10 }}>
-                             <TouchableOpacity style={[styles.chatBtn, { borderColor: theme.borderColor }]} onPress={() => handleChat(item.buyer_id, item.id)}>
+                            <TouchableOpacity style={[styles.chatBtn, { borderColor: theme.borderColor }]} onPress={() => handleChat(item.buyer_id, item.id)}>
                                 <Text style={{ color: theme.text, fontWeight: '600' }}>Chat with Customer</Text>
                             </TouchableOpacity>
                         </View>
@@ -301,7 +301,7 @@ const BusinessOrdersScreen = ({ navigation, route }: any) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F7FAFC' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 40 : 20, paddingBottom: 15 },
     headerTitle: { fontSize: 20, fontWeight: 'bold' },
     backButton: { padding: 5, borderRadius: 20 },
     listContent: { padding: 20 },

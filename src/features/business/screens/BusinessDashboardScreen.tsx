@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image, Modal, TouchableWithoutFeedback, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image, Modal, TouchableWithoutFeedback, RefreshControl, Platform } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { DataService } from '../../../services/DataService';
 import { useTheme } from '../../../theme/useTheme';
@@ -340,7 +340,7 @@ const BusinessDashboardScreen = ({ navigation }: any) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 40 : 20, paddingBottom: 15 },
     headerLogo: { fontSize: 20, fontWeight: 'bold', color: '#A0AEC0' }, // Gray/Dim white
     headerTitle: { fontSize: 20, fontWeight: 'bold' },
     headerAvatar: { width: 40, height: 40, borderRadius: 20 },

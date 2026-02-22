@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 40 : 20, paddingBottom: 15 },
     headerTitle: { fontSize: 20, fontWeight: 'bold' },
     backButton: { padding: 5, borderRadius: 20 },
-    listContent: { padding: 20 },
+    listContent: { padding: 20, paddingBottom: 100 },
     card: { backgroundColor: 'white', borderRadius: 12, marginBottom: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, elevation: 2, overflow: 'hidden' },
     cardHeader: { flexDirection: 'row', padding: 16, justifyContent: 'space-between' },
     headerInfo: { flex: 1 },

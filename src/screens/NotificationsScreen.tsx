@@ -98,7 +98,7 @@ const NotificationsScreen = ({ navigation }: any) => {
                     data={notifications}
                     renderItem={renderItem}
                     keyExtractor={item => item.id.toString()}
-                    contentContainerStyle={{ padding: 20 }}
+                    contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchNotifications(); }} />}
                     ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 50, color: theme.subText }}>No notifications</Text>}
                 />

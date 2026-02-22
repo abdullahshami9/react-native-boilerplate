@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     headerLogo: { fontSize: 20, fontWeight: 'bold', color: '#A0AEC0' }, // Gray/Dim white
     headerTitle: { fontSize: 20, fontWeight: 'bold' },
     headerAvatar: { width: 40, height: 40, borderRadius: 20 },
-    content: { padding: 20 },
+    content: { padding: 20, paddingBottom: 100 },
 
     statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
     statCard: { width: '31%', padding: 10, borderRadius: 12, elevation: 2, shadowOpacity: 0.1, shadowRadius: 3, alignItems: 'center' },

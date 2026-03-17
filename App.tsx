@@ -35,6 +35,7 @@ import ProfileScreen from './src/features/social/screens/ProfileScreen';
 import ServiceDetailsScreen from './src/features/services/screens/ServiceDetailsScreen';
 import BookingScreen from './src/features/services/screens/BookingScreen';
 import CheckoutScreen from './src/features/market/screens/CheckoutScreen';
+import VirtualTryOnScreen from './src/features/market/screens/VirtualTryOnScreen';
 import BusinessCardEditorScreen from './src/features/business/screens/BusinessCardEditorScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 
@@ -59,6 +60,7 @@ import BusinessTypeContactScreen from './src/screens/tunnel/business/BusinessTyp
 import BusinessIndustryScreen from './src/screens/tunnel/business/BusinessIndustryScreen';
 import PaymentIntegrationScreen from './src/screens/tunnel/PaymentIntegrationScreen';
 import IdentityGateScreen from './src/screens/tunnel/IdentityGateScreen';
+import AvatarSetupScreen from './src/screens/tunnel/AvatarSetupScreen';
 import PremiumUpgradeScreen from './src/features/business/screens/PremiumUpgradeScreen';
 import { navigationRef } from './src/utils/NavigationHelper';
 
@@ -211,6 +213,7 @@ const AppNav = () => {
                 <Stack.Screen name="CustomerOrders" component={CustomerOrdersScreen} />
                 <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
                 <Stack.Screen name="Checkout" component={CheckoutScreen} />
+                <Stack.Screen name="VirtualTryOn" component={VirtualTryOnScreen} />
 
                 {/* Business Screens */}
                 <Stack.Screen name="ManageServices" component={ManageServicesScreen} />
@@ -249,6 +252,7 @@ const AppNav = () => {
 
                 {/* Common Final Step */}
                 <Stack.Screen name="IdentityGate" component={IdentityGateScreen} options={{ animation: 'none' }} />
+                <Stack.Screen name="AvatarSetup" component={AvatarSetupScreen} options={{ animation: 'none' }} />
                 <Stack.Screen name="PaymentIntegration" component={PaymentIntegrationScreen} options={{ animation: 'none' }} />
               </>
             )

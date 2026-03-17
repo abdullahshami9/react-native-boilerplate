@@ -561,6 +561,13 @@ initConnection.query(initQuery, (err, result) => {
         runMigration("ALTER TABLE user_metadata ADD COLUMN communication_keywords TEXT", "User Communication Keywords");
         runMigration("ALTER TABLE profile_views ADD COLUMN viewer_id INT DEFAULT NULL", "Profile Views Viewer ID");
 
+        // Migration V5: Avatar/Body Dimensions
+        runMigration("ALTER TABLE users ADD COLUMN height DECIMAL(5,2) DEFAULT NULL", "User Height");
+        runMigration("ALTER TABLE users ADD COLUMN weight DECIMAL(5,2) DEFAULT NULL", "User Weight");
+        runMigration("ALTER TABLE users ADD COLUMN skin_tone VARCHAR(50) DEFAULT NULL", "User Skin Tone");
+        runMigration("ALTER TABLE users ADD COLUMN body_size VARCHAR(10) DEFAULT NULL", "User Body Size");
+        runMigration("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(255) DEFAULT NULL", "User Avatar URL");
+
         // Seed Dummy Data for Location (If empty)
         db.query("SELECT COUNT(*) as count FROM province", (e, r) => {
             if (r && r[0].count === 0) {
@@ -2226,6 +2233,20 @@ app.post('/api/tunnel/personal/skills', (req, res) => {
             if (err2) return res.status(500).json({ success: false });
             res.json({ success: true });
         });
+    });
+});
+
+app.post('/api/tunnel/avatar-setup', verifyToken, (req, res) => {
+    // Only update avatar properties
+    const { height, weight, skin_tone, body_size, avatar_url, user_id } = req.body;
+
+    // Fallback: If no custom avatar_url passed, use a default doppl-like base model
+    const finalAvatar = avatar_url || "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb";
+
+    const query = 'UPDATE users SET height = ?, weight = ?, skin_tone = ?, body_size = ?, avatar_url = ? WHERE id = ?';
+    dbQuery(query, [height, weight, skin_tone, body_size, finalAvatar, user_id], req, (err) => {
+        if (err) return res.status(500).json({ success: false, message: 'Failed to update avatar details' });
+        res.json({ success: true, message: 'Avatar setup complete' });
     });
 });
 

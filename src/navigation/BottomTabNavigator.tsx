@@ -9,6 +9,7 @@ import { useTheme } from '../theme/useTheme';
 import DiscoverScreen from '../features/social/screens/DiscoverScreen';
 import ConnectionsScreen from '../features/social/screens/ConnectionsScreen';
 import ShopScreen from '../features/market/screens/ShopScreen';
+import VirtualTryOnHistoryScreen from '../features/market/screens/VirtualTryOnHistoryScreen';
 import ProfileScreen from '../features/social/screens/ProfileScreen';
 
 // Business Screens
@@ -123,6 +124,17 @@ const BottomTabNavigator = () => {
                                     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={focused ? "2.5" : "2"}>
                                         <Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                                         <Path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                    </Svg>
+                                )
+                            }}
+                        />
+                        <Tab.Screen
+                            name="VirtualTryOnHistory"
+                            component={VirtualTryOnHistoryScreen}
+                            options={{
+                                tabBarIcon: ({ color, focused }) => (
+                                    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={focused ? "2.5" : "2"}>
+                                        <Path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" strokeLinecap="round" strokeLinejoin="round"/>
                                     </Svg>
                                 )
                             }}

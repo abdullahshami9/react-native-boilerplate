@@ -38,6 +38,7 @@ export function Navbar() {
     { name: 'Discover', href: '/discover' },
     !isGuest && { name: 'Connections', href: '/connections' },
     { name: 'Shop', href: '/shop' },
+    { name: 'Try-On', href: '/virtual-try-on' },
     { name: 'Profile', href: `/profile/${userInfo?.id}` },
   ].filter(Boolean) as { name: string; href: string }[];
 

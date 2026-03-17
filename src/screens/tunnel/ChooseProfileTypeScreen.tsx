@@ -85,10 +85,8 @@ const ChooseProfileTypeScreen = ({ navigation }: any) => {
 
         // Navigate after short delay for animation visibility
         setTimeout(() => {
-            if (type === 'Individual') {
-                navigation.navigate('PersonalDetails');
-            } else if (type === 'Business') {
-                navigation.navigate('BusinessLocation');
+            if (type === 'Individual' || type === 'Business') {
+                navigation.navigate('AvatarSetup');
             }
 
             // Cleanup animations after navigation happens (runs in background)

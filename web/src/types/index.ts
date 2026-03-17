@@ -3,7 +3,7 @@ export interface User {
     name: string;
     email: string;
     phone: string;
-    user_type: 'Individual' | 'Business';
+    user_type: 'Individual' | 'Business' | 'Guest';
     profile_pic_url?: string;
     is_tunnel_completed: boolean;
     address?: string;
@@ -13,6 +13,11 @@ export interface User {
     interests?: string[]; // stored as JSON string in DB, parsed here
     resume_url?: string;
     is_private?: boolean;
+    height?: number;
+    weight?: number;
+    skin_tone?: string;
+    body_size?: string;
+    avatar_url?: string;
 }
 
 export interface Product {

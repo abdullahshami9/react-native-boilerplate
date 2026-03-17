@@ -22,15 +22,11 @@ export default function TunnelPage() {
             await api.post('/api/tunnel/complete', { user_id: userInfo?.id });
 
             if (userInfo) {
-                const updatedUser = { ...userInfo, user_type: type, is_tunnel_completed: true };
+                const updatedUser = { ...userInfo, user_type: type };
                 updateUser(updatedUser);
 
-                // 3. Redirect based on role
-                if (type === 'Business') {
-                    router.push('/business/stats');
-                } else {
-                    router.push('/discover');
-                }
+                // Redirect everyone to 3D avatar setup before completing tunnel
+                router.push('/tunnel/avatar-setup');
             }
         } catch (err) {
             console.error("Tunnel Error:", err);

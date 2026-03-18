@@ -25,8 +25,8 @@ export default function AvatarSetupPage() {
     const [gender, setGender] = useState('Male');
     const [height, setHeight] = useState('');
     const [weight, setWeight] = useState('');
-    const [skinTone, setSkinTone] = useState('#FAD6B1');
-    const [bodySize, setBodySize] = useState('M');
+    const [skinTone, setSkinTone] = useState('#F0D5BE');
+    const [bodySize, setBodySize] = useState('Healthy');
 
     const handleCameraSimulation = () => {
         setLoading(true);
@@ -34,6 +34,19 @@ export default function AvatarSetupPage() {
             setLoading(false);
             setStep(2);
         }, 1500);
+    };
+
+    const generateAvatarUrl = (g: string, size: string, color: string) => {
+        let baseUrl = "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb";
+
+        if (g === 'Female') {
+            baseUrl = size === 'Chubby' ? "https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb" : "https://models.readyplayer.me/64f29b8e1da94c4e10df0dac.glb";
+        } else {
+            baseUrl = size === 'Slim' ? "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb" : "https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb";
+        }
+
+        const cleanColor = color.replace('#', '');
+        return `${baseUrl}?skinTone=${cleanColor}`;
     };
 
     const submitAvatar = async () => {
@@ -44,6 +57,8 @@ export default function AvatarSetupPage() {
 
         setLoading(true);
         try {
+            const finalAvatarUrl = generateAvatarUrl(gender, bodySize, skinTone);
+
             await api.post('/api/tunnel/avatar-setup', {
                 user_id: userInfo?.id,
                 height: parseFloat(height),
@@ -51,7 +66,7 @@ export default function AvatarSetupPage() {
                 skin_tone: skinTone,
                 body_size: bodySize,
                 gender: gender,
-                avatar_url: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb'
+                avatar_url: finalAvatarUrl
             });
 
             router.push('/tunnel/personal-details');
@@ -167,10 +182,9 @@ export default function AvatarSetupPage() {
                                     value={bodySize}
                                     onChange={(e) => setBodySize(e.target.value)}
                                 >
-                                    <option value="S">Small (S)</option>
-                                    <option value="M">Medium (M)</option>
-                                    <option value="L">Large (L)</option>
-                                    <option value="XL">Extra Large (XL)</option>
+                                    <option value="Slim">Slim</option>
+                                    <option value="Healthy">Healthy</option>
+                                    <option value="Chubby">Chubby</option>
                                 </select>
                             </div>
 

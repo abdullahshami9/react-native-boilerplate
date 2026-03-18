@@ -24,3 +24,5 @@ https://nextjs.org/telemetry
  GET /virtual-try-on 200 in 5.6s (compile: 5.1s, render: 567ms)
 ✓ Compiled in 108ms
  GET /virtual-try-on 200 in 251ms (compile: 91ms, render: 160ms)
+ GET /virtual-try-on 200 in 2.1s (compile: 801ms, render: 1294ms)
+ GET /virtual-try-on 200 in 254ms (compile: 116ms, render: 138ms)

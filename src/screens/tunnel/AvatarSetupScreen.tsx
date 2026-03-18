@@ -27,8 +27,8 @@ const AvatarSetupScreen = ({ navigation }: any) => {
     const [gender, setGender] = useState('Male');
     const [height, setHeight] = useState('');
     const [weight, setWeight] = useState('');
-    const [skinTone, setSkinTone] = useState('#FAD6B1');
-    const [bodySize, setBodySize] = useState('M');
+    const [skinTone, setSkinTone] = useState('#F0D5BE');
+    const [bodySize, setBodySize] = useState('Healthy');
 
     const INSTRUCTIONS = [
         "Position your face in the circle.",
@@ -45,10 +45,9 @@ const AvatarSetupScreen = ({ navigation }: any) => {
     ];
 
     const bodySizeOptions = [
-        { label: 'Small (S)', value: 'S' },
-        { label: 'Medium (M)', value: 'M' },
-        { label: 'Large (L)', value: 'L' },
-        { label: 'Extra Large (XL)', value: 'XL' },
+        { label: 'Slim', value: 'Slim' },
+        { label: 'Healthy', value: 'Healthy' },
+        { label: 'Chubby', value: 'Chubby' },
     ];
 
     const skinTones = [
@@ -103,6 +102,21 @@ const AvatarSetupScreen = ({ navigation }: any) => {
         }
     };
 
+    const generateAvatarUrl = (g: string, size: string, color: string) => {
+        // Base mapping simulation. In a real scenario, an API generates this.
+        let baseUrl = "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb"; // Default Male Healthy
+
+        if (g === 'Female') {
+            baseUrl = size === 'Chubby' ? "https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb" : "https://models.readyplayer.me/64f29b8e1da94c4e10df0dac.glb";
+        } else {
+            baseUrl = size === 'Slim' ? "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb" : "https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb";
+        }
+
+        // Add skin tone as a query parameter just as an example of how Doppl modifies parameters
+        const cleanColor = color.replace('#', '');
+        return `${baseUrl}?skinTone=${cleanColor}`;
+    };
+
     const submitAvatarSetup = async () => {
         if (!height || !weight) {
             Alert.alert("Error", "Please fill in all details.");
@@ -112,6 +126,8 @@ const AvatarSetupScreen = ({ navigation }: any) => {
         setLoading(true);
 
         try {
+            const finalAvatarUrl = generateAvatarUrl(gender, bodySize, skinTone);
+
             const response = await axios.post(`${CONFIG.API_URL}/api/tunnel/avatar-setup`, {
                 user_id: userInfo.id,
                 height: parseFloat(height),
@@ -119,8 +135,7 @@ const AvatarSetupScreen = ({ navigation }: any) => {
                 skin_tone: skinTone,
                 body_size: bodySize,
                 gender: gender,
-                // Passing a demo standard male/female or neutral avatar based on Doppl inspiration
-                avatar_url: "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb"
+                avatar_url: finalAvatarUrl
             }, {
                 headers: { Authorization: `Bearer ${userToken}` }
             });
@@ -285,7 +300,7 @@ const AvatarSetupScreen = ({ navigation }: any) => {
                             style={[
                                 styles.colorCircle,
                                 { backgroundColor: color },
-                                skinTone === color && styles.colorCircleSelected
+                                skinTone === color && [styles.colorCircleSelected, { borderColor: theme.primary }]
                             ]}
                             onPress={() => setSkinTone(color)}
                         />
@@ -485,7 +500,6 @@ const styles = StyleSheet.create({
     },
     colorCircleSelected: {
         borderWidth: 3,
-        borderColor: '#3182CE',
         transform: [{ scale: 1.1 }],
     }
 });

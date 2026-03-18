@@ -231,7 +231,7 @@ const VirtualTryOnScreen = ({ navigation }: any) => {
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.optionsScroll}>
                                     {DUMMY_CLOTHING.filter(item => activeCategory === 'All' || item.category === activeCategory).map(item => (
                                         <TouchableOpacity key={item.id} style={[styles.optionCard, { borderColor: theme.borderColor, backgroundColor: theme.cardBg }]} onPress={() => handleTryOn(item)}>
-                                            <View style={styles.optionImageContainer}>
+                                            <View style={[styles.optionImageContainer, { backgroundColor: theme.primary }]}>
                                                 <Text style={styles.optionImageText}>{item.name[0]}</Text>
                                             </View>
                                             <Text style={[styles.optionText, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
@@ -393,7 +393,6 @@ const styles = StyleSheet.create({
         width: 60,
         height: 60,
         borderRadius: 8,
-        backgroundColor: '#667eea',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 8,

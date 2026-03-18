@@ -173,7 +173,7 @@ export default function VirtualTryOnPage() {
 
     return (
         <div className="flex h-[calc(100vh-64px)] w-full bg-gray-50 dark:bg-junr-dark-bg overflow-hidden">
-            <Script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js" strategy="lazyOnload" />
+            <Script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js" strategy="beforeInteractive" />
 
             {/* Left Panel: 3D Avatar Viewer */}
             <div className="w-1/2 h-full border-r border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 relative">
@@ -268,7 +268,7 @@ export default function VirtualTryOnPage() {
                                         onClick={() => handleTryOn(item)}
                                         className="group flex flex-col items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-junr-blue dark:hover:border-junr-blue hover:shadow-md transition-all duration-200 w-[100px]"
                                     >
-                                        <div className="w-14 h-14 bg-[#667eea] rounded-lg flex items-center justify-center mb-2">
+                                        <div className="w-14 h-14 bg-junr-blue rounded-lg flex items-center justify-center mb-2 shadow-sm">
                                             <span className="text-white text-xl font-bold">{item.name[0]}</span>
                                         </div>
                                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 text-center line-clamp-1 w-full">{item.name}</span>

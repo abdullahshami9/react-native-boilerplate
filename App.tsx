@@ -49,17 +49,8 @@ import OrderDetailScreen from './src/screens/OrderDetailScreen';
 import ARCardScannerScreen from './src/screens/ar/ARCardScannerScreen';
 
 // Tunnel Screens
-import ChooseProfileTypeScreen from './src/screens/tunnel/ChooseProfileTypeScreen';
 import PersonalDetailsScreen from './src/screens/tunnel/personal/PersonalDetailsScreen';
-import PersonalSkillsScreen from './src/screens/tunnel/personal/PersonalSkillsScreen';
-import PersonalEducationScreen from './src/screens/tunnel/personal/PersonalEducationScreen';
-import PersonalLocationJobScreen from './src/screens/tunnel/personal/PersonalLocationJobScreen';
-import PersonalJobScreen from './src/screens/tunnel/personal/PersonalJobScreen';
-import BusinessLocationScreen from './src/screens/tunnel/business/BusinessLocationScreen';
-import BusinessTypeContactScreen from './src/screens/tunnel/business/BusinessTypeContactScreen';
-import BusinessIndustryScreen from './src/screens/tunnel/business/BusinessIndustryScreen';
 import PaymentIntegrationScreen from './src/screens/tunnel/PaymentIntegrationScreen';
-import IdentityGateScreen from './src/screens/tunnel/IdentityGateScreen';
 import AvatarSetupScreen from './src/screens/tunnel/AvatarSetupScreen';
 import PremiumUpgradeScreen from './src/features/business/screens/PremiumUpgradeScreen';
 import { navigationRef } from './src/utils/NavigationHelper';
@@ -226,33 +217,8 @@ const AppNav = () => {
             ) : (
               // Tunnel Stack (Mandatory Onboarding)
               <>
-                {(!userInfo?.user_type || userInfo.user_type === 'Guest') && (
-                  <Stack.Screen name="ChooseProfileType" component={ChooseProfileTypeScreen} options={{ animation: 'none' }} />
-                )}
-
-                {/* Personal Flow */}
-                {userInfo?.user_type === 'Individual' && (
-                  <>
-                    <Stack.Screen name="PersonalDetails" component={PersonalDetailsScreen} options={{ animation: 'none' }} />
-                    <Stack.Screen name="PersonalSkills" component={PersonalSkillsScreen} options={{ animation: 'none' }} />
-                    <Stack.Screen name="PersonalEducation" component={PersonalEducationScreen} options={{ animation: 'none' }} />
-                    <Stack.Screen name="PersonalLocationJob" component={PersonalLocationJobScreen} options={{ animation: 'none' }} />
-                    <Stack.Screen name="PersonalJob" component={PersonalJobScreen} options={{ animation: 'none' }} />
-                  </>
-                )}
-
-                {/* Business Flow */}
-                {userInfo?.user_type === 'Business' && (
-                  <>
-                    <Stack.Screen name="BusinessLocation" component={BusinessLocationScreen} options={{ animation: 'none' }} />
-                    <Stack.Screen name="BusinessTypeContact" component={BusinessTypeContactScreen} options={{ animation: 'none' }} />
-                    <Stack.Screen name="BusinessIndustry" component={BusinessIndustryScreen} options={{ animation: 'none' }} />
-                  </>
-                )}
-
-                {/* Common Final Step */}
-                <Stack.Screen name="IdentityGate" component={IdentityGateScreen} options={{ animation: 'none' }} />
                 <Stack.Screen name="AvatarSetup" component={AvatarSetupScreen} options={{ animation: 'none' }} />
+                <Stack.Screen name="PersonalDetails" component={PersonalDetailsScreen} options={{ animation: 'none' }} />
                 <Stack.Screen name="PaymentIntegration" component={PaymentIntegrationScreen} options={{ animation: 'none' }} />
               </>
             )

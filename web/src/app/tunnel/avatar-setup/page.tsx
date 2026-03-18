@@ -22,10 +22,11 @@ export default function AvatarSetupPage() {
     const [loading, setLoading] = useState(false);
 
     // Form State
+    const [gender, setGender] = useState('Male');
     const [height, setHeight] = useState('');
     const [weight, setWeight] = useState('');
-    const [skinTone, setSkinTone] = useState('#FAD6B1');
-    const [bodySize, setBodySize] = useState('M');
+    const [skinTone, setSkinTone] = useState('#F0D5BE');
+    const [bodySize, setBodySize] = useState('Healthy');
 
     const handleCameraSimulation = () => {
         setLoading(true);
@@ -33,6 +34,19 @@ export default function AvatarSetupPage() {
             setLoading(false);
             setStep(2);
         }, 1500);
+    };
+
+    const generateAvatarUrl = (g: string, size: string, color: string) => {
+        let baseUrl = "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb";
+
+        if (g === 'Female') {
+            baseUrl = size === 'Chubby' ? "https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb" : "https://models.readyplayer.me/64f29b8e1da94c4e10df0dac.glb";
+        } else {
+            baseUrl = size === 'Slim' ? "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb" : "https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb";
+        }
+
+        const cleanColor = color.replace('#', '');
+        return `${baseUrl}?skinTone=${cleanColor}`;
     };
 
     const submitAvatar = async () => {
@@ -43,26 +57,19 @@ export default function AvatarSetupPage() {
 
         setLoading(true);
         try {
+            const finalAvatarUrl = generateAvatarUrl(gender, bodySize, skinTone);
+
             await api.post('/api/tunnel/avatar-setup', {
                 user_id: userInfo?.id,
                 height: parseFloat(height),
                 weight: parseFloat(weight),
                 skin_tone: skinTone,
                 body_size: bodySize,
-                avatar_url: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb'
+                gender: gender,
+                avatar_url: finalAvatarUrl
             });
 
-            // Update local user state
-            if (userInfo) {
-                updateUser({ ...userInfo, is_tunnel_completed: true });
-            }
-
-            // Redirect to home/dashboard
-            if (userInfo?.user_type === 'Business') {
-                router.push('/business/stats');
-            } else {
-                router.push('/discover');
-            }
+            router.push('/tunnel/personal-details');
 
         } catch (error) {
             console.error(error);
@@ -90,12 +97,6 @@ export default function AvatarSetupPage() {
                         <Button className="w-full" onClick={() => setStep(1)}>
                             Start Face Scan
                         </Button>
-                        <button
-                            className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                            onClick={() => setStep(2)}
-                        >
-                            Skip to manual entry
-                        </button>
                     </div>
                 )}
 
@@ -135,6 +136,21 @@ export default function AvatarSetupPage() {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Gender
+                                </label>
+                                <select
+                                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-junr-blue outline-none transition-all"
+                                    value={gender}
+                                    onChange={(e) => setGender(e.target.value)}
+                                >
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Height (cm)
                                 </label>
                                 <Input
@@ -166,10 +182,9 @@ export default function AvatarSetupPage() {
                                     value={bodySize}
                                     onChange={(e) => setBodySize(e.target.value)}
                                 >
-                                    <option value="S">Small (S)</option>
-                                    <option value="M">Medium (M)</option>
-                                    <option value="L">Large (L)</option>
-                                    <option value="XL">Extra Large (XL)</option>
+                                    <option value="Slim">Slim</option>
+                                    <option value="Healthy">Healthy</option>
+                                    <option value="Chubby">Chubby</option>
                                 </select>
                             </div>
 

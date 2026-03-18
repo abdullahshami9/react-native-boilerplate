@@ -24,10 +24,11 @@ const AvatarSetupScreen = ({ navigation }: any) => {
     const [recordingStep, setRecordingStep] = useState(0);
 
     // Form states
+    const [gender, setGender] = useState('Male');
     const [height, setHeight] = useState('');
     const [weight, setWeight] = useState('');
-    const [skinTone, setSkinTone] = useState('#FAD6B1');
-    const [bodySize, setBodySize] = useState('M');
+    const [skinTone, setSkinTone] = useState('#F0D5BE');
+    const [bodySize, setBodySize] = useState('Healthy');
 
     const INSTRUCTIONS = [
         "Position your face in the circle.",
@@ -37,11 +38,16 @@ const AvatarSetupScreen = ({ navigation }: any) => {
         "Processing Face Scan..."
     ];
 
+    const genderOptions = [
+        { label: 'Male', value: 'Male' },
+        { label: 'Female', value: 'Female' },
+        { label: 'Other', value: 'Other' }
+    ];
+
     const bodySizeOptions = [
-        { label: 'Small (S)', value: 'S' },
-        { label: 'Medium (M)', value: 'M' },
-        { label: 'Large (L)', value: 'L' },
-        { label: 'Extra Large (XL)', value: 'XL' },
+        { label: 'Slim', value: 'Slim' },
+        { label: 'Healthy', value: 'Healthy' },
+        { label: 'Chubby', value: 'Chubby' },
     ];
 
     const skinTones = [
@@ -96,6 +102,21 @@ const AvatarSetupScreen = ({ navigation }: any) => {
         }
     };
 
+    const generateAvatarUrl = (g: string, size: string, color: string) => {
+        // Base mapping simulation. In a real scenario, an API generates this.
+        let baseUrl = "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb"; // Default Male Healthy
+
+        if (g === 'Female') {
+            baseUrl = size === 'Chubby' ? "https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb" : "https://models.readyplayer.me/64f29b8e1da94c4e10df0dac.glb";
+        } else {
+            baseUrl = size === 'Slim' ? "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb" : "https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb";
+        }
+
+        // Add skin tone as a query parameter just as an example of how Doppl modifies parameters
+        const cleanColor = color.replace('#', '');
+        return `${baseUrl}?skinTone=${cleanColor}`;
+    };
+
     const submitAvatarSetup = async () => {
         if (!height || !weight) {
             Alert.alert("Error", "Please fill in all details.");
@@ -105,27 +126,22 @@ const AvatarSetupScreen = ({ navigation }: any) => {
         setLoading(true);
 
         try {
+            const finalAvatarUrl = generateAvatarUrl(gender, bodySize, skinTone);
+
             const response = await axios.post(`${CONFIG.API_URL}/api/tunnel/avatar-setup`, {
                 user_id: userInfo.id,
                 height: parseFloat(height),
                 weight: parseFloat(weight),
                 skin_tone: skinTone,
                 body_size: bodySize,
-                // Passing a demo standard male/female or neutral avatar based on Doppl inspiration
-                avatar_url: "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb"
+                gender: gender,
+                avatar_url: finalAvatarUrl
             }, {
                 headers: { Authorization: `Bearer ${userToken}` }
             });
 
             if (response.data.success) {
-                // Determine next step based on profile type
-                if (userInfo.user_type === 'Individual') {
-                    navigation.navigate('PersonalDetails');
-                } else if (userInfo.user_type === 'Business') {
-                    navigation.navigate('BusinessLocation');
-                } else {
-                    navigation.navigate('IdentityGate');
-                }
+                navigation.navigate('PersonalDetails');
             } else {
                 Alert.alert("Error", "Failed to save avatar data.");
             }
@@ -152,10 +168,6 @@ const AvatarSetupScreen = ({ navigation }: any) => {
 
             <TouchableOpacity style={[styles.primaryButton, { backgroundColor: theme.primary }]} onPress={() => setStep(1)}>
                 <Text style={styles.primaryButtonText}>Start Face Scan</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.skipButton} onPress={() => setStep(2)}>
-                <Text style={[styles.skipButtonText, { color: theme.subText }]}>Skip Face Scan</Text>
             </TouchableOpacity>
         </View>
     );
@@ -226,6 +238,21 @@ const AvatarSetupScreen = ({ navigation }: any) => {
             </Text>
 
             <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: theme.text }]}>Gender</Text>
+                <Dropdown
+                    style={[styles.dropdown, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}
+                    placeholderStyle={[styles.dropdownText, { color: theme.subText }]}
+                    selectedTextStyle={[styles.dropdownText, { color: theme.text }]}
+                    data={genderOptions}
+                    labelField="label"
+                    valueField="value"
+                    placeholder="Select Gender"
+                    value={gender}
+                    onChange={item => setGender(item.value)}
+                />
+            </View>
+
+            <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: theme.text }]}>Height (cm)</Text>
                 <TextInput
                     style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
@@ -273,7 +300,7 @@ const AvatarSetupScreen = ({ navigation }: any) => {
                             style={[
                                 styles.colorCircle,
                                 { backgroundColor: color },
-                                skinTone === color && styles.colorCircleSelected
+                                skinTone === color && [styles.colorCircleSelected, { borderColor: theme.primary }]
                             ]}
                             onPress={() => setSkinTone(color)}
                         />
@@ -473,7 +500,6 @@ const styles = StyleSheet.create({
     },
     colorCircleSelected: {
         borderWidth: 3,
-        borderColor: '#3182CE',
         transform: [{ scale: 1.1 }],
     }
 });

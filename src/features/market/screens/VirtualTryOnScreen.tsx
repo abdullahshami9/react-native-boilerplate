@@ -4,6 +4,8 @@ import { useTheme } from '../../../theme/useTheme';
 import { AuthContext } from '../../../context/AuthContext';
 import Svg, { Path, Circle } from 'react-native-svg';
 import Avatar3DViewer from '../../../components/Avatar3DViewer';
+import axios from 'axios';
+import { CONFIG } from '../../../Config';
 
 const { height } = Dimensions.get('window');
 
@@ -19,16 +21,20 @@ interface ClothingItem {
     id: string;
     name: string;
     image: string;
+    category: string;
     modelUrl: string; // The URL to the .glb file of the avatar wearing this cloth
 }
 
 // Dummy mapping of clothes for demo. In reality this would come from an API/AI endpoint processing the body + clothing mapping.
 const DUMMY_CLOTHING: ClothingItem[] = [
-    { id: '1', name: 'White T-Shirt', image: 'asset:white_tshirt', modelUrl: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb' },
-    { id: '2', name: 'Denim Jacket', image: 'asset:denim_jacket', modelUrl: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb' },
-    { id: '3', name: 'Black Hoodie', image: 'asset:black_hoodie', modelUrl: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb' },
-    { id: '4', name: 'Polo Shirt', image: 'asset:polo_shirt', modelUrl: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb' }
+    { id: '1', name: 'White T-Shirt', image: 'asset:white_tshirt', category: 'Tops', modelUrl: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb' },
+    { id: '2', name: 'Denim Jacket', image: 'asset:denim_jacket', category: 'Outerwear', modelUrl: 'https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb' },
+    { id: '3', name: 'Black Hoodie', image: 'asset:black_hoodie', category: 'Tops', modelUrl: 'https://models.readyplayer.me/64f29b8e1da94c4e10df0dac.glb' },
+    { id: '4', name: 'Slim Fit Pants', image: 'asset:slim_fit_pants', category: 'Bottoms', modelUrl: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb' },
+    { id: '5', name: 'Polo Shirt', image: 'asset:polo_shirt', category: 'Tops', modelUrl: 'https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb' }
 ];
+
+const CATEGORIES = ['All', 'Tops', 'Bottoms', 'Outerwear', 'Shoes'];
 
 const VirtualTryOnScreen = ({ navigation }: any) => {
     const theme = useTheme();
@@ -44,6 +50,7 @@ const VirtualTryOnScreen = ({ navigation }: any) => {
     const [inputText, setInputText] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [showOptions, setShowOptions] = useState(true);
+    const [activeCategory, setActiveCategory] = useState('All');
 
     const scrollViewRef = useRef<ScrollView>(null);
 
@@ -52,12 +59,13 @@ const VirtualTryOnScreen = ({ navigation }: any) => {
         setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
     }, [messages, isTyping]);
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!inputText.trim()) return;
 
+        const messageText = inputText.trim();
         const newUserMsg: ChatMessage = {
             id: Date.now().toString(),
-            text: inputText,
+            text: messageText,
             sender: 'user',
             timestamp: new Date()
         };
@@ -66,21 +74,43 @@ const VirtualTryOnScreen = ({ navigation }: any) => {
         setInputText('');
         setIsTyping(true);
 
-        // Simulate AI Response processing NLP
-        setTimeout(() => {
-            const aiResponse: ChatMessage = {
+        try {
+            // Call the actual AI Backend endpoint
+            const response = await axios.post(`${CONFIG.API_URL}/api/tryon/chat`, { message: messageText });
+            const data = response.data.response;
+
+            setIsTyping(false);
+
+            const aiMsg: ChatMessage = {
                 id: (Date.now() + 1).toString(),
-                text: "I can find that style for you! Select an item below to try it on.",
+                text: data.text,
                 sender: 'ai',
+                isTryOn: !!data.modelUrl,
                 timestamp: new Date()
             };
+
+            setMessages(prev => [...prev, aiMsg]);
+
+            if (data.modelUrl) {
+                setCurrentAvatarUrl(data.modelUrl);
+                setShowOptions(false); // Hide options when successfully applied
+            } else {
+                setShowOptions(true);
+            }
+
+        } catch (error) {
+            console.error("AI TryOn Error", error);
             setIsTyping(false);
-            setMessages(prev => [...prev, aiResponse]);
-            setShowOptions(true); // Bring back options to pick from
-        }, 1500);
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                text: "Sorry, my AI engine is currently offline. Please try manually selecting an item.",
+                sender: 'ai',
+                timestamp: new Date()
+            }]);
+        }
     };
 
-    const handleTryOn = (item: ClothingItem) => {
+    const handleTryOn = async (item: ClothingItem) => {
         setShowOptions(false);
         const userMsg: ChatMessage = {
             id: Date.now().toString(),
@@ -91,19 +121,34 @@ const VirtualTryOnScreen = ({ navigation }: any) => {
         setMessages(prev => [...prev, userMsg]);
         setIsTyping(true);
 
-        // Simulate AI applying cloth mapping
-        setTimeout(() => {
-            setCurrentAvatarUrl(item.modelUrl); // Change 3D Model
+        try {
+            // Re-use the backend NLP flow to fetch the dynamic response for this item
+            const response = await axios.post(`${CONFIG.API_URL}/api/tryon/chat`, { message: `Try on ${item.name}` });
+            const data = response.data.response;
+
+            setIsTyping(false);
+            setCurrentAvatarUrl(item.modelUrl || data.modelUrl); // Change 3D Model
+
             const aiMsg: ChatMessage = {
                 id: (Date.now() + 1).toString(),
-                text: `Here is how the ${item.name} looks on you!`,
+                text: data.text || `Here is how the ${item.name} looks on you!`,
                 sender: 'ai',
                 isTryOn: true,
                 timestamp: new Date()
             };
-            setIsTyping(false);
             setMessages(prev => [...prev, aiMsg]);
-        }, 2000);
+        } catch (error) {
+            // Fallback to client-side swap if network fails
+            setIsTyping(false);
+            setCurrentAvatarUrl(item.modelUrl);
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                text: `Here is the ${item.name}!`,
+                sender: 'ai',
+                isTryOn: true,
+                timestamp: new Date()
+            }]);
+        }
     };
 
     const renderMessage = (msg: ChatMessage) => {
@@ -168,14 +213,26 @@ const VirtualTryOnScreen = ({ navigation }: any) => {
                         {/* Horizontal Selection Options */}
                         {showOptions && !isTyping && (
                             <View style={styles.optionsContainer}>
+                                <View style={styles.categoryFilterContainer}>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+                                        {CATEGORIES.map(cat => (
+                                            <TouchableOpacity
+                                                key={cat}
+                                                style={[styles.categoryPill, activeCategory === cat ? { backgroundColor: theme.primary, borderColor: theme.primary } : { borderColor: theme.borderColor, backgroundColor: theme.cardBg }]}
+                                                onPress={() => setActiveCategory(cat)}
+                                            >
+                                                <Text style={[styles.categoryText, activeCategory === cat ? { color: '#FFF' } : { color: theme.text }]}>{cat}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+
                                 <Text style={[styles.optionsTitle, { color: theme.subText }]}>Suggested Items</Text>
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.optionsScroll}>
-                                    {DUMMY_CLOTHING.map(item => (
+                                    {DUMMY_CLOTHING.filter(item => activeCategory === 'All' || item.category === activeCategory).map(item => (
                                         <TouchableOpacity key={item.id} style={[styles.optionCard, { borderColor: theme.borderColor, backgroundColor: theme.cardBg }]} onPress={() => handleTryOn(item)}>
-                                            <View style={styles.optionImageContainer}>
-                                                <Svg width="30" height="30" viewBox="0 0 24 24" fill="none">
-                                                    <Path d="M20.33 6.64l-4.78-4.78c-.41-.41-1.08-.41-1.49 0l-1.06 1.06c-.41.41-.41 1.08 0 1.49l2.25 2.25H4.78c-.58 0-1.06.48-1.06 1.06 0 .58.48 1.06 1.06 1.06h10.46l-2.25 2.25c-.41.41-.41 1.08 0 1.49l1.06 1.06c.41.41 1.08.41 1.49 0l4.78-4.78c.42-.42.42-1.09.01-1.5z" fill={theme.subText}/>
-                                                </Svg>
+                                            <View style={[styles.optionImageContainer, { backgroundColor: theme.primary }]}>
+                                                <Text style={styles.optionImageText}>{item.name[0]}</Text>
                                             </View>
                                             <Text style={[styles.optionText, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
                                         </TouchableOpacity>
@@ -336,10 +393,14 @@ const styles = StyleSheet.create({
         width: 60,
         height: 60,
         borderRadius: 8,
-        backgroundColor: 'rgba(0,0,0,0.05)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 8,
+    },
+    optionImageText: {
+        color: '#fff',
+        fontSize: 20,
+        fontWeight: 'bold',
     },
     optionText: {
         fontSize: 12,

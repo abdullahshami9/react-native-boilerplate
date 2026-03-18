@@ -21,7 +21,7 @@ const Avatar3DViewer: React.FC<Avatar3DViewerProps> = ({
         <html>
         <head>
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-            <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.1.1/model-viewer.min.js"></script>
+            <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
             <style>
                 body {
                     margin: 0;
@@ -33,11 +33,6 @@ const Avatar3DViewer: React.FC<Avatar3DViewerProps> = ({
                     height: 100vh;
                     overflow: hidden;
                 }
-                model-viewer {
-                    width: 100%;
-                    height: 100%;
-                    outline: none;
-                }
             </style>
         </head>
         <body>
@@ -47,9 +42,7 @@ const Avatar3DViewer: React.FC<Avatar3DViewerProps> = ({
                 auto-rotate
                 camera-controls
                 shadow-intensity="1"
-                environment-image="neutral"
-                exposure="1"
-                disable-zoom
+                style="width:100%;height:100%;background:#1a1a2e"
             ></model-viewer>
         </body>
         </html>
@@ -71,6 +64,7 @@ const Avatar3DViewer: React.FC<Avatar3DViewerProps> = ({
     return (
         <View style={[styles.container, { width, height, backgroundColor }]}>
             <WebView
+                key={avatarUrl}
                 source={{ html: htmlContent }}
                 style={{ flex: 1, backgroundColor: 'transparent' }}
                 scrollEnabled={false}

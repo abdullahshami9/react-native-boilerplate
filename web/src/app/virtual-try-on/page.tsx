@@ -5,8 +5,7 @@ import { AuthContext } from '@/context/AuthContext';
 import { Send, Image as ImageIcon, Loader2, RefreshCcw, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-// Safe dynamic import for ModelViewer to avoid SSR issues
-import dynamic from 'next/dynamic';
+import Script from 'next/script';
 
 interface ChatMessage {
     id: string;
@@ -20,15 +19,19 @@ interface ClothingItem {
     id: string;
     name: string;
     image: string;
+    category: string;
     modelUrl: string;
 }
 
 const DUMMY_CLOTHING: ClothingItem[] = [
-    { id: '1', name: 'White T-Shirt', image: 'white_tshirt.png', modelUrl: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb' },
-    { id: '2', name: 'Denim Jacket', image: 'denim_jacket.png', modelUrl: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb' },
-    { id: '3', name: 'Black Hoodie', image: 'black_hoodie.png', modelUrl: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb' },
-    { id: '4', name: 'Polo Shirt', image: 'polo_shirt.png', modelUrl: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb' }
+    { id: '1', name: 'White T-Shirt', image: 'asset:white_tshirt', category: 'Tops', modelUrl: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb' },
+    { id: '2', name: 'Denim Jacket', image: 'asset:denim_jacket', category: 'Outerwear', modelUrl: 'https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb' },
+    { id: '3', name: 'Black Hoodie', image: 'asset:black_hoodie', category: 'Tops', modelUrl: 'https://models.readyplayer.me/64f29b8e1da94c4e10df0dac.glb' },
+    { id: '4', name: 'Slim Fit Pants', image: 'asset:slim_fit_pants', category: 'Bottoms', modelUrl: 'https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb' },
+    { id: '5', name: 'Polo Shirt', image: 'asset:polo_shirt', category: 'Tops', modelUrl: 'https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb' }
 ];
+
+const CATEGORIES = ['All', 'Tops', 'Bottoms', 'Outerwear', 'Shoes'];
 
 export default function VirtualTryOnPage() {
     const { userInfo } = useContext(AuthContext);
@@ -43,6 +46,7 @@ export default function VirtualTryOnPage() {
     const [inputText, setInputText] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [showOptions, setShowOptions] = useState(true);
+    const [activeCategory, setActiveCategory] = useState('All');
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -117,22 +121,22 @@ export default function VirtualTryOnPage() {
 
     return (
         <div className="flex h-[calc(100vh-64px)] w-full bg-gray-50 dark:bg-junr-dark-bg overflow-hidden">
+            <Script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js" strategy="lazyOnload" />
 
             {/* Left Panel: 3D Avatar Viewer */}
             <div className="w-1/2 h-full border-r border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 relative">
                 {/* Embedded Model Viewer */}
-                <div className="w-full h-full" dangerouslySetInnerHTML={{__html: `
-                    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.1.1/model-viewer.min.js"></script>
+                <div className="w-full h-full">
+                    {/* @ts-ignore */}
                     <model-viewer
-                        src="${currentAvatarUrl}"
+                        src={currentAvatarUrl}
                         alt="3D Avatar"
-                        auto-rotate
-                        camera-controls
+                        auto-rotate="true"
+                        camera-controls="true"
                         shadow-intensity="1"
-                        style="width: 100%; height: 100%; outline: none;"
-                        disable-zoom
+                        style={{ width: '100%', height: '100%', background: '#1a1a2e', outline: 'none' }}
                     ></model-viewer>
-                `}} />
+                </div>
 
                 <div className="absolute top-4 left-4">
                     <div className="bg-white/90 dark:bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-gray-200 dark:border-gray-700 flex items-center gap-2 shadow-sm">
@@ -189,16 +193,31 @@ export default function VirtualTryOnPage() {
                     {/* Inline Clothing Options */}
                     {showOptions && !isTyping && (
                         <div className="mt-6 mb-2">
+                            <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+                                {CATEGORIES.map(cat => (
+                                    <button
+                                        key={cat}
+                                        onClick={() => setActiveCategory(cat)}
+                                        className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors border ${
+                                            activeCategory === cat
+                                                ? 'bg-junr-blue text-white border-junr-blue'
+                                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-junr-blue'
+                                        }`}
+                                    >
+                                        {cat}
+                                    </button>
+                                ))}
+                            </div>
                             <p className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-3 pl-2">Suggested Items</p>
                             <div className="flex flex-wrap gap-3">
-                                {DUMMY_CLOTHING.map(item => (
+                                {DUMMY_CLOTHING.filter(item => activeCategory === 'All' || item.category === activeCategory).map(item => (
                                     <button
                                         key={item.id}
                                         onClick={() => handleTryOn(item)}
                                         className="group flex flex-col items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-junr-blue dark:hover:border-junr-blue hover:shadow-md transition-all duration-200 w-[100px]"
                                     >
-                                        <div className="w-14 h-14 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-2 group-hover:bg-junr-blue/5 transition-colors">
-                                            <ImageIcon className="w-6 h-6 text-gray-400 dark:text-gray-500 group-hover:text-junr-blue transition-colors" />
+                                        <div className="w-14 h-14 bg-[#667eea] rounded-lg flex items-center justify-center mb-2">
+                                            <span className="text-white text-xl font-bold">{item.name[0]}</span>
                                         </div>
                                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 text-center line-clamp-1 w-full">{item.name}</span>
                                     </button>

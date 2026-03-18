@@ -24,28 +24,17 @@ export function Navbar() {
   const isBusiness = userInfo?.user_type?.toLowerCase() === 'business';
   const isGuest = userInfo?.user_type === 'Guest';
 
-  // Navigation Links based on Role
-  const businessLinks = [
-    { name: 'Stats', href: '/business/stats' },
-    { name: 'Inventory', href: '/business/products' },
-    { name: 'Services', href: '/business/services' },
-    { name: 'Orders', href: '/business/orders' },
-    { name: 'Messages', href: '/messages' },
-    { name: 'Profile', href: `/profile/${userInfo?.id}` },
-  ];
-
   const customerLinks = [
     { name: 'Discover', href: '/discover' },
-    !isGuest && { name: 'Connections', href: '/connections' },
     { name: 'Shop', href: '/shop' },
-    { name: 'Try-On', href: '/virtual-try-on' },
+    { name: 'Try-On 👕', href: '/virtual-try-on' },
     { name: 'Profile', href: `/profile/${userInfo?.id}` },
   ].filter(Boolean) as { name: string; href: string }[];
 
   // Public links are now hidden to match "App" feel (Login required to see features)
   const publicLinks: { name: string; href: string }[] = [];
 
-  const currentLinks = userToken ? (isBusiness ? businessLinks : customerLinks) : publicLinks;
+  const currentLinks = userToken ? customerLinks : publicLinks;
 
   return (
     <nav className="fixed top-0 w-full z-50 glass border-b border-white/10 dark:border-white/5">
@@ -76,7 +65,7 @@ export function Navbar() {
                 </button>
                 <Link href={`/profile/${userInfo?.id}`} className="flex items-center gap-2 hover:opacity-80">
                     <Image
-                      src={resolveImage(userInfo?.profile_pic_url, getDefaultImageForType(isBusiness ? 'business' : 'customer'))}
+                      src={resolveImage(userInfo?.profile_pic_url, getDefaultImageForType('customer'))}
                       alt="Profile"
                       width={32}
                       height={32}

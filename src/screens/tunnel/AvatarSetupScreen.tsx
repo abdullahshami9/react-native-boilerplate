@@ -24,6 +24,7 @@ const AvatarSetupScreen = ({ navigation }: any) => {
     const [recordingStep, setRecordingStep] = useState(0);
 
     // Form states
+    const [gender, setGender] = useState('Male');
     const [height, setHeight] = useState('');
     const [weight, setWeight] = useState('');
     const [skinTone, setSkinTone] = useState('#FAD6B1');
@@ -35,6 +36,12 @@ const AvatarSetupScreen = ({ navigation }: any) => {
         "Turn your head slowly to the RIGHT...",
         "Look slightly UP and DOWN...",
         "Processing Face Scan..."
+    ];
+
+    const genderOptions = [
+        { label: 'Male', value: 'Male' },
+        { label: 'Female', value: 'Female' },
+        { label: 'Other', value: 'Other' }
     ];
 
     const bodySizeOptions = [
@@ -111,6 +118,7 @@ const AvatarSetupScreen = ({ navigation }: any) => {
                 weight: parseFloat(weight),
                 skin_tone: skinTone,
                 body_size: bodySize,
+                gender: gender,
                 // Passing a demo standard male/female or neutral avatar based on Doppl inspiration
                 avatar_url: "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb"
             }, {
@@ -118,14 +126,7 @@ const AvatarSetupScreen = ({ navigation }: any) => {
             });
 
             if (response.data.success) {
-                // Determine next step based on profile type
-                if (userInfo.user_type === 'Individual') {
-                    navigation.navigate('PersonalDetails');
-                } else if (userInfo.user_type === 'Business') {
-                    navigation.navigate('BusinessLocation');
-                } else {
-                    navigation.navigate('IdentityGate');
-                }
+                navigation.navigate('PersonalDetails');
             } else {
                 Alert.alert("Error", "Failed to save avatar data.");
             }
@@ -152,10 +153,6 @@ const AvatarSetupScreen = ({ navigation }: any) => {
 
             <TouchableOpacity style={[styles.primaryButton, { backgroundColor: theme.primary }]} onPress={() => setStep(1)}>
                 <Text style={styles.primaryButtonText}>Start Face Scan</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.skipButton} onPress={() => setStep(2)}>
-                <Text style={[styles.skipButtonText, { color: theme.subText }]}>Skip Face Scan</Text>
             </TouchableOpacity>
         </View>
     );
@@ -224,6 +221,21 @@ const AvatarSetupScreen = ({ navigation }: any) => {
             <Text style={[styles.formSubtitle, { color: theme.subText }]}>
                 Provide your measurements for accurate clothing fitment.
             </Text>
+
+            <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: theme.text }]}>Gender</Text>
+                <Dropdown
+                    style={[styles.dropdown, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}
+                    placeholderStyle={[styles.dropdownText, { color: theme.subText }]}
+                    selectedTextStyle={[styles.dropdownText, { color: theme.text }]}
+                    data={genderOptions}
+                    labelField="label"
+                    valueField="value"
+                    placeholder="Select Gender"
+                    value={gender}
+                    onChange={item => setGender(item.value)}
+                />
+            </View>
 
             <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: theme.text }]}>Height (cm)</Text>

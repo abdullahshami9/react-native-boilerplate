@@ -567,6 +567,7 @@ initConnection.query(initQuery, (err, result) => {
         runMigration("ALTER TABLE users ADD COLUMN skin_tone VARCHAR(50) DEFAULT NULL", "User Skin Tone");
         runMigration("ALTER TABLE users ADD COLUMN body_size VARCHAR(10) DEFAULT NULL", "User Body Size");
         runMigration("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(255) DEFAULT NULL", "User Avatar URL");
+        runMigration("ALTER TABLE users ADD COLUMN gender VARCHAR(20) DEFAULT NULL", "User Gender");
 
         // Seed Dummy Data for Location (If empty)
         db.query("SELECT COUNT(*) as count FROM province", (e, r) => {
@@ -999,7 +1000,7 @@ app.post('/register', (req, res) => {
             return res.status(409).json({ success: false, message: 'Phone number already exists' });
         }
 
-        // Default user_type to 'Individual', will be updated in Tunnel
+        // Default user_type to 'Individual'
         const query = 'INSERT INTO users (email, password, name, phone, user_type, mac_address, is_tunnel_completed) VALUES (?, ?, ?, ?, ?, ?, 0)';
         dbQuery(query, [email, password, name, phone, req.body.user_type || 'Individual', mac_address || null], req, (err, result) => {
             if (err) {
@@ -2238,13 +2239,13 @@ app.post('/api/tunnel/personal/skills', (req, res) => {
 
 app.post('/api/tunnel/avatar-setup', verifyToken, (req, res) => {
     // Only update avatar properties
-    const { height, weight, skin_tone, body_size, avatar_url, user_id } = req.body;
+    const { height, weight, skin_tone, body_size, avatar_url, user_id, gender } = req.body;
 
     // Fallback: If no custom avatar_url passed, use a default doppl-like base model
     const finalAvatar = avatar_url || "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb";
 
-    const query = 'UPDATE users SET height = ?, weight = ?, skin_tone = ?, body_size = ?, avatar_url = ? WHERE id = ?';
-    dbQuery(query, [height, weight, skin_tone, body_size, finalAvatar, user_id], req, (err) => {
+    const query = 'UPDATE users SET height = ?, weight = ?, skin_tone = ?, body_size = ?, avatar_url = ?, gender = ? WHERE id = ?';
+    dbQuery(query, [height, weight, skin_tone, body_size, finalAvatar, gender || null, user_id], req, (err) => {
         if (err) return res.status(500).json({ success: false, message: 'Failed to update avatar details' });
         res.json({ success: true, message: 'Avatar setup complete' });
     });

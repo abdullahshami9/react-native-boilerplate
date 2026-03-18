@@ -1455,6 +1455,63 @@ app.get('/api/messages/:chatId', (req, res) => {
 });
 
 
+// --- AI TRY-ON ---
+
+app.post('/api/tryon/chat', (req, res) => {
+    const { message } = req.body;
+
+    if (!message) {
+        return res.status(400).json({ success: false, message: 'Message is required' });
+    }
+
+    const text = message.toLowerCase();
+
+    // Default AI Response
+    let aiResponse = {
+        text: "I couldn't find an exact match for that, but feel free to select one of the suggested items!",
+        modelUrl: null,
+        appliedItem: null
+    };
+
+    // Simple NLP / Keyword Matching mapping to DUMMY_CLOTHING logic
+    if (text.includes('white') || (text.includes('shirt') && !text.includes('polo'))) {
+        aiResponse = {
+            text: "A classic White T-Shirt! Here is how it looks on you.",
+            modelUrl: "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb",
+            appliedItem: "White T-Shirt"
+        };
+    } else if (text.includes('denim') || text.includes('jacket') || text.includes('leather')) {
+        aiResponse = {
+            text: "Great choice! The Denim Jacket adds a nice layer.",
+            modelUrl: "https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb",
+            appliedItem: "Denim Jacket"
+        };
+    } else if (text.includes('black') || text.includes('hoodie')) {
+        aiResponse = {
+            text: "You can't go wrong with a Black Hoodie. Trying it on now...",
+            modelUrl: "https://models.readyplayer.me/64f29b8e1da94c4e10df0dac.glb",
+            appliedItem: "Black Hoodie"
+        };
+    } else if (text.includes('pants') || text.includes('jeans') || text.includes('bottoms') || text.includes('slim fit')) {
+        aiResponse = {
+            text: "Let's see how these Slim Fit Pants look.",
+            modelUrl: "https://models.readyplayer.me/64b73b5b699276c1a8264e03.glb", // Using base model for demo
+            appliedItem: "Slim Fit Pants"
+        };
+    } else if (text.includes('polo')) {
+         aiResponse = {
+            text: "A Polo Shirt for a smart-casual look.",
+            modelUrl: "https://models.readyplayer.me/6501304a55e7c3c7d6cca5f8.glb",
+            appliedItem: "Polo Shirt"
+        };
+    }
+
+    // Simulate API delay to make it feel like AI processing
+    setTimeout(() => {
+        res.json({ success: true, response: aiResponse });
+    }, 1500);
+});
+
 // --- UPLOADS ---
 
 app.post('/api/upload/profile', upload.single('image'), (req, res) => {

@@ -62,13 +62,14 @@ export default function VirtualTryOnPage() {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
 
-    const handleSend = (e?: React.FormEvent) => {
+    const handleSend = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!inputText.trim()) return;
 
+        const messageText = inputText.trim();
         const newUserMsg: ChatMessage = {
             id: Date.now().toString(),
-            text: inputText,
+            text: messageText,
             sender: 'user',
             timestamp: new Date()
         };
@@ -77,21 +78,49 @@ export default function VirtualTryOnPage() {
         setInputText('');
         setIsTyping(true);
 
-        // Simulate AI Response processing NLP
-        setTimeout(() => {
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/tryon/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: messageText })
+            });
+
+            if (!res.ok) throw new Error('API Error');
+
+            const result = await res.json();
+            const data = result.response;
+
+            setIsTyping(false);
+
             const aiResponse: ChatMessage = {
                 id: (Date.now() + 1).toString(),
-                text: "I can find that style for you! Select an item below to try it on.",
+                text: data.text,
                 sender: 'ai',
+                isTryOn: !!data.modelUrl,
                 timestamp: new Date()
             };
-            setIsTyping(false);
+
             setMessages(prev => [...prev, aiResponse]);
-            setShowOptions(true);
-        }, 1500);
+
+            if (data.modelUrl) {
+                setCurrentAvatarUrl(data.modelUrl);
+                setShowOptions(false);
+            } else {
+                setShowOptions(true);
+            }
+        } catch (error) {
+            console.error("AI Error:", error);
+            setIsTyping(false);
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                text: "Sorry, my AI engine is currently offline. Please try manually selecting an item.",
+                sender: 'ai',
+                timestamp: new Date()
+            }]);
+        }
     };
 
-    const handleTryOn = (item: ClothingItem) => {
+    const handleTryOn = async (item: ClothingItem) => {
         setShowOptions(false);
         const userMsg: ChatMessage = {
             id: Date.now().toString(),
@@ -102,19 +131,42 @@ export default function VirtualTryOnPage() {
         setMessages(prev => [...prev, userMsg]);
         setIsTyping(true);
 
-        // Simulate AI applying cloth mapping
-        setTimeout(() => {
-            setCurrentAvatarUrl(item.modelUrl); // Change 3D Model
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/tryon/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: `Try on ${item.name}` })
+            });
+
+            if (!res.ok) throw new Error('API Error');
+
+            const result = await res.json();
+            const data = result.response;
+
+            setIsTyping(false);
+            setCurrentAvatarUrl(item.modelUrl || data.modelUrl);
+
             const aiMsg: ChatMessage = {
                 id: (Date.now() + 1).toString(),
-                text: `Here is how the ${item.name} looks on you!`,
+                text: data.text || `Here is how the ${item.name} looks on you!`,
                 sender: 'ai',
                 isTryOn: true,
                 timestamp: new Date()
             };
-            setIsTyping(false);
             setMessages(prev => [...prev, aiMsg]);
-        }, 2000);
+
+        } catch (error) {
+            // Fallback
+            setIsTyping(false);
+            setCurrentAvatarUrl(item.modelUrl);
+            setMessages(prev => [...prev, {
+                id: (Date.now() + 1).toString(),
+                text: `Here is the ${item.name}!`,
+                sender: 'ai',
+                isTryOn: true,
+                timestamp: new Date()
+            }]);
+        }
     };
 
     if (!mounted) return null;

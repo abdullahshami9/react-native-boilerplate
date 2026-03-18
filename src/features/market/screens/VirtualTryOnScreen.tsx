@@ -4,6 +4,8 @@ import { useTheme } from '../../../theme/useTheme';
 import { AuthContext } from '../../../context/AuthContext';
 import Svg, { Path, Circle } from 'react-native-svg';
 import Avatar3DViewer from '../../../components/Avatar3DViewer';
+import axios from 'axios';
+import { CONFIG } from '../../../Config';
 
 const { height } = Dimensions.get('window');
 
@@ -57,12 +59,13 @@ const VirtualTryOnScreen = ({ navigation }: any) => {
         setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
     }, [messages, isTyping]);
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!inputText.trim()) return;
 
+        const messageText = inputText.trim();
         const newUserMsg: ChatMessage = {
             id: Date.now().toString(),
-            text: inputText,
+            text: messageText,
             sender: 'user',
             timestamp: new Date()
         };
@@ -71,21 +74,43 @@ const VirtualTryOnScreen = ({ navigation }: any) => {
         setInputText('');
         setIsTyping(true);
 
-        // Simulate AI Response processing NLP
-        setTimeout(() => {
-            const aiResponse: ChatMessage = {
+        try {
+            // Call the actual AI Backend endpoint
+            const response = await axios.post(`${CONFIG.API_URL}/api/tryon/chat`, { message: messageText });
+            const data = response.data.response;
+
+            setIsTyping(false);
+
+            const aiMsg: ChatMessage = {
                 id: (Date.now() + 1).toString(),
-                text: "I can find that style for you! Select an item below to try it on.",
+                text: data.text,
                 sender: 'ai',
+                isTryOn: !!data.modelUrl,
                 timestamp: new Date()
             };
+
+            setMessages(prev => [...prev, aiMsg]);
+
+            if (data.modelUrl) {
+                setCurrentAvatarUrl(data.modelUrl);
+                setShowOptions(false); // Hide options when successfully applied
+            } else {
+                setShowOptions(true);
+            }
+
+        } catch (error) {
+            console.error("AI TryOn Error", error);
             setIsTyping(false);
-            setMessages(prev => [...prev, aiResponse]);
-            setShowOptions(true); // Bring back options to pick from
-        }, 1500);
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                text: "Sorry, my AI engine is currently offline. Please try manually selecting an item.",
+                sender: 'ai',
+                timestamp: new Date()
+            }]);
+        }
     };
 
-    const handleTryOn = (item: ClothingItem) => {
+    const handleTryOn = async (item: ClothingItem) => {
         setShowOptions(false);
         const userMsg: ChatMessage = {
             id: Date.now().toString(),
@@ -96,19 +121,34 @@ const VirtualTryOnScreen = ({ navigation }: any) => {
         setMessages(prev => [...prev, userMsg]);
         setIsTyping(true);
 
-        // Simulate AI applying cloth mapping
-        setTimeout(() => {
-            setCurrentAvatarUrl(item.modelUrl); // Change 3D Model
+        try {
+            // Re-use the backend NLP flow to fetch the dynamic response for this item
+            const response = await axios.post(`${CONFIG.API_URL}/api/tryon/chat`, { message: `Try on ${item.name}` });
+            const data = response.data.response;
+
+            setIsTyping(false);
+            setCurrentAvatarUrl(item.modelUrl || data.modelUrl); // Change 3D Model
+
             const aiMsg: ChatMessage = {
                 id: (Date.now() + 1).toString(),
-                text: `Here is how the ${item.name} looks on you!`,
+                text: data.text || `Here is how the ${item.name} looks on you!`,
                 sender: 'ai',
                 isTryOn: true,
                 timestamp: new Date()
             };
-            setIsTyping(false);
             setMessages(prev => [...prev, aiMsg]);
-        }, 2000);
+        } catch (error) {
+            // Fallback to client-side swap if network fails
+            setIsTyping(false);
+            setCurrentAvatarUrl(item.modelUrl);
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                text: `Here is the ${item.name}!`,
+                sender: 'ai',
+                isTryOn: true,
+                timestamp: new Date()
+            }]);
+        }
     };
 
     const renderMessage = (msg: ChatMessage) => {

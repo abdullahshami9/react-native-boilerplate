@@ -1282,9 +1282,15 @@ app.get('/api/orders/customer/:userId', (req, res) => {
         db.query(itemQuery, [orderIds], (err2, items) => {
             if (err2) return res.status(500).json({ success: false });
 
+            const itemsByOrder = items.reduce((acc, item) => {
+                if (!acc[item.order_id]) acc[item.order_id] = [];
+                acc[item.order_id].push(item);
+                return acc;
+            }, {});
+
             const orders = results.map(o => ({
                 ...o,
-                items: items.filter(i => i.order_id === o.id)
+                items: itemsByOrder[o.id] || []
             }));
             res.json({ success: true, orders });
         });
@@ -2027,9 +2033,15 @@ app.get('/api/orders/business/:userId', (req, res) => {
         db.query(itemQuery, [orderIds], (err2, items) => {
             if (err2) return res.status(500).json({ success: false });
 
+            const itemsByOrder = items.reduce((acc, item) => {
+                if (!acc[item.order_id]) acc[item.order_id] = [];
+                acc[item.order_id].push(item);
+                return acc;
+            }, {});
+
             const orders = results.map(o => ({
                 ...o,
-                items: items.filter(i => i.order_id === o.id)
+                items: itemsByOrder[o.id] || []
             }));
             res.json({ success: true, orders });
         });

@@ -1,6 +1,6 @@
 const { Sequelize } = require('sequelize');
 
-const sequelize = new Sequelize('AppStarter', 'root', '', {
+const sequelize = new Sequelize('AppStarter', 'root', process.env.DB_PASSWORD || 'root', {
     host: 'localhost',
     dialect: 'mysql',
     logging: false, // Set to console.log to see SQL queries

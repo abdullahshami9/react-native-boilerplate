@@ -3,7 +3,7 @@ const mysql = require('mysql2');
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: '',
+    password: process.env.DB_PASSWORD || 'root',
     database: 'AppStarter' // Try connecting directly to the DB
 };
 

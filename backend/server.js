@@ -110,7 +110,7 @@ ensureDir(path.join(__dirname, 'uploads/identity'));
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: '',
+    password: process.env.DB_PASSWORD || 'root',
     database: 'AppStarter',
     waitForConnections: true,
     connectionLimit: 100, // Handle up to 100 concurrent DB connections
@@ -136,7 +136,7 @@ try {
 const initConnection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: '',
+    password: process.env.DB_PASSWORD || 'root',
     multipleStatements: true
 });
 
